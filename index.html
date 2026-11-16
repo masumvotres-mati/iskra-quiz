@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7f9f2">
+    <meta name="description" content="Mały quiz o wielkich wynalazkach. Sześć pytań, ciekawe historie i chwila dobrej zabawy.">
+    <title>Iskra — mały quiz, wielkie odkrycia</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%2358a700'/%3E%3Cpath d='M36 8 16 35h15l-3 21 21-29H34z' fill='%23fff'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./quiz.js" defer></script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <a class="brand" href="./" aria-label="Iskra — strona główna"><span class="brand-icon" aria-hidden="true">ϟ</span> iskra<span class="brand-dot">.</span></a>
+        <span class="header-note">MAŁA DAWKA WIEDZY</span>
+      </header>
+
+      <main>
+        <section id="welcome" class="screen welcome" aria-labelledby="welcome-title">
+          <div class="topic-pill"><span aria-hidden="true">✦</span> HISTORIA WYNALAZKÓW</div>
+          <div class="invention-art" aria-hidden="true">
+            <span class="art-spark spark-one">✦</span><span class="art-spark spark-two">+</span>
+            <svg viewBox="0 0 200 200" role="presentation">
+              <circle cx="100" cy="100" r="87" fill="#eaf3d9"/>
+              <path d="M75 125c0-16-20-24-20-51a45 45 0 0 1 90 0c0 27-20 35-20 51" fill="#ffda54" stroke="#293b20" stroke-width="5" stroke-linecap="round"/>
+              <path d="m85 85 15 13 15-13m-15 13v29" fill="none" stroke="#b18611" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="74" y="126" width="52" height="27" rx="8" fill="#fff" stroke="#293b20" stroke-width="5"/>
+              <path d="M86 155a14 14 0 0 0 28 0M81 139h38M100 8v10M38 31l8 9M162 31l-8 9M22 78h12M166 78h12" fill="none" stroke="#293b20" stroke-width="5" stroke-linecap="round"/>
+              <path d="M72 66c2-9 8-16 17-19" fill="none" stroke="#fff1b1" stroke-width="7" stroke-linecap="round"/>
+            </svg>
+            <span class="art-spark spark-three">✧</span>
+          </div>
+          <p class="eyebrow">CIEKAWOŚĆ TO DOBRY POCZĄTEK</p>
+          <h1 id="welcome-title">Wielkie pomysły.<br>Mały quiz.</h1>
+          <p class="intro">Od druku po pierwszy lot. Sprawdź, ile wiesz o wynalazkach, które zmieniły świat.</p>
+          <div class="quiz-meta"><span><span aria-hidden="true">◷</span> około 2 minut</span><span><span aria-hidden="true">▤</span> 6 pytań</span></div>
+          <button id="start" class="button primary" type="button">Zaczynamy <span aria-hidden="true">→</span></button>
+          <p class="small-note">Bez konta. Bez presji. Z ciekawości.</p>
+        </section>
+
+        <section id="quiz" class="screen quiz-screen" aria-labelledby="question-title" hidden>
+          <div class="progress-label"><span id="question-count"></span><span id="score-count"></span></div>
+          <div id="progress" class="progress-track" role="progressbar" aria-label="Ukończone pytania" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0"><div id="progress-fill"></div></div>
+          <div class="question-heading">
+            <span id="question-icon" class="question-icon" aria-hidden="true"></span>
+            <p id="question-category" class="eyebrow"></p>
+            <h1 id="question-title" tabindex="-1"></h1>
+            <p class="question-hint">Wybierz jedną odpowiedź.</p>
+          </div>
+          <div id="answers" class="answers" role="group" aria-labelledby="question-title"></div>
+          <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
+          <button id="next" class="button primary next-button" type="button" disabled>Dalej <span aria-hidden="true">→</span></button>
+        </section>
+
+        <section id="results" class="screen results" aria-labelledby="results-title" hidden>
+          <div class="result-art" aria-hidden="true">✦</div>
+          <p class="eyebrow">KOLEJNA ISKRA WIEDZY</p>
+          <h1 id="results-title" tabindex="-1">Quiz ukończony!</h1>
+          <p id="result-message" class="intro"></p>
+          <div class="score-card"><span id="final-score" class="final-score"></span><span>poprawnych odpowiedzi</span></div>
+          <p class="result-note">Każdy wielki wynalazek zaczął się od ciekawości.<br>Nie trać swojej.</p>
+          <button id="restart" class="button primary" type="button">Spróbuj jeszcze raz <span aria-hidden="true">↻</span></button>
+        </section>
+        <noscript><p class="noscript">Włącz JavaScript w przeglądarce, aby uruchomić quiz.</p></noscript>
+      </main>
+      <footer>Odrobina zabawy. Cały świat do odkrycia.</footer>
+    </div>
+  </body>
+</html>
