@@ -93,7 +93,7 @@ function renderQuestion() {
   answered = false;
   element("question-count").textContent = `Pytanie ${questionIndex + 1} z ${questions.length}`;
   element("score-count").textContent = `Punkty: ${score}`;
-  element("question-category").textContent = `${activeChapterIndex === null ? "" : `Rozdział ${activeChapterIndex + 1} · `}${current.subject === "history" ? "Historia" : "Prawo"} · ${current.topic}`;
+  element("question-category").textContent = `${activeChapterIndex === null ? "" : `Rozdział ${activeChapterIndex + 1} · `}${current.subject === "history" ? "Historia" : "Prawo (PDF 2023)"} · ${current.topic}`;
   element("question-icon").textContent = current.subject === "history" ? "⚙️" : "⚖️";
   annotateTerms(element("question-title"), current.question, () => answered);
   element("progress").setAttribute("aria-valuemax", String(questions.length));
@@ -186,6 +186,36 @@ function selectAnswer(index) {
   reference.append(citation, link);
   excerpt.append(excerptLabel, quote, reference);
   feedback.append(explanation, excerpt);
+
+  const note = factCheckNotes[current.id];
+  if (note) {
+    const comparison = document.createElement("aside");
+    comparison.className = "fact-check";
+    comparison.setAttribute("aria-label", "Porównanie źródeł");
+    const heading = document.createElement("h2");
+    heading.textContent = "Porównanie źródeł";
+    comparison.append(heading);
+    for (const text of [`Materiał organizatora: ${note.material}`, `Doprecyzowanie: ${note.comparison}`]) {
+      const paragraph = document.createElement("p");
+      annotateTerms(paragraph, text, () => answered);
+      comparison.append(paragraph);
+    }
+    const references = document.createElement("ul");
+    references.className = "fact-check-links";
+    for (const sourceId of note.sources) {
+      const verifiedSource = verificationSources[sourceId];
+      const item = document.createElement("li");
+      const sourceLink = document.createElement("a");
+      sourceLink.href = verifiedSource.url;
+      sourceLink.textContent = verifiedSource.title;
+      sourceLink.target = "_blank";
+      sourceLink.rel = "noopener noreferrer";
+      item.append(sourceLink);
+      references.append(item);
+    }
+    comparison.append(references);
+    feedback.append(comparison);
+  }
 
   element("score-count").textContent = `Punkty: ${score}`;
   element("progress").setAttribute("aria-valuenow", String(questionIndex + 1));

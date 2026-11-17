@@ -71,7 +71,7 @@ h1 { margin: 0; font-size: clamp(32px, 8.5vw, 42px); line-height: 1.13; font-wei
 .subject-picker input { accent-color: var(--green); margin: 0; }
 .sources { margin: 26px 0 0; color: var(--muted); text-align: left; font-size: 12px; line-height: 1.65; }
 .sources summary { cursor: pointer; padding: 12px 0; font-weight: 700; }
-.sources a, .source-reference a { color: inherit; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.sources a, .source-reference a, .fact-check a { color: inherit; text-underline-offset: 3px; overflow-wrap: anywhere; }
 .button.secondary { margin-top: 16px; background: white; border: 2px solid #dfe7d2; color: var(--green-dark); }
 .button.text-button { margin-top: 8px; color: var(--muted); background: transparent; font-size: 14px; }
 .button { display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; min-height: 57px; padding: 14px 20px; border: 0; border-radius: 16px; font-size: 16px; font-weight: 750; cursor: pointer; transition: background 150ms, transform 150ms, box-shadow 150ms; }
@@ -129,6 +129,10 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .source-excerpt blockquote p { margin: 0; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
 .feedback .source-reference { display: grid; gap: 10px; margin-top: 12px; font-size: 11px; line-height: 1.6; }
 .source-reference a { justify-self: start; padding: 10px 0; }
+.fact-check { margin-top: 16px; padding: 14px; border: 1px solid #c8d8e6; border-radius: 10px; background: #f1f6fb; color: #28465f; }
+.fact-check h2 { margin: 0; font-size: 14px; line-height: 1.5; }
+.fact-check-links { list-style: none; margin: 10px 0 0; padding: 0; font-size: 12px; line-height: 1.6; }
+.fact-check-links a { display: block; min-height: 44px; padding: 10px 0; }
 .next-button { margin-top: 20px; margin-bottom: 5px; }
 .result-art { display: grid; place-items: center; width: 126px; height: 126px; margin: 24px auto 30px; border-radius: 40px; background: #eaf3d9; color: var(--green); font-size: 86px; }
 .score-card { display: flex; flex-direction: column; gap: 7px; padding: 27px; margin: 27px 0 22px; border: 2px solid #dfe8d3; border-radius: 22px; background: #fff; color: var(--muted); font-size: 13px; }
