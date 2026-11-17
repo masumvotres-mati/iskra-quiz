@@ -1,58 +1,35 @@
 "use strict";
 
-const questions = [
-  {
-    category: "Słowa, które zmieniły świat",
-    icon: "📚",
-    question: "Kto w XV wieku rozwinął w Europie druk z użyciem ruchomych metalowych czcionek?",
-    answers: ["Leonardo da Vinci", "Johannes Gutenberg", "Isaac Newton", "Galileusz"],
-    correct: 1,
-    fact: "Ruchome czcionki znano w Azji wcześniej. Gutenberg połączył kilka rozwiązań w system, który umożliwił masowy druk książek w Europie.",
-  },
-  {
-    category: "Halo, tu historia!",
-    icon: "☎️",
-    question: "Który wynalazek Alexander Graham Bell opatentował w 1876 roku?",
-    answers: ["Radio", "Telewizor", "Telefon", "Aparat fotograficzny"],
-    correct: 2,
-    fact: "Nad przesyłaniem głosu pracowało wielu wynalazców. Historia telefonu to nie tylko Bell — ważną rolę odegrali też m.in. Antonio Meucci i Elisha Gray.",
-  },
-  {
-    category: "Pomysły nabierają rozpędu",
-    icon: "⚙️",
-    question: "Z udoskonalenia jakiej maszyny słynie James Watt?",
-    answers: ["Maszyny parowej", "Maszyny do pisania", "Maszyny do szycia", "Pralki elektrycznej"],
-    correct: 0,
-  },
-  {
-    category: "Kierunek: niebo",
-    icon: "✈️",
-    question: "W którym roku bracia Wright wykonali swoje pierwsze udane loty samolotem z napędem?",
-    answers: ["1492", "1969", "2001", "1903"],
-    correct: 3,
-    fact: "Pierwszy lot Orville’a Wrighta trwał zaledwie 12 sekund, a samolot pokonał około 36 metrów. Wielkie zmiany czasem zaczynają się od krótkiego skoku!",
-  },
-  {
-    category: "Świat na wyciągnięcie kliknięcia",
-    icon: "🌐",
-    question: "Kto stworzył World Wide Web, czyli system stron WWW?",
-    answers: ["Albert Einstein", "Tim Berners-Lee", "Thomas Edison", "Nikola Tesla"],
-    correct: 1,
-    fact: "WWW to nie to samo co internet. Internet jest siecią łączącą komputery, a WWW to jedna z usług, które z niej korzystają. Pomysł WWW powstał w CERN w 1989 roku.",
-  },
-  {
-    category: "Mały przedmiot, wielki pomysł",
-    icon: "🖊️",
-    question: "Do czego służy długopis, który udoskonalił László Bíró?",
-    answers: ["Mierzenia temperatury", "Nagrywania dźwięku", "Pisania atramentem", "Mierzenia czasu"],
-    correct: 2,
-  },
-];
-
 const element = (id) => document.getElementById(id);
+let questions = [];
 let questionIndex = 0;
 let score = 0;
 let answered = false;
+let mistakes = [];
+let subject = "mixed";
+let reviewing = false;
+const remaining = { history: [], law: [] };
+
+function shuffled(items) {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const other = Math.floor(Math.random() * (index + 1));
+    [result[index], result[other]] = [result[other], result[index]];
+  }
+  return result;
+}
+
+function takeQuestions(selectedSubject, count) {
+  const selected = [];
+  while (selected.length < count) {
+    if (remaining[selectedSubject].length === 0) {
+      remaining[selectedSubject] = shuffled(questionBank.filter((item) =>
+        item.subject === selectedSubject && !selected.some((chosen) => chosen.id === item.id)));
+    }
+    selected.push(remaining[selectedSubject].pop());
+  }
+  return selected;
+}
 
 function showScreen(id) {
   for (const screen of document.querySelectorAll(".screen")) {
@@ -66,8 +43,8 @@ function renderQuestion() {
   answered = false;
   element("question-count").textContent = `Pytanie ${questionIndex + 1} z ${questions.length}`;
   element("score-count").textContent = `Punkty: ${score}`;
-  element("question-category").textContent = current.category;
-  element("question-icon").textContent = current.icon;
+  element("question-category").textContent = `${current.subject === "history" ? "Historia" : "Prawo"} · ${current.topic}`;
+  element("question-icon").textContent = current.subject === "history" ? "⚙️" : "⚖️";
   element("question-title").textContent = current.question;
   element("progress").setAttribute("aria-valuemax", String(questions.length));
   element("progress").setAttribute("aria-valuenow", String(questionIndex));
@@ -103,6 +80,7 @@ function selectAnswer(index) {
   const current = questions[questionIndex];
   const correct = index === current.correct;
   if (correct) score += 1;
+  else mistakes.push(questionBank.find((item) => item.id === current.id));
 
   Array.from(element("answers").children).forEach((button, answerIndex) => {
     button.disabled = true;
@@ -120,36 +98,64 @@ function selectAnswer(index) {
   const feedback = element("feedback");
   feedback.className = correct ? "feedback" : "feedback wrong";
   const title = document.createElement("strong");
-  title.textContent = correct ? "Świetnie! Właśnie tak." : "Nie tym razem — ale teraz już wiesz!";
+  title.textContent = correct ? "Dobrze!" : "Nie tym razem";
   feedback.append(title);
   if (!correct) {
     const answer = document.createElement("p");
-    answer.textContent = `Poprawna odpowiedź: ${"ABCD"[current.correct]}. ${current.answers[current.correct]}.`;
+    answer.textContent = `Poprawna odpowiedź: ${"ABCD"[current.correct]}. ${current.answers[current.correct]}`;
     feedback.append(answer);
   }
-  if (current.fact) {
-    const fact = document.createElement("p");
-    fact.className = "fact";
-    fact.textContent = current.fact;
-    feedback.append(fact);
-  }
+  const explanation = document.createElement("p");
+  explanation.className = "fact";
+  explanation.textContent = current.explanation;
+  const reference = document.createElement("p");
+  const link = document.createElement("a");
+  const source = questionSources[current.subject];
+  link.href = `${source.url}#page=${current.page}`;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = `${source.title}, s. ${current.page}${current.article ? `, ${current.article}` : ""}`;
+  reference.className = "source-reference";
+  reference.append(link);
+  feedback.append(explanation, reference);
 
   element("score-count").textContent = `Punkty: ${score}`;
   element("progress").setAttribute("aria-valuenow", String(questionIndex + 1));
   element("progress-fill").style.width = `${((questionIndex + 1) / questions.length) * 100}%`;
   element("next").disabled = false;
-  element("next").focus({ preventScroll: true });
 }
 
-function startQuiz() {
+function startSession(items, isReview = false) {
+  questions = shuffled(items).map((item) => {
+    const order = shuffled([0, 1, 2, 3]);
+    return { ...item, answers: order.map((index) => item.answers[index]), correct: order.indexOf(item.correct) };
+  });
+  reviewing = isReview;
   questionIndex = 0;
   score = 0;
+  mistakes = [];
   showScreen("quiz");
   renderQuestion();
 }
 
-element("start").addEventListener("click", startQuiz);
+function startQuiz() {
+  const items = subject === "mixed"
+    ? [...takeQuestions("history", 10), ...takeQuestions("law", 10)]
+    : takeQuestions(subject, 20);
+  startSession(items);
+}
+
+element("bank-count").textContent = `${questionBank.length} w bazie`;
+element("start").addEventListener("click", () => {
+  subject = document.querySelector('input[name="subject"]:checked').value;
+  startQuiz();
+});
 element("restart").addEventListener("click", startQuiz);
+element("retry").addEventListener("click", () => startSession(mistakes, true));
+element("change-subject").addEventListener("click", () => {
+  showScreen("welcome");
+  element("welcome-title").focus({ preventScroll: true });
+});
 element("next").addEventListener("click", () => {
   if (!answered) return;
   if (questionIndex < questions.length - 1) {
@@ -161,10 +167,13 @@ element("next").addEventListener("click", () => {
 
   element("final-score").textContent = `${score} / ${questions.length}`;
   element("result-message").textContent = score === questions.length
-    ? "Komplet punktów! Masz nosa do wielkich pomysłów."
-    : score >= questions.length / 2
-      ? "Dobra robota! Kilka wielkich historii masz już w małym palcu."
-      : "Pierwszy krok za Tobą! Teraz znasz już kilka niezwykłych historii.";
+    ? "Komplet punktów w tej serii!"
+    : "Przeczytane wyjaśnienia to kolejny krok. Teraz możesz utrwalić trudniejsze pytania.";
+  element("result-note").textContent = mistakes.length
+    ? `Do powtórki: ${mistakes.length}. Powtórka obejmuje tylko błędy z tej ${reviewing ? "powtórki" : "serii"}.`
+    : "Wszystkie odpowiedzi poprawne. Przejdź do kolejnej serii.";
+  element("retry").hidden = mistakes.length === 0;
+  element("retry").textContent = `Powtórz błędy (${mistakes.length})`;
   showScreen("results");
   element("results-title").focus({ preventScroll: true });
 });

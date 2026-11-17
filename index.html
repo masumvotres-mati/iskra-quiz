@@ -4,22 +4,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#f7f9f2">
-    <meta name="description" content="Mały quiz o wielkich wynalazkach. Sześć pytań, ciekawe historie i chwila dobrej zabawy.">
-    <title>Iskra — mały quiz, wielkie odkrycia</title>
+    <meta name="description" content="Przygotowanie do szkolnego etapu Olimpiady Wiedzy o Wynalazczości. Autorskie pytania ABCD z historii wynalazków i prawa własności przemysłowej.">
+    <title>Iskra — Olimpiada Wiedzy o Wynalazczości</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%2358a700'/%3E%3Cpath d='M36 8 16 35h15l-3 21 21-29H34z' fill='%23fff'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="./styles.css">
+    <script src="./questions.js" defer></script>
     <script src="./quiz.js" defer></script>
   </head>
   <body>
     <div class="app">
       <header class="header">
         <a class="brand" href="./" aria-label="Iskra — strona główna"><span class="brand-icon" aria-hidden="true">ϟ</span> iskra<span class="brand-dot">.</span></a>
-        <span class="header-note">MAŁA DAWKA WIEDZY</span>
+        <span class="header-note">ETAP SZKOLNY</span>
       </header>
 
       <main>
         <section id="welcome" class="screen welcome" aria-labelledby="welcome-title">
-          <div class="topic-pill"><span aria-hidden="true">✦</span> HISTORIA WYNALAZKÓW</div>
+          <div class="topic-pill"><span aria-hidden="true">✦</span> WIEDZA O WYNALAZCZOŚCI</div>
           <div class="invention-art" aria-hidden="true">
             <span class="art-spark spark-one">✦</span><span class="art-spark spark-two">+</span>
             <svg viewBox="0 0 200 200" role="presentation">
@@ -32,16 +33,30 @@
             </svg>
             <span class="art-spark spark-three">✧</span>
           </div>
-          <p class="eyebrow">CIEKAWOŚĆ TO DOBRY POCZĄTEK</p>
-          <h1 id="welcome-title">Wielkie pomysły.<br>Mały quiz.</h1>
-          <p class="intro">Od druku po pierwszy lot. Sprawdź, ile wiesz o wynalazkach, które zmieniły świat.</p>
-          <div class="quiz-meta"><span><span aria-hidden="true">◷</span> około 2 minut</span><span><span aria-hidden="true">▤</span> 6 pytań</span></div>
+          <p class="eyebrow">OLIMPIADA WIEDZY O WYNALAZCZOŚCI</p>
+          <h1 id="welcome-title" tabindex="-1">Wielkie pomysły.<br>Wiedza na olimpiadę.</h1>
+          <p class="intro">Ćwicz ABCD. Po każdej odpowiedzi poznasz wyjaśnienie i źródło w materiałach.</p>
+          <fieldset class="subject-picker">
+            <legend>Co dziś ćwiczymy?</legend>
+            <label><input type="radio" name="subject" value="mixed" checked><span>Razem</span></label>
+            <label><input type="radio" name="subject" value="history"><span>Historia</span></label>
+            <label><input type="radio" name="subject" value="law"><span>Prawo</span></label>
+          </fieldset>
+          <div class="quiz-meta"><span>20 pytań w serii</span><span id="bank-count"></span></div>
           <button id="start" class="button primary" type="button">Zaczynamy <span aria-hidden="true">→</span></button>
+          <details class="sources">
+            <summary>Materiały i zasady treningu</summary>
+            <p>Autorskie pytania treningowe, nie oficjalny arkusz ani pełne pokrycie programu. Każde ma jedną poprawną odpowiedź. W serii mieszanej losujemy po 10 pytań z obu działów; kolejność odpowiedzi też się zmienia.</p>
+            <p>Etap szkolny według <a href="https://www.pzswir.pl/component/phocadownload/category/1-olimpiady?download=354">regulaminu 2026/2027</a>: 20 pytań, 20 minut, 1 punkt za poprawną odpowiedź; przy remisie decyduje czas. Tutaj uczysz się bez limitu czasu, z informacją zwrotną po każdym pytaniu.</p>
+            <p>Regulamin mówi o teście wielokrotnego wyboru. Format ABCD z jedną poprawną odpowiedzią to przyjęty tu sposób nauki, nie gwarancja identycznego formatu zawodów.</p>
+            <p>Źródła: <a href="https://www.pzswir.pl/component/phocadownload/category/1-olimpiady?download=369">Bolesław Orłowski, „Najkrótsza historia wynalazków”, 1993</a> oraz <a href="https://www.pzswir.pl/component/phocadownload/category/1-olimpiady?download=368">ustawa Prawo własności przemysłowej — PDF organizatora z 13.07.2023</a>. Numery stron odnoszą się do tych PDF-ów.</p>
+            <p>Prawo ćwiczymy według wskazanej wersji materiału, nie jako poradę o aktualnym stanie prawnym. Podręcznik historyczny zawiera uproszczenia i nieścisłości; pominięto pytania o wątpliwe daty i sporne pierwszeństwa. Sprawdź materiały swojej edycji na <a href="https://www.pzswir.pl/olimpiady/wiedzy-o-wynalazczo%C5%9Bci">stronie organizatora</a>.</p>
+          </details>
         </section>
 
         <section id="quiz" class="screen quiz-screen" aria-labelledby="question-title" hidden>
           <div class="progress-label"><span id="question-count"></span><span id="score-count"></span></div>
-          <div id="progress" class="progress-track" role="progressbar" aria-label="Ukończone pytania" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0"><div id="progress-fill"></div></div>
+          <div id="progress" class="progress-track" role="progressbar" aria-label="Ukończone pytania" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0"><div id="progress-fill"></div></div>
           <div class="question-heading">
             <span id="question-icon" class="question-icon" aria-hidden="true"></span>
             <p id="question-category" class="eyebrow"></p>
@@ -59,8 +74,10 @@
           <h1 id="results-title" tabindex="-1">Quiz ukończony!</h1>
           <p id="result-message" class="intro"></p>
           <div class="score-card"><span id="final-score" class="final-score"></span><span>poprawnych odpowiedzi</span></div>
-          <p class="result-note">Każdy wielki wynalazek zaczął się od ciekawości.<br>Nie trać swojej.</p>
-          <button id="restart" class="button primary" type="button">Spróbuj jeszcze raz <span aria-hidden="true">↻</span></button>
+          <p id="result-note" class="result-note"></p>
+          <button id="retry" class="button primary" type="button" hidden>Powtórz błędy</button>
+          <button id="restart" class="button secondary" type="button">Nowa seria</button>
+          <button id="change-subject" class="button text-button" type="button">Zmień dział</button>
         </section>
         <noscript><p class="noscript">Włącz JavaScript w przeglądarce, aby uruchomić quiz.</p></noscript>
       </main>
