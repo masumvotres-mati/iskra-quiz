@@ -32,6 +32,7 @@ function takeQuestions(selectedSubject, count) {
 }
 
 function showScreen(id) {
+  closeGlossary();
   for (const screen of document.querySelectorAll(".screen")) {
     screen.hidden = screen.id !== id;
   }
@@ -39,13 +40,14 @@ function showScreen(id) {
 }
 
 function renderQuestion() {
+  closeGlossary();
   const current = questions[questionIndex];
   answered = false;
   element("question-count").textContent = `Pytanie ${questionIndex + 1} z ${questions.length}`;
   element("score-count").textContent = `Punkty: ${score}`;
   element("question-category").textContent = `${current.subject === "history" ? "Historia" : "Prawo"} · ${current.topic}`;
   element("question-icon").textContent = current.subject === "history" ? "⚙️" : "⚖️";
-  element("question-title").textContent = current.question;
+  annotateTerms(element("question-title"), current.question);
   element("progress").setAttribute("aria-valuemax", String(questions.length));
   element("progress").setAttribute("aria-valuenow", String(questionIndex));
   element("progress-fill").style.width = `${(questionIndex / questions.length) * 100}%`;
@@ -56,20 +58,22 @@ function renderQuestion() {
   element("answers").replaceChildren();
 
   current.answers.forEach((answer, index) => {
+    const card = document.createElement("div");
+    card.className = "answer";
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "answer";
+    button.className = "answer-select";
     const letter = document.createElement("span");
     letter.className = "answer-letter";
     letter.textContent = "ABCD"[index];
     letter.setAttribute("aria-hidden", "true");
     const text = document.createElement("span");
     text.className = "answer-text";
-    text.textContent = answer;
+    annotateTerms(text, answer);
     button.setAttribute("aria-label", `${"ABCD"[index]}. ${answer}`);
-    button.append(letter, text);
     button.addEventListener("click", () => selectAnswer(index));
-    element("answers").append(button);
+    card.append(button, letter, text);
+    element("answers").append(card);
   });
   element("question-title").focus({ preventScroll: true });
 }
@@ -82,16 +86,17 @@ function selectAnswer(index) {
   if (correct) score += 1;
   else mistakes.push(questionBank.find((item) => item.id === current.id));
 
-  Array.from(element("answers").children).forEach((button, answerIndex) => {
-    button.disabled = true;
+  closeGlossary();
+  Array.from(element("answers").children).forEach((card, answerIndex) => {
+    card.querySelector(".answer-select").disabled = true;
     if (answerIndex === current.correct || (answerIndex === index && !correct)) {
       const isCorrect = answerIndex === current.correct;
-      button.classList.add(isCorrect ? "correct" : "incorrect");
+      card.classList.add(isCorrect ? "correct" : "incorrect");
       const mark = document.createElement("span");
       mark.className = "answer-mark";
       mark.textContent = isCorrect ? "✓" : "×";
       mark.setAttribute("aria-hidden", "true");
-      button.append(mark);
+      card.append(mark);
     }
   });
 
@@ -102,12 +107,12 @@ function selectAnswer(index) {
   feedback.append(title);
   if (!correct) {
     const answer = document.createElement("p");
-    answer.textContent = `Poprawna odpowiedź: ${"ABCD"[current.correct]}. ${current.answers[current.correct]}`;
+    annotateTerms(answer, `Poprawna odpowiedź: ${"ABCD"[current.correct]}. ${current.answers[current.correct]}`);
     feedback.append(answer);
   }
   const explanation = document.createElement("p");
   explanation.className = "fact";
-  explanation.textContent = current.explanation;
+  annotateTerms(explanation, current.explanation);
   const excerpt = document.createElement("figure");
   excerpt.className = "source-excerpt";
   const excerptLabel = document.createElement("p");
@@ -115,7 +120,7 @@ function selectAnswer(index) {
   excerptLabel.textContent = "Fragment źródła";
   const quote = document.createElement("blockquote");
   const quoteText = document.createElement("p");
-  quoteText.textContent = current.quote;
+  annotateTerms(quoteText, current.quote);
   quote.append(quoteText);
   const reference = document.createElement("figcaption");
   const link = document.createElement("a");

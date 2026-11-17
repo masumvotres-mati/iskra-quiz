@@ -9,6 +9,7 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%2358a700'/%3E%3Cpath d='M36 8 16 35h15l-3 21 21-29H34z' fill='%23fff'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="./styles.css">
     <script src="./questions.js" defer></script>
+    <script src="./glossary.js" defer></script>
     <script src="./quiz.js" defer></script>
   </head>
   <body>
@@ -63,6 +64,14 @@
             <p id="question-category" class="eyebrow"></p>
             <h1 id="question-title" tabindex="-1"></h1>
             <p class="question-hint">Wybierz jedną odpowiedź.</p>
+            <p class="glossary-hint">Dotknij podkreślonego pojęcia, aby zobaczyć wyjaśnienie.</p>
+          </div>
+          <div id="glossary-popover" class="glossary-popover" role="dialog" aria-labelledby="glossary-title" aria-describedby="glossary-definition" tabindex="-1" hidden>
+            <div class="glossary-heading">
+              <h2 id="glossary-title"></h2>
+              <button id="glossary-close" type="button" aria-label="Zamknij wyjaśnienie">×</button>
+            </div>
+            <p id="glossary-definition"></p>
           </div>
           <div id="answers" class="answers" role="group" aria-labelledby="question-title"></div>
           <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
