@@ -54,7 +54,7 @@ const glossaryHints = {
   "Ciśnienie atmosferyczne": "To wielkość fizyczna. W doświadczeniu rozróżnij przyczynę zjawiska od obserwowanego skutku.",
   "Pompa próżniowa": "To nazwa urządzenia używanego w doświadczeniach. Zwróć uwagę na zmianę warunków wewnątrz badanego naczynia.",
   "Krosno": "To nazwa maszyny włókienniczej. Nie utożsamiaj różnych etapów wytwarzania materiału.",
-  "Przędzalnictwo": "To dziedzina produkcji włókienniczej. Oddziel surowiec, kolejne etapy pracy i gotowy wyrób.",
+  "Przędzalnictwo": "To pojęcie związane z produkcją włókienniczą. Oddziel surowiec, kolejne etapy pracy i gotowy wyrób.",
   "Żeliwo": "To nazwa materiału. Nie utożsamiaj wszystkich materiałów zawierających żelazo.",
   "Konwertor Bessemera": "To urządzenie przemysłowe. Rozróżnij surowiec, przebieg procesu i otrzymywany produkt.",
   "Surówka": "To słowo ma tutaj znaczenie hutnicze, nie kulinarne. Zwróć uwagę, o którym etapie produkcji mowa.",
@@ -73,7 +73,7 @@ const glossaryHints = {
   "Rzecznik patentowy": "To nazwa zawodu. Rozróżnij kompetencje zawodowe i sam fakt bycia autorem rozwiązania.",
   "Materiał biologiczny": "To ustawowe pojęcie z biotechnologii. Rozważ wszystkie cechy podane w danej odpowiedzi.",
   "Sekwencja genu": "To pojęcie biologiczne. W pytaniu odróżnij sam przedmiot badań od sposobu jego wykorzystania.",
-  "Keson": "To nazwa konstrukcji używanej przy pracach inżynierskich. Prześledź rolę poszczególnych elementów opisu.",
+  "Keson": "To określenie związane z konstrukcjami używanymi przy pracach inżynierskich. Prześledź rolę poszczególnych elementów opisu.",
   "Manufaktura": "To historyczny sposób organizacji produkcji. Porównaj organizację pracy z zastosowaną techniką.",
   "Koks": "To nazwa surowca przemysłowego. Nie utożsamiaj paliwa z materiałem otrzymywanym w procesie.",
   "Dziewiarka": "To nazwa maszyny włókienniczej. Rozróżnij urządzenia wykonujące różne czynności.",
@@ -164,6 +164,34 @@ const glossary = [
   ["Spawanie", ["spawanie", "spawania", "spawaniem"], "Łączenie części, zwykle metalowych, przez miejscowe stopienie materiału i utworzenie spoiny."],
 ].map(([title, forms, definition]) => ({ title, forms, definition, hint: glossaryHints[title] }));
 
+const glossaryHeadwords = new Map([
+  ["Wyłączny", ["wyłącznego", "wyłącznej", "wyłączny", "wyłączne", "wyłącznym"]],
+  ["Przemysłowe stosowanie", ["przemysłowego stosowania"]],
+  ["Przemysłowe zastosowanie", ["przemysłowego zastosowania"]],
+  ["Zastrzeżenie patentowe", ["zastrzeżenie patentowe"]],
+  ["Zakres ochrony patentowej", ["zakres ochrony patentowej"]],
+  ["Zakres przedmiotowy", ["zakres przedmiotowy"]],
+  ["Przedmiotowy zakres patentu", ["przedmiotowy zakres patentu"]],
+  ["Topografia", ["topografię", "topografia", "topografii", "topografią"]],
+  ["Niewyłączny", ["niewyłączna", "niewyłączny", "niewyłącznym"]],
+  ["Licencyjny", ["licencyjna", "licencyjnej"]],
+  ["Zbywalny", ["zbywalne", "zbywalny", "zbywalna"]],
+  ["Unieważniony", ["unieważniony", "unieważniona"]],
+  ["Wygasać", ["wygasa"]],
+  ["Jednolitość", ["jednolitości"]],
+  ["Irygacyjny", ["irygacyjne", "irygacyjnych"]],
+  ["Skupiający", ["skupiające"]],
+  ["Wypukły", ["wypukłe"]],
+  ["Przędzalniczy", ["przędzalniczą"]],
+  ["Przędzarka", ["przędzarek"]],
+  ["Konwertor", ["konwertorze", "konwertor"]],
+  ["Żelazobeton", ["żelazobeton"]],
+  ["Europejski Obszar Gospodarczy", ["Europejski Obszar Gospodarczy", "Europejskiego Obszaru Gospodarczego"]],
+  ["Przedawniać", ["przedawnia"]],
+  ["Sekwencja lub częściowa sekwencja genu", ["sekwencji lub częściowej sekwencji genu"]],
+  ["Kesonowy", ["kesonowa", "kesonową", "kesonowej"]],
+].flatMap(([title, forms]) => forms.map((form) => [form.toLocaleLowerCase("pl"), title])));
+
 const glossaryForms = new Map(glossary.flatMap((entry) =>
   entry.forms.map((form) => [form.toLocaleLowerCase("pl"), entry])));
 const glossaryPattern = new RegExp(
@@ -203,7 +231,8 @@ function openGlossary(button, entry, revealDefinition = false) {
   }
   closeGlossary();
   glossaryTrigger = button;
-  document.getElementById("glossary-title").textContent = revealDefinition ? entry.title : button.textContent;
+  const headword = glossaryHeadwords.get(button.textContent.toLocaleLowerCase("pl")) ?? entry.title;
+  document.getElementById("glossary-title").textContent = revealDefinition ? entry.title : headword;
   document.getElementById("glossary-stage").textContent = revealDefinition
     ? "Pełne wyjaśnienie" : "Wskazówka — pełna definicja po odpowiedzi";
   document.getElementById("glossary-definition").textContent = revealDefinition ? entry.definition : entry.hint;
