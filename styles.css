@@ -105,7 +105,15 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .glossary-popover { position: fixed; z-index: 10; width: min(340px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; padding: 16px 18px 20px; border: 2px solid #9cbe77; border-radius: 18px; background: #fff; color: #293b20; box-shadow: 0 8px 32px #293b2033; animation: feedback-in 140ms ease-out; }
 .glossary-popover:focus { outline: none; }
 .glossary-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.glossary-heading h2 { margin: 8px 0 0; font-size: 18px; line-height: 1.35; }
+.glossary-title-group { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.glossary-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 11px; background: #eaf3df; color: var(--green-dark); }
+.glossary-icon svg { width: 24px; height: 24px; }
+.glossary-heading h2 { min-width: 0; margin: 0; font-size: 18px; line-height: 1.35; overflow-wrap: anywhere; }
+.glossary-popover[data-stage="hint"] { border-color: #d6ad35; background: #fff8df; color: #614a17; }
+.glossary-popover[data-stage="hint"] .glossary-icon { background: #f7e6a3; color: #79550e; }
+.glossary-popover[data-stage="hint"] #glossary-close { background: #f7e6a3; color: #79550e; }
+.glossary-popover[data-stage="hint"] #glossary-stage { color: #785b1e; }
+.glossary-popover[data-stage="hint"] .definition-icon, .glossary-popover[data-stage="definition"] .hint-icon { display: none; }
 #glossary-close { flex: 0 0 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #eef4e6; color: #386508; font-size: 26px; cursor: pointer; }
 #glossary-definition { margin: 10px 0 0; font-size: 15px; line-height: 1.7; }
 #glossary-stage { margin: 10px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }

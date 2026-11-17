@@ -84,7 +84,7 @@ const glossaryHints = {
 
 const glossary = [
   ["Wyłączność", ["wyłączność", "wyłączności", "wyłącznością", "wyłącznego", "wyłącznej", "wyłączny", "wyłączne", "wyłącznym"], "Prawo zastrzega określone korzystanie z rozwiązania dla osoby, która ma ochronę. Inni zwykle potrzebują jej zgody, ale ustawa przewiduje wyjątki."],
-  ["Przemysłowa stosowalność", ["przemysłowa stosowalność", "przemysłowej stosowalności", "przemysłową stosowalność", "przemysłowego stosowania", "przemysłowego zastosowania"], "Rozwiązanie da się wykorzystać w praktyce: wytworzyć opisany produkt albo zastosować opisany sposób w działalności przemysłowej, także w rolnictwie."],
+  ["Przemysłowa stosowalność", ["przemysłowa stosowalność", "przemysłowej stosowalności", "przemysłową stosowalność", "przemysłowego stosowania", "przemysłowego zastosowania", "przemysłowo stosowalnym"], "Rozwiązanie da się wykorzystać w praktyce: wytworzyć opisany produkt albo zastosować opisany sposób w działalności przemysłowej, także w rolnictwie."],
   ["Poziom wynalazczy", ["poziom wynalazczy", "poziomu wynalazczego", "poziomem wynalazczym"], "Rozwiązanie nie może być oczywistym kolejnym krokiem dla fachowca znającego dotychczasowe rozwiązania. Sama nowość jeszcze nie wystarcza."],
   ["Stan techniki", ["stan techniki", "stanu techniki", "stanem techniki"], "Wiedza o rozwiązaniach udostępniona publicznie przed datą, według której bada się pierwszeństwo. Może pochodzić np. z publikacji, pokazu lub używania produktu; ustawa uwzględnia też szczególne przypadki wcześniejszych zgłoszeń."],
   ["Pierwszeństwo", ["pierwszeństwo", "pierwszeństwa", "pierwszeństwem", "pierwszeństwie"], "Ustala, kto ma wcześniejszą datę istotną dla uzyskania ochrony. Zwykle liczy się zgłoszenie w urzędzie, ale przy spełnieniu warunków można powołać się np. na wcześniejsze zgłoszenie zagraniczne."],
@@ -168,6 +168,7 @@ const glossaryHeadwords = new Map([
   ["Wyłączny", ["wyłącznego", "wyłącznej", "wyłączny", "wyłączne", "wyłącznym"]],
   ["Przemysłowe stosowanie", ["przemysłowego stosowania"]],
   ["Przemysłowe zastosowanie", ["przemysłowego zastosowania"]],
+  ["Przemysłowo stosowalny", ["przemysłowo stosowalnym"]],
   ["Zastrzeżenie patentowe", ["zastrzeżenie patentowe"]],
   ["Zakres ochrony patentowej", ["zakres ochrony patentowej"]],
   ["Zakres przedmiotowy", ["zakres przedmiotowy"]],
@@ -231,6 +232,7 @@ function openGlossary(button, entry, revealDefinition = false) {
   }
   closeGlossary();
   glossaryTrigger = button;
+  glossaryPopover.dataset.stage = revealDefinition ? "definition" : "hint";
   const headword = glossaryHeadwords.get(button.textContent.toLocaleLowerCase("pl")) ?? entry.title;
   document.getElementById("glossary-title").textContent = revealDefinition ? entry.title : headword;
   document.getElementById("glossary-stage").textContent = revealDefinition
