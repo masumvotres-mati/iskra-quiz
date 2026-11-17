@@ -22,6 +22,31 @@ h1:focus { outline: none; }
 .brand-icon { display: inline-grid; place-items: center; width: 31px; height: 35px; margin-right: 7px; color: white; background: var(--green); border-radius: 10px; font-size: 31px; font-weight: 700; }
 .brand-dot { color: var(--green); }
 .header-note { color: var(--muted); font-size: 9px; font-weight: 750; letter-spacing: 1.1px; }
+.header-actions { display: flex; align-items: center; gap: 12px; }
+#sound-toggle { min-width: 44px; height: 44px; padding: 5px; background: #eaf3df; color: var(--green-dark); border: 1px solid #dfe7d2; border-radius: 12px; font-size: 21px; cursor: pointer; }
+.app-notice { padding: 14px; border: 1px solid #b18b25; border-radius: 12px; background: #fff3cc; font-size: 13px; line-height: 1.6; }
+.course-summary { margin: 24px 0 7px; color: var(--green-dark); font-size: 15px; font-weight: 750; }
+.progress-note { margin: 0 auto 24px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.chapter-list { list-style: none; padding: 0; margin: 20px 0; text-align: left; }
+.chapter-list li { position: relative; padding-bottom: 16px; }
+.chapter-list li:not(:last-child)::after { content: ""; position: absolute; left: 36px; bottom: 0; height: 16px; border-left: 3px dotted #ccdcb9; }
+.chapter-button { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px; border: 2px solid #dfe7d2; border-radius: 18px; background: white; color: #293b20; text-align: left; cursor: pointer; }
+.chapter-button.current { border-color: #78ae3d; box-shadow: 0 3px 0 #b5cd98; }
+.chapter-button.completed { background: #eef6e5; }
+.chapter-button:disabled { background: #edf0e7; color: #6d7864; cursor: default; }
+.chapter-number { display: grid; place-items: center; flex: 0 0 40px; height: 40px; border-radius: 50%; background: #eaf3df; color: var(--green-dark); font-weight: 800; font-size: 17px; }
+.chapter-button:disabled .chapter-number { background: #e0e5d8; color: #6d7864; }
+.chapter-copy { min-width: 0; }
+.chapter-copy strong { display: block; font-size: 15px; line-height: 1.4; }
+.chapter-copy small { display: block; margin-top: 5px; font-size: 11px; line-height: 1.6; font-weight: 400; }
+.chapter-state { color: var(--green-dark); font-weight: 700 !important; }
+.chapter-button:disabled .chapter-state { color: #6d7864; }
+.practice { margin-top: 26px; padding: 16px; border: 1px solid #dfe7d2; border-radius: 16px; text-align: left; }
+.practice summary { cursor: pointer; font-size: 13px; font-weight: 750; line-height: 1.6; }
+.practice p { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.welcome .invention-art { width: 130px; height: 130px; margin: 12px auto; }
+.welcome { padding-top: 8px; }
+#next-chapter:not([hidden]) + #retry { margin-top: 16px; }
 main { flex: 1; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
 .screen { animation: enter 220ms ease-out; }
 .welcome, .results { text-align: center; padding-top: 21px; }

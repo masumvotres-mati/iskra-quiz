@@ -8,7 +8,55 @@ let answered = false;
 let mistakes = [];
 let subject = "mixed";
 let reviewing = false;
+let activeChapterIndex = null;
 const remaining = { history: [], law: [] };
+
+function renderCourse() {
+  const completed = chapters.filter((chapter) => (courseState.bestScores[chapter.id] || 0) >= passingPercent).length;
+  element("course-summary").textContent = `Zaliczone rozdziały: ${completed} / ${chapters.length}`;
+  element("start").textContent = completed === chapters.length
+    ? "Cała ścieżka zaliczona — powtórz →" : `${completed === 0 ? "Rozpocznij" : "Kontynuuj"} rozdział ${completed + 1} →`;
+  element("chapter-list").replaceChildren();
+  chapters.forEach((chapter, index) => {
+    const best = courseState.bestScores[chapter.id];
+    const passed = (best || 0) >= passingPercent;
+    const unlocked = isChapterUnlocked(index);
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `chapter-button${passed ? " completed" : unlocked ? " current" : ""}`;
+    button.disabled = !unlocked;
+    const number = document.createElement("span");
+    number.className = "chapter-number";
+    number.textContent = passed ? "✓" : String(index + 1);
+    number.setAttribute("aria-hidden", "true");
+    const copy = document.createElement("span");
+    copy.className = "chapter-copy";
+    const title = document.createElement("strong");
+    title.textContent = `${index + 1}. ${chapter.title}`;
+    const description = document.createElement("small");
+    description.textContent = `${chapter.subject === "history" ? "Historia" : "Prawo"} · ${chapter.questionIds.length} pytań. ${chapter.description}`;
+    const state = document.createElement("small");
+    state.className = "chapter-state";
+    state.textContent = !unlocked ? "Zablokowany — zalicz poprzedni rozdział"
+      : passed ? `Zaliczony · najlepszy wynik ${best}% · powtórz`
+        : best === undefined ? "Odblokowany · zalicz od 80%" : `Najlepszy wynik ${best}% · potrzeba 80%`;
+    copy.append(title, description, state);
+    button.append(number, copy);
+    button.addEventListener("click", () => startChapter(index));
+    item.append(button);
+    element("chapter-list").append(item);
+  });
+}
+
+function startChapter(index) {
+  if (!isChapterUnlocked(index)) {
+    notifyCourse("Ten rozdział jest zablokowany. Najpierw zalicz poprzednie rozdziały wynikiem co najmniej 80%.");
+    return;
+  }
+  activeChapterIndex = index;
+  startSession(chapters[index].questionIds.map((id) => questionBank.find((item) => item.id === id)));
+}
 
 function shuffled(items) {
   const result = [...items];
@@ -45,7 +93,7 @@ function renderQuestion() {
   answered = false;
   element("question-count").textContent = `Pytanie ${questionIndex + 1} z ${questions.length}`;
   element("score-count").textContent = `Punkty: ${score}`;
-  element("question-category").textContent = `${current.subject === "history" ? "Historia" : "Prawo"} · ${current.topic}`;
+  element("question-category").textContent = `${activeChapterIndex === null ? "" : `Rozdział ${activeChapterIndex + 1} · `}${current.subject === "history" ? "Historia" : "Prawo"} · ${current.topic}`;
   element("question-icon").textContent = current.subject === "history" ? "⚙️" : "⚖️";
   annotateTerms(element("question-title"), current.question);
   element("progress").setAttribute("aria-valuemax", String(questions.length));
@@ -83,6 +131,7 @@ function selectAnswer(index) {
   answered = true;
   const current = questions[questionIndex];
   const correct = index === current.correct;
+  playSound(correct ? "correct" : "incorrect");
   if (correct) score += 1;
   else mistakes.push(questionBank.find((item) => item.id === current.id));
 
@@ -158,6 +207,7 @@ function startSession(items, isReview = false) {
 }
 
 function startQuiz() {
+  activeChapterIndex = null;
   const items = subject === "mixed"
     ? [...takeQuestions("history", 10), ...takeQuestions("law", 10)]
     : takeQuestions(subject, 20);
@@ -166,14 +216,22 @@ function startQuiz() {
 
 element("bank-count").textContent = `${questionBank.length} w bazie`;
 element("start").addEventListener("click", () => {
+  const next = chapters.findIndex((chapter) => (courseState.bestScores[chapter.id] || 0) < passingPercent);
+  startChapter(next === -1 ? 0 : next);
+});
+element("practice-start").addEventListener("click", () => {
   subject = document.querySelector('input[name="subject"]:checked').value;
   startQuiz();
 });
-element("restart").addEventListener("click", startQuiz);
+element("restart").addEventListener("click", () => activeChapterIndex === null ? startQuiz() : startChapter(activeChapterIndex));
 element("retry").addEventListener("click", () => startSession(mistakes, true));
 element("change-subject").addEventListener("click", () => {
+  renderCourse();
   showScreen("welcome");
   element("welcome-title").focus({ preventScroll: true });
+});
+element("next-chapter").addEventListener("click", () => {
+  if (activeChapterIndex !== null) startChapter(activeChapterIndex + 1);
 });
 element("next").addEventListener("click", () => {
   if (!answered) return;
@@ -184,15 +242,36 @@ element("next").addEventListener("click", () => {
     return;
   }
 
+  const chapter = activeChapterIndex === null ? null : chapters[activeChapterIndex];
+  const percent = Math.round(score / questions.length * 100);
+  const passed = percent >= passingPercent;
+  if (chapter && !reviewing) {
+    const previous = courseState.bestScores[chapter.id];
+    if (previous === undefined || percent > previous) {
+      courseState.bestScores[chapter.id] = percent;
+      saveCourseState();
+    }
+    renderCourse();
+  }
   element("final-score").textContent = `${score} / ${questions.length}`;
-  element("result-message").textContent = score === questions.length
-    ? "Komplet punktów w tej serii!"
-    : "Przeczytane wyjaśnienia to kolejny krok. Teraz możesz utrwalić trudniejsze pytania.";
-  element("result-note").textContent = mistakes.length
-    ? `Do powtórki: ${mistakes.length}. Powtórka obejmuje tylko błędy z tej ${reviewing ? "powtórki" : "serii"}.`
-    : "Wszystkie odpowiedzi poprawne. Przejdź do kolejnej serii.";
+  element("results-title").textContent = reviewing ? "Powtórka ukończona!"
+    : chapter ? passed ? "Rozdział zaliczony!" : "Jeszcze trochę!" : "Trening ukończony!";
+  element("result-message").textContent = reviewing
+    ? "Utrwalasz trudniejsze pytania. Powtórka błędów nie zmienia zaliczenia rozdziału."
+    : chapter
+      ? passed
+        ? activeChapterIndex === chapters.length - 1 ? "Cała ścieżka zaliczona! Możesz wracać do dowolnego rozdziału."
+          : `Wynik ${percent}% — kolejny rozdział jest odblokowany.`
+        : `Wynik ${percent}%. Do zaliczenia potrzeba co najmniej ${Math.ceil(questions.length * passingPercent / 100)} poprawnych odpowiedzi w jednej pełnej próbie.`
+      : score === questions.length ? "Komplet punktów w tej serii!" : "Przeczytane wyjaśnienia to kolejny krok.";
+  const reviewNote = mistakes.length ? `Do powtórki: ${mistakes.length}.` : "Wszystkie odpowiedzi poprawne.";
+  element("result-note").textContent = `${reviewNote}${chapter && !reviewing ? ` Najlepszy wynik rozdziału: ${courseState.bestScores[chapter.id]}%.` : ""}`;
+  element("next-chapter").hidden = !chapter || activeChapterIndex === chapters.length - 1 ||
+    !isChapterUnlocked(activeChapterIndex + 1);
+  element("restart").textContent = chapter ? "Powtórz rozdział" : "Nowa seria";
   element("retry").hidden = mistakes.length === 0;
   element("retry").textContent = `Powtórz błędy (${mistakes.length})`;
   showScreen("results");
   element("results-title").focus({ preventScroll: true });
 });
+renderCourse();

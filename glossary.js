@@ -66,6 +66,20 @@ const glossary = [
   ["Kondensator", ["kondensator", "kondensatorów", "kondensatory", "kondensatorami"], "Element elektryczny, który gromadzi ładunek i energię w polu elektrycznym, a potem może je oddać do obwodu."],
   ["Opona pneumatyczna", ["opona pneumatyczna", "oponę pneumatyczną", "opony pneumatyczne"], "Opona wypełniona sprężonym gazem, zwykle powietrzem. Łagodzi wstrząsy podczas jazdy."],
   ["Batyskaf", ["batyskaf", "batyskafu", "batyskafem", "batyskafom"], "Pojazd podwodny do badania bardzo dużych głębokości."],
+  ["Wyczerpanie prawa", ["wyczerpanie prawa", "wyczerpania prawa"], "Po legalnym wprowadzeniu konkretnego egzemplarza do obrotu na odpowiednim obszarze właściciel prawa co do zasady nie kontroluje już jego dalszej odsprzedaży. Nie daje to zgody na produkcję nowych kopii."],
+  ["EOG", ["EOG", "Europejski Obszar Gospodarczy", "Europejskiego Obszaru Gospodarczego"], "Europejski Obszar Gospodarczy: państwa Unii Europejskiej oraz Norwegia, Islandia i Liechtenstein. W pytaniach ważne jest, gdzie towar został legalnie wprowadzony do obrotu."],
+  ["Przedawnienie", ["przedawnienie", "przedawnienia", "przedawnieniu", "przedawnia"], "Upływ ustawowego terminu może pozwolić drugiej stronie uchylić się od zaspokojenia roszczenia. To nie jest to samo co wygaśnięcie patentu."],
+  ["Roszczenie", ["roszczenie", "roszczenia", "roszczeń"], "Żądanie skierowane do konkretnej osoby, np. żeby przestała naruszać patent albo naprawiła szkodę."],
+  ["Rzecznik patentowy", ["rzecznik patentowy", "rzecznika patentowego"], "Specjalista z uprawnieniami do pomocy w sprawach własności przemysłowej, np. przy zgłoszeniu wynalazku i ochronie patentu."],
+  ["Materiał biologiczny", ["materiał biologiczny", "materiału biologicznego", "materiałem biologicznym"], "Materiał zawierający informację genetyczną, który potrafi się powielać sam albo można go powielać w systemie biologicznym."],
+  ["Sekwencja genu", ["sekwencja genu", "sekwencji genu", "sekwencji lub częściowej sekwencji genu"], "Kolejność elementów zapisujących informację genetyczną w genie. Samo znalezienie takiej kolejności nie oznacza jeszcze stworzenia wynalazku."],
+  ["Keson", ["keson", "kesonu", "kesonów", "kesony", "kesonowa", "kesonową", "kesonowej"], "Komora używana przy pracach pod wodą, np. przy fundamentach mostu. Sprężone powietrze może powstrzymywać napływ wody do jej wnętrza."],
+  ["Manufaktura", ["manufaktura", "manufaktury", "manufaktur", "manufakturami", "manufakturę"], "Zakład skupiający ludzi wykonujących produkcję ręcznie. Różni się od późniejszej fabryki opartej na pracy maszyn."],
+  ["Koks", ["koks", "koksu", "koksem"], "Paliwo otrzymywane przez ogrzewanie węgla kamiennego bez dostępu powietrza. Ma duże znaczenie w hutnictwie."],
+  ["Dziewiarka", ["dziewiarka", "dziewiarkę", "dziewiarki"], "Maszyna robiąca dzianinę przez tworzenie i łączenie oczek z nici, podobnie do robienia na drutach."],
+  ["Sterowiec", ["sterowiec", "sterowca", "sterowców", "sterowce", "sterowcami"], "Statek powietrzny unoszony przez gaz lżejszy od powietrza, wyposażony we własny napęd i sterowanie."],
+  ["Cyklotron", ["cyklotron", "cyklotronem", "cyklotronu"], "Urządzenie przyspieszające cząstki naładowane elektrycznie. Wykorzystuje się je w badaniach fizycznych i zastosowaniach medycznych."],
+  ["Spawanie", ["spawanie", "spawania", "spawaniem"], "Łączenie części, zwykle metalowych, przez miejscowe stopienie materiału i utworzenie spoiny."],
 ].map(([title, forms, definition]) => ({ title, forms, definition }));
 
 const glossaryForms = new Map(glossary.flatMap((entry) =>

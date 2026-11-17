@@ -10,16 +10,19 @@
     <link rel="stylesheet" href="./styles.css">
     <script src="./questions.js" defer></script>
     <script src="./glossary.js" defer></script>
+    <script src="./course.js" defer></script>
+    <script src="./sounds.js" defer></script>
     <script src="./quiz.js" defer></script>
   </head>
   <body>
     <div class="app">
       <header class="header">
         <a class="brand" href="./" aria-label="Iskra — strona główna"><span class="brand-icon" aria-hidden="true">ϟ</span> iskra<span class="brand-dot">.</span></a>
-        <span class="header-note">ETAP SZKOLNY</span>
+        <div class="header-actions"><span class="header-note">ETAP SZKOLNY</span><button id="sound-toggle" type="button" aria-label="Wycisz dźwięki" aria-pressed="true">♪</button></div>
       </header>
 
       <main>
+        <p id="app-notice" class="app-notice" role="status" hidden></p>
         <section id="welcome" class="screen welcome" aria-labelledby="welcome-title">
           <div class="topic-pill"><span aria-hidden="true">✦</span> WIEDZA O WYNALAZCZOŚCI</div>
           <div class="invention-art" aria-hidden="true">
@@ -35,19 +38,28 @@
             <span class="art-spark spark-three">✧</span>
           </div>
           <p class="eyebrow">OLIMPIADA WIEDZY O WYNALAZCZOŚCI</p>
-          <h1 id="welcome-title" tabindex="-1">Wielkie pomysły.<br>Wiedza na olimpiadę.</h1>
-          <p class="intro">Ćwicz ABCD. Po każdej odpowiedzi poznasz wyjaśnienie i cytat z materiałów.</p>
-          <fieldset class="subject-picker">
-            <legend>Co dziś ćwiczymy?</legend>
-            <label><input type="radio" name="subject" value="mixed" checked><span>Razem</span></label>
-            <label><input type="radio" name="subject" value="history"><span>Historia</span></label>
-            <label><input type="radio" name="subject" value="law"><span>Prawo</span></label>
-          </fieldset>
-          <div class="quiz-meta"><span>20 pytań w serii</span><span id="bank-count"></span></div>
+          <h1 id="welcome-title" tabindex="-1">Małe kroki.<br>Wielka wiedza.</h1>
+          <p class="intro">Od intuicyjnych podstaw do olimpijskich szczegółów. Zdobądź 80%, żeby odblokować kolejny rozdział.</p>
+          <div class="quiz-meta"><span>10 pytań w rozdziale</span><span id="bank-count"></span></div>
           <button id="start" class="button primary" type="button">Zaczynamy <span aria-hidden="true">→</span></button>
+          <p id="course-summary" class="course-summary" aria-live="polite"></p>
+          <p class="progress-note">Postęp zapisuje się w tej przeglądarce. Nie synchronizuje się między urządzeniami; wyczyszczenie danych strony usuwa zapis.</p>
+          <ol id="chapter-list" class="chapter-list" aria-label="Ścieżka nauki"></ol>
+          <details class="practice">
+            <summary>Swobodny trening — bez odblokowywania</summary>
+            <p>Losowe serie po 20 pytań. Ich wyniki i powtórki błędów nie odblokowują rozdziałów.</p>
+            <fieldset class="subject-picker">
+              <legend>Co dziś ćwiczymy?</legend>
+              <label><input type="radio" name="subject" value="mixed" checked><span>Razem</span></label>
+              <label><input type="radio" name="subject" value="history"><span>Historia</span></label>
+              <label><input type="radio" name="subject" value="law"><span>Prawo</span></label>
+            </fieldset>
+            <button id="practice-start" class="button secondary" type="button">Losuj 20 pytań</button>
+          </details>
           <details class="sources">
             <summary>Materiały i zasady treningu</summary>
-            <p>Autorskie pytania treningowe, nie oficjalny arkusz ani pełne pokrycie programu. Każde ma jedną poprawną odpowiedź. W serii mieszanej losujemy po 10 pytań z obu działów; kolejność odpowiedzi też się zmienia.</p>
+            <p>Autorskie pytania treningowe, nie oficjalny arkusz ani gwarancja pełnego pokrycia programu. Ścieżka obejmuje najważniejsze zagadnienia obu materiałów: historię techniki, polskich pionierów, patenty, wzory, znaki, oznaczenia geograficzne, topografie, biotechnologię i podstawy procedur.</p>
+            <p>Każdy rozdział ma 10 pytań z jedną poprawną odpowiedzią. Zaliczysz go wynikiem co najmniej 8/10 w jednej pełnej próbie. Zapamiętujemy najlepszy wynik; słabsza powtórka nie blokuje zdobytych rozdziałów. Kolejność pytań i odpowiedzi jest losowa. W mieszanym swobodnym treningu losujemy po 10 pytań z obu działów.</p>
             <p>Etap szkolny według <a href="https://www.pzswir.pl/component/phocadownload/category/1-olimpiady?download=354">regulaminu 2026/2027</a>: 20 pytań, 20 minut, 1 punkt za poprawną odpowiedź; przy remisie decyduje czas. Tutaj uczysz się bez limitu czasu, z informacją zwrotną po każdym pytaniu.</p>
             <p>Regulamin mówi o teście wielokrotnego wyboru. Format ABCD z jedną poprawną odpowiedzią to przyjęty tu sposób nauki, nie gwarancja identycznego formatu zawodów.</p>
             <p>Źródła: <a href="https://www.pzswir.pl/component/phocadownload/category/1-olimpiady?download=369">Bolesław Orłowski, „Najkrótsza historia wynalazków”, 1993</a> oraz <a href="https://www.pzswir.pl/component/phocadownload/category/1-olimpiady?download=368">ustawa Prawo własności przemysłowej — PDF organizatora z 13.07.2023</a>. Numery stron odnoszą się do tych PDF-ów.</p>
@@ -66,13 +78,6 @@
             <p class="question-hint">Wybierz jedną odpowiedź.</p>
             <p class="glossary-hint">Dotknij podkreślonego pojęcia, aby zobaczyć wyjaśnienie.</p>
           </div>
-          <div id="glossary-popover" class="glossary-popover" role="dialog" aria-labelledby="glossary-title" aria-describedby="glossary-definition" tabindex="-1" hidden>
-            <div class="glossary-heading">
-              <h2 id="glossary-title"></h2>
-              <button id="glossary-close" type="button" aria-label="Zamknij wyjaśnienie">×</button>
-            </div>
-            <p id="glossary-definition"></p>
-          </div>
           <div id="answers" class="answers" role="group" aria-labelledby="question-title"></div>
           <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
           <button id="next" class="button primary next-button" type="button" disabled>Dalej <span aria-hidden="true">→</span></button>
@@ -85,12 +90,20 @@
           <p id="result-message" class="intro"></p>
           <div class="score-card"><span id="final-score" class="final-score"></span><span>poprawnych odpowiedzi</span></div>
           <p id="result-note" class="result-note"></p>
+          <button id="next-chapter" class="button primary" type="button" hidden>Następny rozdział →</button>
           <button id="retry" class="button primary" type="button" hidden>Powtórz błędy</button>
           <button id="restart" class="button secondary" type="button">Nowa seria</button>
-          <button id="change-subject" class="button text-button" type="button">Zmień dział</button>
+          <button id="change-subject" class="button text-button" type="button">Wróć do ścieżki</button>
         </section>
         <noscript><p class="noscript">Włącz JavaScript w przeglądarce, aby uruchomić quiz.</p></noscript>
       </main>
+    </div>
+    <div id="glossary-popover" class="glossary-popover" role="dialog" aria-labelledby="glossary-title" aria-describedby="glossary-definition" tabindex="-1" hidden>
+      <div class="glossary-heading">
+        <h2 id="glossary-title"></h2>
+        <button id="glossary-close" type="button" aria-label="Zamknij wyjaśnienie">×</button>
+      </div>
+      <p id="glossary-definition"></p>
     </div>
   </body>
 </html>
