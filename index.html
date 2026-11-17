@@ -72,7 +72,7 @@
         </section>
 
         <section id="quiz" class="screen quiz-screen" aria-labelledby="question-title" hidden>
-          <div class="progress-label"><span id="question-count"></span><span id="score-count"></span></div>
+          <div class="progress-label"><span id="question-count"></span><span class="progress-stats"><span id="streak-count" class="streak-count" hidden></span><span id="score-count"></span></span></div>
           <div id="progress" class="progress-track" role="progressbar" aria-label="Ukończone pytania" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0"><div id="progress-fill"></div></div>
           <div class="question-heading">
             <span id="question-icon" class="question-icon" aria-hidden="true"></span>
@@ -83,15 +83,19 @@
           </div>
           <div id="answers" class="answers" role="group" aria-labelledby="question-title"></div>
           <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
-          <button id="next" class="button primary next-button" type="button" disabled>Dalej <span aria-hidden="true">→</span></button>
+          <div class="quiz-actions">
+            <p id="answer-status" class="answer-status" aria-hidden="true" hidden></p>
+            <button id="next" class="button primary next-button" type="button" disabled>Dalej <span aria-hidden="true">→</span></button>
+          </div>
         </section>
 
         <section id="results" class="screen results" aria-labelledby="results-title" hidden>
           <div class="result-art" aria-hidden="true">✦</div>
+          <p id="result-achievement" class="result-achievement" hidden></p>
           <p class="eyebrow">KOLEJNA ISKRA WIEDZY</p>
           <h1 id="results-title" tabindex="-1">Quiz ukończony!</h1>
           <p id="result-message" class="intro"></p>
-          <div class="score-card"><span id="final-score" class="final-score"></span><span>poprawnych odpowiedzi</span></div>
+          <div class="score-card"><span id="final-score" class="final-score"></span><span>poprawnych odpowiedzi</span><span id="result-streak" class="result-streak" hidden></span></div>
           <p id="result-note" class="result-note"></p>
           <button id="next-chapter" class="button primary" type="button" hidden>Następny rozdział →</button>
           <button id="retry" class="button primary" type="button" hidden>Powtórz błędy</button>
@@ -101,6 +105,7 @@
         <noscript><p class="noscript">Włącz JavaScript w przeglądarce, aby uruchomić quiz.</p></noscript>
       </main>
     </div>
+    <div id="celebration" aria-hidden="true"></div>
     <div id="glossary-popover" class="glossary-popover" role="dialog" aria-labelledby="glossary-title" aria-describedby="glossary-stage glossary-definition" tabindex="-1" hidden>
       <div class="glossary-heading">
         <h2 id="glossary-title"></h2>

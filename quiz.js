@@ -9,7 +9,44 @@ let mistakes = [];
 let subject = "mixed";
 let reviewing = false;
 let activeChapterIndex = null;
+let answerStreak = 0;
+let bestStreak = 0;
+let celebrationTimer;
+const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
 const remaining = { history: [], law: [] };
+
+function clearCelebration() {
+  window.clearTimeout(celebrationTimer);
+  element("celebration").replaceChildren();
+}
+
+function celebrate() {
+  clearCelebration();
+  if (motionPreference.matches) return;
+  const colors = ["#78ae3d", "#e7b833", "#5a9cbb", "#c982a0"];
+  for (let index = 0; index < 18; index += 1) {
+    const piece = document.createElement("span");
+    piece.style.left = `${10 + index * 17 % 80}%`;
+    piece.style.background = colors[index % colors.length];
+    piece.style.setProperty("--drift", `${(index % 2 ? 1 : -1) * (20 + index % 5 * 12)}px`);
+    piece.style.setProperty("--fall", `${170 + index % 4 * 40}px`);
+    piece.style.setProperty("--spin", `${(index % 2 ? 1 : -1) * (140 + index * 19)}deg`);
+    piece.style.animationDelay = `${index % 4 * 30}ms`;
+    element("celebration").append(piece);
+  }
+  celebrationTimer = window.setTimeout(clearCelebration, 1100);
+}
+
+motionPreference.addEventListener("change", () => {
+  if (motionPreference.matches) clearCelebration();
+});
+
+function renderStreak() {
+  const badge = element("streak-count");
+  badge.hidden = answerStreak < 3;
+  badge.textContent = `ϟ ${answerStreak} z rzędu`;
+  badge.setAttribute("aria-label", `Seria poprawnych odpowiedzi w tej próbie: ${answerStreak}`);
+}
 
 function renderCourse() {
   const completed = chapters.filter((chapter) => (courseState.bestScores[chapter.id] || 0) >= passingPercent).length;
@@ -81,6 +118,7 @@ function takeQuestions(selectedSubject, count) {
 
 function showScreen(id) {
   closeGlossary();
+  clearCelebration();
   for (const screen of document.querySelectorAll(".screen")) {
     screen.hidden = screen.id !== id;
   }
@@ -91,6 +129,10 @@ function renderQuestion() {
   closeGlossary();
   const current = questions[questionIndex];
   answered = false;
+  element("quiz").classList.remove("answered", "answer-correct", "answer-wrong", "streak-milestone");
+  element("answer-status").hidden = true;
+  element("answer-status").textContent = "";
+  renderStreak();
   element("question-count").textContent = `Pytanie ${questionIndex + 1} z ${questions.length}`;
   element("score-count").textContent = `Punkty: ${score}`;
   element("question-category").textContent = `${activeChapterIndex === null ? "" : `Rozdział ${activeChapterIndex + 1} · `}${current.subject === "history" ? "Historia" : "Prawo (PDF 2023)"} · ${current.topic}`;
@@ -131,9 +173,23 @@ function selectAnswer(index) {
   answered = true;
   const current = questions[questionIndex];
   const correct = index === current.correct;
-  playSound(correct ? "correct" : "incorrect");
-  if (correct) score += 1;
-  else mistakes.push(questionBank.find((item) => item.id === current.id));
+  if (correct) {
+    score += 1;
+    answerStreak += 1;
+    bestStreak = Math.max(bestStreak, answerStreak);
+  } else {
+    answerStreak = 0;
+    mistakes.push(questionBank.find((item) => item.id === current.id));
+  }
+  const milestone = correct && [3, 5, 10].includes(answerStreak);
+  playSound(correct ? milestone ? "streak" : "correct" : "incorrect");
+  renderStreak();
+  element("quiz").classList.add("answered", correct ? "answer-correct" : "answer-wrong");
+  element("quiz").classList.toggle("streak-milestone", milestone);
+  element("answer-status").textContent = correct
+    ? milestone ? `${answerStreak} z rzędu — świetnie!` : "Dobrze! +1 punkt"
+    : "Możesz utrwalić to w powtórce.";
+  element("answer-status").hidden = false;
 
   closeGlossary();
   Array.from(element("answers").children).forEach((card, answerIndex) => {
@@ -152,7 +208,7 @@ function selectAnswer(index) {
   const feedback = element("feedback");
   feedback.className = correct ? "feedback" : "feedback wrong";
   const title = document.createElement("strong");
-  title.textContent = correct ? "Dobrze!" : "Nie tym razem";
+  title.textContent = correct ? milestone ? `${answerStreak} z rzędu — świetnie!` : "Dobrze!" : "Nie tym razem";
   feedback.append(title);
   if (!correct) {
     const answer = document.createElement("p");
@@ -231,6 +287,8 @@ function startSession(items, isReview = false) {
   reviewing = isReview;
   questionIndex = 0;
   score = 0;
+  answerStreak = 0;
+  bestStreak = 0;
   mistakes = [];
   showScreen("quiz");
   renderQuestion();
@@ -275,8 +333,15 @@ element("next").addEventListener("click", () => {
   const chapter = activeChapterIndex === null ? null : chapters[activeChapterIndex];
   const percent = Math.round(score / questions.length * 100);
   const passed = percent >= passingPercent;
+  let achievement = "";
   if (chapter && !reviewing) {
     const previous = courseState.bestScores[chapter.id];
+    if (passed && (previous || 0) < passingPercent) {
+      achievement = activeChapterIndex === chapters.length - 1
+        ? "Cała ścieżka zaliczona!" : `Odblokowano rozdział ${activeChapterIndex + 2}`;
+    } else if (previous !== undefined && percent > previous) {
+      achievement = `Nowy najlepszy wynik: ${percent}%`;
+    }
     if (previous === undefined || percent > previous) {
       courseState.bestScores[chapter.id] = percent;
       saveCourseState();
@@ -300,8 +365,19 @@ element("next").addEventListener("click", () => {
     !isChapterUnlocked(activeChapterIndex + 1);
   element("restart").textContent = chapter ? "Powtórz rozdział" : "Nowa seria";
   element("retry").hidden = mistakes.length === 0;
+  element("retry").classList.toggle("primary", element("next-chapter").hidden);
+  element("retry").classList.toggle("secondary", !element("next-chapter").hidden);
   element("retry").textContent = `Powtórz błędy (${mistakes.length})`;
+  element("result-achievement").textContent = achievement;
+  element("result-achievement").hidden = !achievement;
+  element("result-streak").textContent = `Najlepsza seria w tej próbie: ${bestStreak}`;
+  element("result-streak").hidden = bestStreak < 3;
+  const celebrating = (chapter && !reviewing && passed) || score === questions.length;
+  element("results").classList.toggle("celebrating", celebrating);
+  element("results").querySelector(".result-art").textContent = celebrating ? "✦" : "✓";
   showScreen("results");
+  playSound(celebrating ? "complete" : "finish");
+  if (celebrating) celebrate();
   element("results-title").focus({ preventScroll: true });
 });
 renderCourse();

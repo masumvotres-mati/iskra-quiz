@@ -3,6 +3,15 @@
 let soundContext;
 let soundOutput;
 
+const soundPatterns = {
+  click: { notes: [650], duration: 0.035, spacing: 0, volume: 0.025 },
+  correct: { notes: [523.25, 659.25, 783.99], duration: 0.14, spacing: 0.065, volume: 0.045 },
+  incorrect: { notes: [293.66, 261.63], duration: 0.14, spacing: 0.09, volume: 0.03 },
+  streak: { notes: [659.25, 783.99, 1046.5], duration: 0.18, spacing: 0.075, volume: 0.045 },
+  complete: { notes: [523.25, 659.25, 783.99, 1046.5], duration: 0.24, spacing: 0.09, volume: 0.045 },
+  finish: { notes: [523.25, 659.25], duration: 0.18, spacing: 0.08, volume: 0.035 },
+};
+
 function updateSoundControl() {
   const button = document.getElementById("sound-toggle");
   button.textContent = courseState.muted ? "♪ ×" : "♪";
@@ -13,6 +22,11 @@ function updateSoundControl() {
 
 function playSound(kind) {
   if (courseState.muted) return;
+  const pattern = soundPatterns[kind];
+  if (!pattern) {
+    notifyCourse("Nie rozpoznano efektu dźwiękowego.");
+    return;
+  }
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) {
     notifyCourse("Ta przeglądarka nie obsługuje dźwięków quizu.");
@@ -27,17 +41,15 @@ function playSound(kind) {
     if (soundContext.state === "suspended") {
       soundContext.resume().catch(() => notifyCourse("Nie udało się włączyć dźwięku. Sprawdź ustawienia przeglądarki."));
     }
-    const notes = kind === "correct" ? [523.25, 659.25, 783.99] : kind === "incorrect" ? [220, 164.81] : [650];
-    const duration = kind === "click" ? 0.045 : 0.12;
-    notes.forEach((frequency, index) => {
-      const start = soundContext.currentTime + index * duration * 0.7;
+    pattern.notes.forEach((frequency, index) => {
+      const start = soundContext.currentTime + index * pattern.spacing;
       const oscillator = soundContext.createOscillator();
       const volume = soundContext.createGain();
       oscillator.type = "sine";
       oscillator.frequency.setValueAtTime(frequency, start);
       volume.gain.setValueAtTime(0, start);
-      volume.gain.linearRampToValueAtTime(kind === "click" ? 0.025 : 0.06, start + 0.008);
-      volume.gain.exponentialRampToValueAtTime(0.001, start + duration);
+      volume.gain.linearRampToValueAtTime(pattern.volume, start + 0.006);
+      volume.gain.exponentialRampToValueAtTime(0.001, start + pattern.duration);
       oscillator.connect(volume);
       volume.connect(soundOutput);
       oscillator.addEventListener("ended", () => {
@@ -45,7 +57,7 @@ function playSound(kind) {
         volume.disconnect();
       }, { once: true });
       oscillator.start(start);
-      oscillator.stop(start + duration + 0.01);
+      oscillator.stop(start + pattern.duration + 0.01);
     });
   } catch (error) {
     notifyCourse("Dźwięk jest niedostępny. Możesz nadal korzystać z quizu bez dźwięku.");
@@ -61,6 +73,7 @@ document.getElementById("sound-toggle").addEventListener("click", () => {
 document.addEventListener("click", (event) => {
   const button = event.target instanceof Element ? event.target.closest("button") : null;
   if (button && !button.disabled && button.id !== "sound-toggle" && !button.classList.contains("answer-select")) {
+    if (button.id === "next" && !document.getElementById("results").hidden) return;
     playSound("click");
   }
 });
