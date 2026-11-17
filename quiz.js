@@ -130,7 +130,7 @@ function selectAnswer(index) {
   if (current.fact) {
     const fact = document.createElement("p");
     fact.className = "fact";
-    fact.textContent = `A to ciekawe: ${current.fact}`;
+    fact.textContent = current.fact;
     feedback.append(fact);
   }
 
