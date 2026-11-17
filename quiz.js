@@ -95,7 +95,7 @@ function renderQuestion() {
   element("score-count").textContent = `Punkty: ${score}`;
   element("question-category").textContent = `${activeChapterIndex === null ? "" : `Rozdział ${activeChapterIndex + 1} · `}${current.subject === "history" ? "Historia" : "Prawo"} · ${current.topic}`;
   element("question-icon").textContent = current.subject === "history" ? "⚙️" : "⚖️";
-  annotateTerms(element("question-title"), current.question);
+  annotateTerms(element("question-title"), current.question, () => answered);
   element("progress").setAttribute("aria-valuemax", String(questions.length));
   element("progress").setAttribute("aria-valuenow", String(questionIndex));
   element("progress-fill").style.width = `${(questionIndex / questions.length) * 100}%`;
@@ -117,7 +117,7 @@ function renderQuestion() {
     letter.setAttribute("aria-hidden", "true");
     const text = document.createElement("span");
     text.className = "answer-text";
-    annotateTerms(text, answer);
+    annotateTerms(text, answer, () => answered);
     button.setAttribute("aria-label", `${"ABCD"[index]}. ${answer}`);
     button.addEventListener("click", () => selectAnswer(index));
     card.append(button, letter, text);
@@ -156,12 +156,12 @@ function selectAnswer(index) {
   feedback.append(title);
   if (!correct) {
     const answer = document.createElement("p");
-    annotateTerms(answer, `Poprawna odpowiedź: ${"ABCD"[current.correct]}. ${current.answers[current.correct]}`);
+    annotateTerms(answer, `Poprawna odpowiedź: ${"ABCD"[current.correct]}. ${current.answers[current.correct]}`, () => answered);
     feedback.append(answer);
   }
   const explanation = document.createElement("p");
   explanation.className = "fact";
-  annotateTerms(explanation, current.explanation);
+  annotateTerms(explanation, current.explanation, () => answered);
   const excerpt = document.createElement("figure");
   excerpt.className = "source-excerpt";
   const excerptLabel = document.createElement("p");
@@ -169,7 +169,7 @@ function selectAnswer(index) {
   excerptLabel.textContent = "Fragment źródła";
   const quote = document.createElement("blockquote");
   const quoteText = document.createElement("p");
-  annotateTerms(quoteText, current.quote);
+  annotateTerms(quoteText, current.quote, () => answered);
   quote.append(quoteText);
   const reference = document.createElement("figcaption");
   const link = document.createElement("a");

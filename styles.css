@@ -101,6 +101,7 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .glossary-heading h2 { margin: 8px 0 0; font-size: 18px; line-height: 1.35; }
 #glossary-close { flex: 0 0 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #eef4e6; color: #386508; font-size: 26px; cursor: pointer; }
 #glossary-definition { margin: 10px 0 0; font-size: 15px; line-height: 1.7; }
+#glossary-stage { margin: 10px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .answers { display: grid; gap: 11px; }
 .answer { position: relative; display: flex; align-items: center; gap: 13px; min-height: 62px; width: 100%; padding: 11px 14px; color: #34422d; text-align: left; background: #fff; border: 2px solid #e0e6d9; border-radius: 15px; box-shadow: 0 2px 0 #e0e6d9; font-size: 15px; font-weight: 650; }
 .answer-select { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; border-radius: 13px; background: transparent; cursor: pointer; }
