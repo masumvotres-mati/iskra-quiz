@@ -79,7 +79,7 @@
             <p id="question-category" class="eyebrow"></p>
             <h1 id="question-title" tabindex="-1"></h1>
             <p class="question-hint">Wybierz jedną odpowiedź.</p>
-            <p class="glossary-hint">Podkreślone pojęcia: wskazówka przed wyborem, pełna definicja po odpowiedzi.</p>
+            <p class="glossary-hint">Podkreślone pojęcia: definicja i przykład po wybraniu odpowiedzi.</p>
           </div>
           <div id="answers" class="answers" role="group" aria-labelledby="question-title"></div>
           <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -106,11 +106,11 @@
       </main>
     </div>
     <div id="celebration" aria-hidden="true"></div>
-    <div id="glossary-popover" class="glossary-popover" data-stage="hint" role="dialog" aria-labelledby="glossary-title" aria-describedby="glossary-stage glossary-definition" tabindex="-1" hidden>
+    <div id="glossary-popover" class="glossary-popover" data-stage="locked" role="dialog" aria-labelledby="glossary-title" aria-describedby="glossary-stage glossary-locked" tabindex="-1" hidden>
       <div class="glossary-heading">
         <div class="glossary-title-group">
           <span class="glossary-icon" aria-hidden="true">
-            <svg class="hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6m-5 3h4M9 18v-2a6 6 0 1 1 6 0v2m-5-7 2 2 2-2m-2 2v5"/></svg>
+            <svg class="locked-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></svg>
             <svg class="definition-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v15M3 4h5a4 4 0 0 1 4 2 4 4 0 0 1 4-2h5v15h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3Z"/></svg>
           </span>
           <h2 id="glossary-title"></h2>
@@ -118,7 +118,15 @@
         <button id="glossary-close" type="button" aria-label="Zamknij wyjaśnienie">×</button>
       </div>
       <p id="glossary-stage"></p>
-      <p id="glossary-definition"></p>
+      <div id="glossary-locked">
+        <div class="glossary-preview" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p>Wybierz odpowiedź, a potem kliknij pojęcie ponownie. Definicja i przykład odblokują się także po błędzie.</p>
+      </div>
+      <p id="glossary-definition" hidden></p>
+      <div id="glossary-example" hidden>
+        <p class="glossary-example-label">Przykład</p>
+        <p id="glossary-example-text"></p>
+      </div>
     </div>
   </body>
 </html>

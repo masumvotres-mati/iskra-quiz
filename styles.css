@@ -109,14 +109,22 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .glossary-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 11px; background: #eaf3df; color: var(--green-dark); }
 .glossary-icon svg { width: 24px; height: 24px; }
 .glossary-heading h2 { min-width: 0; margin: 0; font-size: 18px; line-height: 1.35; overflow-wrap: anywhere; }
-.glossary-popover[data-stage="hint"] { border-color: #d6ad35; background: #fff8df; color: #614a17; }
-.glossary-popover[data-stage="hint"] .glossary-icon { background: #f7e6a3; color: #79550e; }
-.glossary-popover[data-stage="hint"] #glossary-close { background: #f7e6a3; color: #79550e; }
-.glossary-popover[data-stage="hint"] #glossary-stage { color: #785b1e; }
-.glossary-popover[data-stage="hint"] .definition-icon, .glossary-popover[data-stage="definition"] .hint-icon { display: none; }
+.glossary-popover[data-stage="locked"] { border-color: #d6ad35; background: #fff8df; color: #614a17; }
+.glossary-popover[data-stage="locked"] .glossary-icon { background: #f7e6a3; color: #79550e; }
+.glossary-popover[data-stage="locked"] #glossary-close { background: #f7e6a3; color: #79550e; }
+.glossary-popover[data-stage="locked"] #glossary-stage { color: #785b1e; }
+.glossary-popover[data-stage="locked"] .definition-icon, .glossary-popover[data-stage="definition"] .locked-icon { display: none; }
 #glossary-close { flex: 0 0 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #eef4e6; color: #386508; font-size: 26px; cursor: pointer; }
 #glossary-definition { margin: 10px 0 0; font-size: 15px; line-height: 1.7; }
 #glossary-stage { margin: 10px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.glossary-preview { display: grid; gap: 12px; margin: 22px 4px; opacity: .35; filter: blur(3px); pointer-events: none; user-select: none; }
+.glossary-preview span { width: 94%; height: 8px; border-radius: 6px; background: currentColor; }
+.glossary-preview span:nth-child(2) { width: 82%; }
+.glossary-preview span:nth-child(3) { width: 61%; }
+#glossary-locked p { margin: 0; font-size: 14px; line-height: 1.7; }
+#glossary-example { margin-top: 16px; padding: 12px; border-radius: 12px; background: #eef5e5; }
+#glossary-example .glossary-example-label { margin: 0 0 6px; color: var(--green-dark); font-size: 11px; font-weight: 750; }
+#glossary-example-text { margin: 0; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
 .answers { display: grid; gap: 11px; }
 .answer { position: relative; display: flex; align-items: center; gap: 13px; min-height: 62px; width: 100%; padding: 11px 14px; color: #34422d; text-align: left; background: #fff; border: 2px solid #e0e6d9; border-radius: 15px; box-shadow: 0 2px 0 #e0e6d9; font-size: 15px; font-weight: 650; transition: transform 90ms, background 120ms, border-color 120ms, box-shadow 90ms; animation: answer-in 180ms ease-out backwards; }
 .answer:nth-child(2) { animation-delay: 20ms; }

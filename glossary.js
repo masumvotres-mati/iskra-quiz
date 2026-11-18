@@ -1,85 +1,85 @@
 "use strict";
 
-const glossaryHints = {
-  "Wyłączność": "Rozróżnij osobę uprawnioną, obszar ochrony i granice korzystania. Pytanie może dotyczyć tylko jednej z tych kwestii.",
-  "Przemysłowa stosowalność": "To jedno z ustawowych kryteriów oceny wynalazku. Rozważ, jaki przypadek opisano w pytaniu.",
-  "Poziom wynalazczy": "To kryterium oceny rozwiązania, a nie wykształcenia lub sławy jego autora.",
-  "Stan techniki": "To termin z ustawy, nie opis stopnia zużycia urządzenia. Zwróć uwagę na kontekst pytania.",
-  "Pierwszeństwo": "Rozróżnij moment powstania pomysłu, zgłoszenia i publikacji. Nie muszą przypadać tego samego dnia.",
-  "Zastrzeżenia patentowe": "To część dokumentacji wynalazku. Porównaj jej rolę z rolą tytułu, opisu i skrótu.",
-  "Zakres ochrony": "Pytanie dotyczy granic pewnego uprawnienia. Oddziel to, co jest chronione, od sposobu opisania produktu.",
-  "Prawo ochronne": "To nazwa konkretnego rodzaju prawa. Nie przenoś automatycznie reguł jednego rodzaju ochrony na inny.",
-  "Prawo z rejestracji": "To ustawowa nazwa rodzaju ochrony. Sprawdź, jakiego przedmiotu dotyczy pytanie.",
-  "Wzór użytkowy": "To jeden z przedmiotów ochrony przewidzianych w ustawie. Porównaj dokładnie wszystkie opisy produktu.",
-  "Wzór przemysłowy": "To ustawowe określenie przedmiotu ochrony. Nie utożsamiaj różnych rodzajów wzorów tylko z powodu podobnej nazwy.",
-  "Znak towarowy": "To pojęcie prawne związane z działalnością przedsiębiorstw. Jego dokładną rolę trzeba odróżnić od innych form ochrony.",
-  "Oznaczenie geograficzne": "Sama nazwa miejsca nie rozstrzyga jeszcze o zastosowaniu przepisu. Zwróć uwagę na warunki opisane w pytaniu.",
-  "Topografia układu scalonego": "To termin użyty w prawie własności przemysłowej. Nie opieraj odpowiedzi wyłącznie na potocznym znaczeniu słowa.",
-  "Układ scalony": "To określenie z elektroniki. Rozróżnij sam przedmiot, jego części i cechy, o które pyta zadanie.",
-  "Licencja przymusowa": "To szczególny rodzaj licencji. Nie zakładaj, że wszystkie licencje mają takie same zasady.",
-  "Licencja otwarta": "To szczególny rodzaj licencji. Oddziel zasady składania oświadczenia od zasad korzystania z wynalazku.",
-  "Licencja pełna": "To określenie rodzaju licencji. Sprawdź, jaką cechę umowy opisuje pytanie.",
-  "Licencja niewyłączna": "To określenie rodzaju licencji. Porównaj prawa poszczególnych stron, nie tylko brzmienie nazwy.",
-  "Licencja": "To pojęcie dotyczące relacji między stronami. Nie myl zasad umowy z samym czasem trwania ochrony.",
-  "Sublicencja": "To termin związany z licencją. Zwróć uwagę, kto podejmuje czynność i czyjej zgody dotyczy pytanie.",
-  "Licencjobiorca": "To nazwa jednej ze stron umowy. Pilnuj, której strony dotyczy opisane uprawnienie.",
-  "Licencjodawca": "To nazwa jednej ze stron umowy. Nie zamieniaj ról stron przy czytaniu odpowiedzi.",
-  "Patent": "To termin prawny. Rozróżnij rodzaj ochrony, jej czas, terytorium i dokument potwierdzający prawo.",
-  "Uprawniony": "Zwróć uwagę, o jakie prawo chodzi w danym zdaniu. Autor, zgłaszający i strony umowy mogą pełnić różne role.",
-  "Znawca": "To osoba przyjmowana jako punkt odniesienia w przepisie. Pomyśl, jaką wiedzę powinna mieć przy ocenie rozwiązania.",
-  "Pod rygorem nieważności": "To określenie skutku prawnego. Odróżnij wymaganą formę czynności od terminu jej dokonania.",
-  "Zbywalne": "To określenie cechy prawa. Porównaj czynności wymienione w odpowiedziach, zamiast kierować się samą nazwą.",
-  "Dziedziczenie": "To pojęcie dotyczące losu praw. Nie utożsamiaj wszystkich sposobów zmiany osoby uprawnionej.",
-  "Unieważnienie": "To jeden ze sposobów zakwestionowania ochrony. Zwróć uwagę, kiedy i z jakiej przyczyny pojawił się problem.",
-  "Wygaśnięcie": "To pojęcie dotyczące zakończenia ochrony. Nie każdy przypadek zakończenia prawa ma tę samą podstawę.",
-  "Jednolitość wynalazku": "To wymóg odnoszący się do zgłoszenia. Porównaj rodzaje powiązań wskazane w odpowiedziach.",
-  "Indywidualny charakter": "To kryterium oceny wzoru. Zwróć uwagę na punkt widzenia i sposób porównania wskazane w pytaniu.",
-  "Zorientowany użytkownik": "To osoba przyjmowana jako punkt odniesienia przy ocenie wzoru. Nie utożsamiaj automatycznie wszystkich grup odbiorców.",
-  "Zła wiara": "To prawne określenie ocenianej postawy. Nie chodzi wyłącznie o to, kto jako pierwszy wypełnił formularz.",
-  "Dobra wiara": "To prawne określenie ocenianej postawy. Samo przekonanie uczestnika sprawy trzeba rozpatrywać w jej okolicznościach.",
-  "Opłata okresowa": "To rodzaj opłaty urzędowej. Oddziel ją od innych opłat i sprawdź, od jakiego zdarzenia liczy się termin.",
-  "Projekt wynalazczy": "To zbiorcze określenie ustawowe. Nie musi oznaczać tego samego co wszystkie przedmioty własności przemysłowej.",
-  "Irygacja": "To historyczne pojęcie związane z gospodarowaniem wodą. W pytaniu ważny jest sposób organizacji całego systemu.",
-  "Pięściak": "To nazwa konkretnego dawnego narzędzia. Pytanie może dotyczyć jego budowy albo zastosowania.",
-  "Brąz": "To nazwa materiału. Rozróżnij jego skład, właściwości i zastosowanie — to trzy różne kwestie.",
-  "Stop": "To określenie materiałoznawcze. Nie myl składu materiału z jego kształtem lub metodą obróbki.",
-  "Metoda traconego wosku": "To nazwa procesu wytwarzania. Spróbuj uporządkować etapy, zamiast kierować się tylko nazwą metody.",
-  "Akwedukt": "To nazwa budowli. Zwróć uwagę na warunki jej działania, nie tylko wygląd zewnętrzny.",
-  "Pucolana": "To historyczna nazwa materiału. Oddziel jego pochodzenie od gotowego wyrobu, w którym go stosowano.",
-  "Chomąto": "To historyczna nazwa części końskiego wyposażenia. Porównaj jej możliwe funkcje, zamiast kierować się samym skojarzeniem z koniem.",
-  "Koźlak": "To nazwa konstrukcji technicznej. Przy porównywaniu urządzeń zwróć uwagę, które części się poruszają.",
-  "Soczewka skupiająca": "To określenie optyczne. Rozróżnij kształt elementu, jego działanie i zastosowanie.",
-  "Śluza": "To nazwa urządzenia na drodze wodnej. Prześledź, co w danym rozwiązaniu zmienia położenie lub poziom.",
-  "Barometr": "To nazwa przyrządu. Oddziel jego funkcję od funkcji innych urządzeń pomiarowych.",
-  "Ciśnienie atmosferyczne": "To wielkość fizyczna. W doświadczeniu rozróżnij przyczynę zjawiska od obserwowanego skutku.",
-  "Pompa próżniowa": "To nazwa urządzenia używanego w doświadczeniach. Zwróć uwagę na zmianę warunków wewnątrz badanego naczynia.",
-  "Krosno": "To nazwa maszyny włókienniczej. Nie utożsamiaj różnych etapów wytwarzania materiału.",
-  "Przędzalnictwo": "To pojęcie związane z produkcją włókienniczą. Oddziel surowiec, kolejne etapy pracy i gotowy wyrób.",
-  "Żeliwo": "To nazwa materiału. Nie utożsamiaj wszystkich materiałów zawierających żelazo.",
-  "Konwertor Bessemera": "To urządzenie przemysłowe. Rozróżnij surowiec, przebieg procesu i otrzymywany produkt.",
-  "Surówka": "To słowo ma tutaj znaczenie hutnicze, nie kulinarne. Zwróć uwagę, o którym etapie produkcji mowa.",
-  "Żelbet": "To nazwa materiału konstrukcyjnego. Rozważ rolę poszczególnych składników i rodzaje obciążeń.",
-  "Indukcja elektromagnetyczna": "To nazwa zjawiska fizycznego. Oddziel odkrycie zjawiska od zbudowania urządzenia, które je wykorzystuje.",
-  "Prądnica": "To nazwa urządzenia elektrycznego. Zwróć uwagę na kierunek przemiany energii.",
-  "Telegraf": "To nazwa rozwiązania z dziedziny łączności. Rozróżnij sposób przesyłania informacji i jej postać.",
-  "Kinematograf": "To historyczna nazwa urządzenia. Zwróć uwagę, czy pytanie dotyczy zapisu, odtwarzania czy przesyłania.",
-  "Kondensator": "To element elektryczny. Nie utożsamiaj jego roli z działaniem całego urządzenia.",
-  "Opona pneumatyczna": "To nazwa rozwiązania stosowanego w pojazdach. Odróżnij jego budowę od historii zastosowania.",
-  "Batyskaf": "To nazwa specjalnego pojazdu. Pytanie może dotyczyć środowiska pracy, celu albo konstruktora.",
-  "Wyczerpanie prawa": "To pojęcie prawne. Oddziel los konkretnego egzemplarza towaru od losu samego prawa.",
-  "EOG": "To skrót nazwy obszaru. Zwróć uwagę, gdzie miało miejsce zdarzenie opisane w pytaniu.",
-  "Przedawnienie": "To pojęcie związane z terminami. Sprawdź, od jakiego zdarzenia zaczyna się liczenie okresu.",
-  "Roszczenie": "To termin prawny dotyczący relacji między stronami sporu. Nie utożsamiaj go z karą ani z okresem ochrony.",
-  "Rzecznik patentowy": "To nazwa zawodu. Rozróżnij kompetencje zawodowe i sam fakt bycia autorem rozwiązania.",
-  "Materiał biologiczny": "To ustawowe pojęcie z biotechnologii. Rozważ wszystkie cechy podane w danej odpowiedzi.",
-  "Sekwencja genu": "To pojęcie biologiczne. W pytaniu odróżnij sam przedmiot badań od sposobu jego wykorzystania.",
-  "Keson": "To określenie związane z konstrukcjami używanymi przy pracach inżynierskich. Prześledź rolę poszczególnych elementów opisu.",
-  "Manufaktura": "To historyczny sposób organizacji produkcji. Porównaj organizację pracy z zastosowaną techniką.",
-  "Koks": "To nazwa surowca przemysłowego. Nie utożsamiaj paliwa z materiałem otrzymywanym w procesie.",
-  "Dziewiarka": "To nazwa maszyny włókienniczej. Rozróżnij urządzenia wykonujące różne czynności.",
-  "Sterowiec": "To nazwa rodzaju statku powietrznego. Przy porównaniu konstrukcji nie kieruj się wyłącznie nazwiskiem.",
-  "Cyklotron": "To nazwa przyrządu badawczego. Oddziel jego przeznaczenie od innych osiągnięć danej epoki.",
-  "Spawanie": "To nazwa metody wykonywania połączeń. Nie utożsamiaj metody budowy z rodzajem materiału.",
+const glossaryExamples = {
+  "Wyłączność": "Konkurent co do zasady potrzebuje zgody uprawnionego z polskiego patentu, by w Polsce zarobkowo produkować chronioną pompę.",
+  "Przemysłowa stosowalność": "Nowy sposób nawadniania może być wykorzystywany w gospodarstwach rolnych, nie tylko w fabryce.",
+  "Poziom wynalazczy": "Sama zamiana koloru obudowy zwykle nie wnosi nieoczywistego rozwiązania technicznego.",
+  "Stan techniki": "Publiczny katalog z opisem takiej samej pompy, dostępny przed datą pierwszeństwa, może należeć do stanu techniki.",
+  "Pierwszeństwo": "Pierwsze prawidłowe zgłoszenie z 2 marca może dać pierwszeństwo przed zgłoszeniem konkurenta z 10 marca.",
+  "Zastrzeżenia patentowe": "W zastrzeżeniu opisano zawór z konkretnym układem części; tytuł „Nowy zawór” sam nie wyznacza ochrony.",
+  "Zakres ochrony": "Ochrona konkretnego układu części zaworu nie musi obejmować każdego zaworu sprzedawanego na rynku.",
+  "Prawo ochronne": "Firma otrzymuje prawo ochronne na znak swoich butów, nie patent na tę nazwę.",
+  "Prawo z rejestracji": "Na nowy wygląd lampy, spełniający warunki ustawy, można uzyskać prawo z rejestracji wzoru przemysłowego.",
+  "Wzór użytkowy": "Nowy kształt uchwytu narzędzia może być wzorem użytkowym, jeśli jest rozwiązaniem technicznym spełniającym ustawowe warunki.",
+  "Wzór przemysłowy": "Ozdobny kształt obudowy lampy to przykład jej wyglądu; sposób działania instalacji elektrycznej to osobna sprawa.",
+  "Znak towarowy": "Nazwa na pudełku butów pozwala klientowi rozpoznać, od jakiej firmy pochodzi produkt.",
+  "Oznaczenie geograficzne": "Nazwą regionu opisuje się wyrób, którego szczególna jakość lub renoma wiąże się z tym miejscem.",
+  "Topografia układu scalonego": "Projekt pokazuje rozmieszczenie elementów i połączeń w warstwach układu, nie jego nazwę handlową.",
+  "Układ scalony": "Kalkulator zawiera mały układ elektroniczny z wieloma połączonymi elementami, który wykonuje obliczenia.",
+  "Licencja przymusowa": "Urząd Patentowy może w ustawowej sytuacji pozwolić fabryce produkować chronioną pompę bez zgody uprawnionego. Fabryka płaci mu opłatę licencyjną.",
+  "Licencja otwarta": "Uprawniony z patentu na zawór zgłasza gotowość udzielania licencji każdemu zainteresowanemu na zasadach licencji otwartej.",
+  "Licencja pełna": "Umowa pozwala licencjobiorcy korzystać z opatentowanej maszyny w takim zakresie jak uprawniony, bez dodatkowych ograniczeń umownych.",
+  "Licencja niewyłączna": "Właściciel patentu udziela licencji fabryce A, ale może też udzielić jej fabryce B.",
+  "Licencja": "Firma płaci za zgodę na produkowanie chronionej pompy, lecz sam patent nadal należy do dotychczasowego uprawnionego.",
+  "Sublicencja": "Fabryka A ma licencję i za zgodą uprawnionego udziela fabryce B dalszej zgody na korzystanie z wynalazku.",
+  "Licencjobiorca": "Fabryka produkująca pompę na podstawie licencji jest licencjobiorcą, nawet jeśli nie posiada patentu.",
+  "Licencjodawca": "Właściciel patentu udzielający innej firmie licencji na produkowanie chronionej pompy występuje jako licencjodawca.",
+  "Patent": "Firma uzyskuje polski patent na nowy mechanizm pompy; nie daje jej to automatycznie ochrony w Niemczech.",
+  "Uprawniony": "Pracownik stworzył wynalazek w ramach obowiązków służbowych, lecz prawo do patentu może przysługiwać pracodawcy.",
+  "Znawca": "Przy ocenie pompy punktem odniesienia będzie fachowiec od odpowiednich urządzeń, a nie przypadkowy klient sklepu.",
+  "Pod rygorem nieważności": "Strony tylko ustnie uzgodniły sprzedaż patentu. Taka umowa nie spełnia wymaganej formy pisemnej pod rygorem nieważności.",
+  "Zbywalne": "Uprawniony może sprzedać patent innej firmie, zachowując wymaganą formę umowy.",
+  "Dziedziczenie": "Po śmierci właściciela prawo do patentu może przypaść jego spadkobiercom.",
+  "Unieważnienie": "Po udzieleniu patentu wykazano, że rozwiązanie nie było nowe; może to być podstawą jego unieważnienia.",
+  "Wygaśnięcie": "Właściciel nie opłacił kolejnego okresu ochrony i upłynęły właściwe terminy; patent może wygasnąć.",
+  "Jednolitość wynalazku": "Nowy zawór i specjalna metoda jego wytwarzania mogą należeć do jednego zgłoszenia, jeśli łączy je jeden ogólny pomysł wynalazczy.",
+  "Indywidualny charakter": "Wygląd nowej lampy daje zorientowanemu użytkownikowi inne ogólne wrażenie niż wcześniejsze wzory; sama drobna zmiana może nie wystarczyć.",
+  "Zorientowany użytkownik": "Osoba dobrze znająca dostępne modele krzeseł ocenia wygląd nowego krzesła; nie musi sama projektować mebli.",
+  "Zła wiara": "Ktoś świadomie próbuje zarejestrować cudze oznaczenie, aby zablokować konkurenta; okoliczności mogą wskazywać na złą wiarę.",
+  "Dobra wiara": "Mały sprzedawca używa oznaczenia, mając w danych okolicznościach usprawiedliwione przekonanie, że nie narusza cudzych praw.",
+  "Opłata okresowa": "Po opłacie za pierwszy okres ochrony patent wymaga kolejnych opłat, aby utrzymać go w mocy.",
+  "Projekt wynalazczy": "Techniczna budowa uchwytu może być wzorem użytkowym, a jego wygląd wzorem przemysłowym; oba należą do projektów wynalazczych.",
+  "Irygacja": "Rolnicy doprowadzają wodę kanałami do pól, na których opady nie wystarczają do upraw.",
+  "Pięściak": "Kawałek kamienia obrobiono z dwóch stron, tworząc ostrą krawędź przydatną do cięcia i rozłupywania.",
+  "Brąz": "Odlewnik łączy miedź z cyną i otrzymuje brąz, z którego można wykonać narzędzie.",
+  "Stop": "Mosiądz jest stopem miedzi i cynku; nie jest tym samym stopem co brąz cynowy.",
+  "Metoda traconego wosku": "Jubiler robi woskowy model pierścionka, usuwa wosk z formy i wlewa w jego miejsce ciekły metal.",
+  "Akwedukt": "Kanał prowadzi wodę z wyżej położonego źródła do miasta; tylko część trasy może biec po arkadach.",
+  "Pucolana": "Dodatek popiołu wulkanicznego do spoiwa wapiennego pomaga otrzymać materiał budowlany odporniejszy na działanie wody.",
+  "Chomąto": "Koń ciągnący wóz naciska barkami na chomąto, a uprząż przenosi jego siłę na pojazd.",
+  "Koźlak": "Młynarz obraca korpus wiatraka, aby skrzydła ustawiły się do wiatru; nie obraca tylko samego dachu.",
+  "Soczewka skupiająca": "Lupa skupia światło; przez odpowiednio ustawioną lupę można też zobaczyć powiększony obraz małego druku.",
+  "Śluza": "Statek wpływa do komory, wrota się zamykają, a dopuszczenie wody podnosi go do poziomu wyższego odcinka kanału.",
+  "Barometr": "Na tarczy barometru odczytujesz 1013 hPa, a nie liczbę stopni temperatury.",
+  "Ciśnienie atmosferyczne": "Przyssawka trzyma się szyby dzięki różnicy ciśnień po jej obu stronach.",
+  "Pompa próżniowa": "Pompa odsysa powietrze spod szklanego klosza, dzięki czemu ciśnienie wewnątrz maleje.",
+  "Krosno": "Na krośnie nitka wątku przechodzi między nićmi osnowy i powstaje tkanina.",
+  "Przędzalnictwo": "Z luźnych włókien bawełny powstaje długa przędza, z której dopiero później można utkać materiał.",
+  "Żeliwo": "Ciężki korpus maszyny można odlać z żeliwa; nie jest to stalowe zbrojenie betonu.",
+  "Konwertor Bessemera": "Przez ciekłą surówkę przedmuchuje się powietrze, co pomaga usunąć nadmiar węgla i otrzymać stal.",
+  "Surówka": "Z wielkiego pieca otrzymuje się surówkę, którą można dalej przerabiać na stal.",
+  "Żelbet": "W betonowej belce umieszcza się stalowe pręty, które przejmują siły rozciągające przy zginaniu.",
+  "Indukcja elektromagnetyczna": "Przesuwanie magnesu do wnętrza zwojnicy zmienia pole obejmujące jej zwoje i może wytworzyć napięcie.",
+  "Prądnica": "Mała prądnica napędzana kołem roweru dostarcza energię elektryczną do lampki.",
+  "Telegraf": "Operator przesyła serię krótkich i długich sygnałów, z których odbiorca odczytuje wiadomość alfabetem Morse’a.",
+  "Kinematograf": "To samo historyczne urządzenie mogło rejestrować kolejne klatki filmu, a potem wyświetlać je na ekranie.",
+  "Kondensator": "W lampie błyskowej kondensator gromadzi energię, którą następnie szybko oddaje podczas błysku.",
+  "Opona pneumatyczna": "Powietrze w oponie roweru pomaga łagodzić uderzenia podczas przejazdu przez nierówności.",
+  "Batyskaf": "Batyskaf „Trieste” badał wielkie głębokości oceanu z ludźmi na pokładzie.",
+  "Wyczerpanie prawa": "Uprawniony sprzedaje oznaczone buty w EOG. Ich zwykła odsprzedaż co do zasady nie wymaga jego ponownej zgody.",
+  "EOG": "Norwegia należy do EOG, choć nie należy do Unii Europejskiej; Szwajcaria do EOG nie należy.",
+  "Przedawnienie": "Właściciel patentu zbyt długo zwleka z pozwem, a pozwany broni się zarzutem przedawnienia. Nie oznacza to automatycznie wygaśnięcia patentu.",
+  "Roszczenie": "Właściciel patentu żąda, żeby firma przestała bezprawnie produkować chronione urządzenie; żądanie zaniechania jest roszczeniem.",
+  "Rzecznik patentowy": "Przygotowując zgłoszenie nowego zaworu, wynalazca korzysta z pomocy rzecznika przy opracowaniu dokumentacji i zastrzeżeń.",
+  "Materiał biologiczny": "Żywa komórka drożdży zawiera informację genetyczną i może się namnażać w odpowiednich warunkach.",
+  "Sekwencja genu": "Fragment DNA można zapisać jako ciąg A, C, G i T; zmiana kolejności tych liter oznacza inną sekwencję.",
+  "Keson": "Robotnicy mogą pracować przy fundamencie mostu pod wodą, bo sprężone powietrze utrzymuje suchą przestrzeń w kesonie.",
+  "Manufaktura": "W jednym zakładzie kilku rękodzielników ręcznie wykonuje różne etapy produkcji, np. przygotowanie części i ich składanie.",
+  "Koks": "W wielkim piecu koks dostarcza ciepła i uczestniczy w procesie otrzymywania żelaza z rudy.",
+  "Dziewiarka": "Maszyna tworzy kolejne oczka przędzy przy robieniu pończochy, zamiast przeplatać osnowę i wątek jak krosno.",
+  "Sterowiec": "Wydłużony statek powietrzny unosi się dzięki gazowi lżejszemu od powietrza, a silniki pozwalają nim kierować.",
+  "Cyklotron": "Proton krąży w polu magnetycznym i przy kolejnych przejściach przez szczelinę zyskuje energię od pola elektrycznego.",
+  "Spawanie": "Dwa stalowe elementy mostu łączy spoina powstała po miejscowym stopieniu materiału, zamiast szeregu nitów.",
 };
 
 const glossary = [
@@ -162,7 +162,7 @@ const glossary = [
   ["Sterowiec", ["sterowiec", "sterowca", "sterowców", "sterowce", "sterowcami"], "Statek powietrzny unoszony przez gaz lżejszy od powietrza, wyposażony we własny napęd i sterowanie."],
   ["Cyklotron", ["cyklotron", "cyklotronem", "cyklotronu"], "Urządzenie przyspieszające cząstki naładowane elektrycznie. Wykorzystuje się je w badaniach fizycznych i zastosowaniach medycznych."],
   ["Spawanie", ["spawanie", "spawania", "spawaniem"], "Łączenie części, zwykle metalowych, przez miejscowe stopienie materiału i utworzenie spoiny."],
-].map(([title, forms, definition]) => ({ title, forms, definition, hint: glossaryHints[title] }));
+].map(([title, forms, definition]) => ({ title, forms, definition, example: glossaryExamples[title] }));
 
 const glossaryHeadwords = new Map([
   ["Wyłączny", ["wyłącznego", "wyłącznej", "wyłączny", "wyłączne", "wyłącznym"]],
@@ -208,6 +208,8 @@ let glossaryTrigger = null;
 function closeGlossary(restoreFocus = false) {
   const trigger = glossaryTrigger;
   glossaryPopover.hidden = true;
+  document.getElementById("glossary-definition").textContent = "";
+  document.getElementById("glossary-example-text").textContent = "";
   if (trigger) trigger.setAttribute("aria-expanded", "false");
   glossaryTrigger = null;
   if (restoreFocus && trigger?.isConnected) trigger.focus({ preventScroll: true });
@@ -232,14 +234,21 @@ function openGlossary(button, entry, revealDefinition = false) {
   }
   closeGlossary();
   glossaryTrigger = button;
-  glossaryPopover.dataset.stage = revealDefinition ? "definition" : "hint";
+  glossaryPopover.dataset.stage = revealDefinition ? "definition" : "locked";
   const headword = glossaryHeadwords.get(button.textContent.toLocaleLowerCase("pl")) ?? entry.title;
   document.getElementById("glossary-title").textContent = revealDefinition ? entry.title : headword;
   document.getElementById("glossary-stage").textContent = revealDefinition
-    ? "Pełne wyjaśnienie" : "Wskazówka — pełna definicja po odpowiedzi";
-  document.getElementById("glossary-definition").textContent = revealDefinition ? entry.definition : entry.hint;
+    ? "Pełna definicja" : "Pełna definicja po odpowiedzi";
+  document.getElementById("glossary-locked").hidden = revealDefinition;
+  document.getElementById("glossary-definition").hidden = !revealDefinition;
+  document.getElementById("glossary-example").hidden = !revealDefinition;
+  document.getElementById("glossary-definition").textContent = revealDefinition ? entry.definition : "";
+  document.getElementById("glossary-example-text").textContent = revealDefinition ? entry.example : "";
+  glossaryPopover.setAttribute("aria-describedby", revealDefinition
+    ? "glossary-stage glossary-definition glossary-example" : "glossary-stage glossary-locked");
   button.setAttribute("aria-expanded", "true");
   glossaryPopover.hidden = false;
+  glossaryPopover.scrollTop = 0;
   positionGlossary();
   glossaryPopover.focus({ preventScroll: true });
 }
