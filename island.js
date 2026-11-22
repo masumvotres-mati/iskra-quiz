@@ -62,17 +62,17 @@ let islandMotionPaused = false;
 let islandTurnMessage = "";
 
 const islandRoutes = {
-  irrigation: { type: "water", points: [[203, 185], [270, 202], [356, 185], [442, 182]] },
-  river: { type: "water", points: [[202, 185], [246, 220], [285, 248], [326, 268]] },
-  food: { type: "food", points: [[525, 226], [444, 251], [334, 309], [230, 339]] },
-  tools: { type: "tools", points: [[205, 316], [183, 270], [209, 233], [232, 205]] },
-  workshopDrive: { type: "gear", points: [[325, 269], [300, 292], [278, 316], [245, 329]] },
-  generatorDrive: { type: "gear", points: [[350, 279], [389, 298], [427, 316], [462, 330]] },
-  power: { type: "power", points: [[507, 326], [550, 292], [582, 302], [607, 319]] },
-  message: { type: "message", points: [[607, 319], [589, 260], [575, 198], [578, 133]] },
-  harvest: { type: "farmer", points: [[551, 215], [504, 189], [478, 202], [526, 227]] },
-  wheelTools: { type: "tools", points: [[217, 327], [261, 313], [303, 289], [332, 266]] },
-  lighting: { type: "power", points: [[499, 324], [398, 263], [276, 262], [156, 314]] },
+  irrigation: { kind: "flow", points: [[220, 254], [262, 277], [367, 242], [409, 259]] },
+  river: { kind: "flow", points: [[220, 254], [282, 285], [316, 329], [324, 350]] },
+  food: { kind: "worker", carry: "food", points: [[481, 300], [420, 334], [300, 386], [228, 400]] },
+  tools: { kind: "worker", carry: "tools", points: [[205, 390], [253, 340], [242, 290], [260, 260]] },
+  workshopDrive: { kind: "drive", points: [[324, 345], [307, 362], [285, 374], [270, 375]] },
+  generatorDrive: { kind: "drive", points: [[346, 360], [366, 376], [390, 385], [410, 385]] },
+  power: { kind: "current", points: [[445, 381], [478, 352], [508, 347], [535, 367]] },
+  message: { kind: "current", points: [[535, 304], [554, 250], [539, 195], [510, 165]] },
+  harvest: { kind: "worker", carry: "food", points: [[503, 300], [458, 265], [424, 270], [482, 298]] },
+  wheelTools: { kind: "worker", carry: "tools", points: [[210, 390], [270, 385], [309, 376], [324, 365]] },
+  lighting: { kind: "current", points: [[443, 380], [360, 313], [255, 332], [160, 349]] },
 };
 
 function islandInteraction(id, level) {
@@ -115,6 +115,7 @@ function clearIslandEffects() {
   for (const animation of islandAnimations) animation.cancel();
   islandAnimations = [];
   element("island-effects").replaceChildren();
+  element("island-scene").dataset.action = "";
   for (const item of element("island").querySelectorAll(".inspected, .receiving")) {
     item.classList.remove("inspected", "receiving");
   }
@@ -124,30 +125,77 @@ function animateIslandAsset(id) {
   if (!islandCanAnimate()) return;
   const body = element(`island-asset-${id}`).querySelector(".island-grow-body");
   islandAnimations.push(body.animate([
-    { transform: "translateY(7px) scale(.93)" },
-    { transform: "translateY(-3px) scale(1.04)", offset: 0.65 },
+    { transform: "translateY(-58px) scale(.82)", opacity: 0 },
+    { transform: "translateY(4px) scale(1.03)", opacity: 1, offset: 0.7 },
     { transform: "translateY(0) scale(1)" },
-  ], { duration: 390, easing: "ease-out" }));
+  ], { duration: 420, easing: "ease-out" }));
 }
 
 function sendIslandEffect(routeId, recipient) {
   if (!islandCanAnimate()) return;
   const route = islandRoutes[routeId];
-  const token = document.createElementNS("http://www.w3.org/2000/svg", "g");
-  token.classList.add("island-traveller");
-  token.dataset.route = routeId;
-  token.dataset.recipient = recipient;
-  const icon = document.createElementNS("http://www.w3.org/2000/svg", "use");
-  icon.setAttribute("href", `#island-token-${route.type}`);
-  icon.setAttribute("transform", "scale(1.25)");
-  token.append(icon);
-  element("island-effects").append(token);
-  const animation = token.animate(route.points.map(([x, y], index) => ({
-    transform: `translate(${x}px, ${y}px)`,
-    opacity: index === 0 || index === route.points.length - 1 ? 0 : 1,
-  })), { duration: 560, easing: "ease-in-out" });
-  animation.onfinish = () => token.remove();
-  islandAnimations.push(animation);
+  const svg = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
+  const action = svg("g");
+  action.classList.add("island-action");
+  action.dataset.route = routeId;
+  action.dataset.recipient = recipient;
+  action.dataset.kind = route.kind;
+  element("island-effects").append(action);
+  element("island-scene").dataset.action = routeId;
+  if (route.kind === "worker") {
+    const pose = svg("g");
+    pose.classList.add("island-person-pose");
+    const person = svg("use");
+    person.setAttribute("href", "#island-resident");
+    person.setAttribute("x", "-23");
+    person.setAttribute("y", "-78");
+    person.setAttribute("width", "46");
+    person.setAttribute("height", "78");
+    const cargo = svg("use");
+    cargo.setAttribute("href", `#island-token-${route.carry}`);
+    cargo.classList.add("island-hand-tool");
+    const holder = svg("g");
+    holder.setAttribute("transform", route.carry === "food" ? "translate(25 -3)" : "translate(20 -29)");
+    holder.append(cargo);
+    pose.append(person, holder);
+    action.append(pose);
+    action.classList.add("walking");
+    const frames = route.points.map(([x, y], index) => ({
+      transform: `translate(${x}px, ${y}px)`, offset: index * 0.22,
+    }));
+    const [x, y] = route.points.at(-1);
+    frames.push({ transform: `translate(${x}px, ${y}px)`, offset: 1 });
+    islandAnimations.push(action.animate(frames, { duration: 560, fill: "forwards", easing: "ease-in-out" }));
+    islandVisualTimers.push(window.setTimeout(() => {
+      action.classList.remove("walking");
+      action.classList.add("working");
+    }, 370));
+  } else {
+    const path = svg("path");
+    path.setAttribute("d", route.points.map(([x, y], index) => `${index ? "L" : "M"}${x} ${y}`).join(" "));
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    path.setAttribute("stroke", route.kind === "flow" ? "#8deaf0" : route.kind === "drive" ? "#ad8351" : "#ffe67d");
+    path.setAttribute("stroke-width", route.kind === "flow" ? "13" : route.kind === "drive" ? "8" : "5");
+    action.append(path);
+    const length = path.getTotalLength();
+    path.style.strokeDasharray = `${length} ${length}`;
+    islandAnimations.push(path.animate([
+      { strokeDashoffset: length }, { strokeDashoffset: 0 },
+    ], { duration: 560, fill: "forwards", easing: "ease-in-out" }));
+    if (route.kind === "drive") {
+      const bearing = svg("g");
+      const [x, y] = route.points.at(-1);
+      bearing.setAttribute("transform", `translate(${x} ${y})`);
+      const gear = svg("use");
+      gear.setAttribute("href", "#island-token-gear");
+      gear.classList.add("island-contact-gear");
+      bearing.append(gear);
+      action.append(bearing);
+    }
+  }
+  islandVisualTimers.push(window.setTimeout(() => action.remove(), 950));
 }
 
 function reactIslandAsset(id, levels = islandState.levels) {
@@ -188,6 +236,10 @@ function renderIsland(grown = []) {
     asset.dataset.level = String(level);
     asset.classList.toggle("grew", grown.includes(item.id));
     const button = element(`island-pick-${item.id}`);
+    const hotspot = element("island-scene").querySelector(`[data-island-inspect="${item.id}"]`);
+    hotspot.hidden = level === 0;
+    hotspot.disabled = islandState.busy;
+    hotspot.setAttribute("aria-label", `${item.name}: ${level ? item.stages[level - 1] : "jeszcze nie dodano"}. Obejrzyj działanie.`);
     button.disabled = islandState.busy;
     button.classList.toggle("placed", level > 0);
     button.classList.toggle("maxed", level === 3);
@@ -383,6 +435,12 @@ element("island-motion").addEventListener("click", () => {
 });
 for (const item of islandItems) {
   element(`island-pick-${item.id}`).addEventListener("click", () => pickIslandItem(item.id));
+}
+for (const button of element("island-scene").querySelectorAll("[data-island-inspect]")) {
+  button.dataset.feedbackSound = "";
+  button.addEventListener("click", () => {
+    if (!islandState.busy) inspectIslandItem(button.dataset.islandInspect);
+  });
 }
 motionPreference.addEventListener("change", () => {
   if (motionPreference.matches && islandState.busy) finishIslandTurn();
