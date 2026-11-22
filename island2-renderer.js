@@ -1,5 +1,18 @@
 "use strict";
 
+const island2Layout = {
+  wheelRest: [244, 400], wheelDrive: [237, 418], wheelPottery: [237, 418],
+  crateRest: [432, 391], cabinBase: [416, 373], cabinTop: [416, 225], cabinLanding: [416, 284],
+  rope: [396, 289], copper: [328, 425],
+  glassRest: [188, 374], glassRough: [291, 386], glassReady: [378, 400], glassTop: [471, 190],
+  lamp: [471, 205], lampRest: [497, 358], cargoLanding: [445, 285], cargoBoat: [567, 438],
+  boatWaiting: [574, 304], boatDock: [574, 446], loadOffset: [0, -29],
+};
+
+function island2LoadPoint(point) {
+  return point.map((value, index) => value + island2Layout.loadOffset[index]);
+}
+
 const island2Renderer = (() => {
   const ns = "http://www.w3.org/2000/svg";
   const entities = new Map();
@@ -12,44 +25,47 @@ const island2Renderer = (() => {
   let previous = 0;
   let clock = 0;
   const nodes = {
-    farm: { point: [148, 318], plane: "front" },
-    rear: { point: [439, 301], plane: "ground-back" },
-    cave: { point: [248, 364], plane: "front" },
-    inside: { point: [267, 338], plane: "cave" },
-    wheel: { point: [162, 414], plane: "front" },
-    mill: { point: [295, 451], plane: "front" },
-    landing: { point: [326, 424], plane: "front" },
-    generator: { point: [310, 445], plane: "front" },
-    lift: { point: [365, 407], plane: "front" },
-    dock: { point: [467, 450], plane: "front" },
-    stairs: { point: [329, 370], plane: "front" },
-    terrace: { point: [309, 244], plane: "terrace" },
-    spring: { point: [278, 229], plane: "terrace" },
-    behind: { point: [340, 163], plane: "terrace" },
-    summit: { point: [468, 168], plane: "peak" },
-    balcony: { point: [402, 249], plane: "front" },
-    plazaLeft: { point: [245, 450], plane: "front" },
-    plazaCenter: { point: [303, 476], plane: "front" },
-    plazaRight: { point: [371, 453], plane: "front" },
+    farm: { point: [135, 367], plane: "front" },
+    rear: { point: [340, 331], plane: "ground-back" },
+    cave: { point: [340, 389], plane: "front" },
+    inside: { point: [333, 378], plane: "cave" },
+    workshop: { point: [379, 398], plane: "front" },
+    potter: { point: [269, 415], plane: "front" },
+    teaLeft: { point: [204, 402], plane: "front" },
+    teaRight: { point: [283, 408], plane: "front" },
+    wheel: { point: [195, 396], plane: "front" },
+    mill: { point: [287, 432], plane: "front" },
+    landing: { point: [377, 421], plane: "front" },
+    generator: { point: [367, 422], plane: "front" },
+    lift: { point: [383, 382], plane: "front" },
+    dock: { point: [507, 400], plane: "front" },
+    stairs: { point: [383, 370], plane: "front" },
+    terrace: { point: [282, 327], plane: "terrace" },
+    spring: { point: [204, 336], plane: "terrace" },
+    behind: { point: [237, 283], plane: "ground-back" },
+    summit: { point: [439, 286], plane: "peak" },
+    balcony: { point: [427, 294], plane: "peak" },
   };
   const edges = [
-    ["rear", "farm", [[461, 331], [381, 376], [257, 363], [184, 345]], "around"],
-    ["farm", "cave", [[184, 345]]],
+    ["rear", "farm", [[278, 341], [249, 348], [204, 357]], "around"],
+    ["farm", "cave", [[219, 365], [283, 389]]],
     ["cave", "inside", [], "door"],
-    ["cave", "wheel", [[204, 393]]],
-    ["cave", "stairs", [[299, 363]]],
-    ["wheel", "mill", [[240, 449]]],
+    ["cave", "workshop", []],
+    ["cave", "potter", [[284, 406]]],
+    ["wheel", "teaLeft", []], ["mill", "teaRight", []],
+    ["cave", "wheel", [[287, 409]]],
+    ["cave", "stairs", [[377, 393]]],
+    ["wheel", "mill", [[236, 414]]],
     ["mill", "generator", []],
     ["generator", "landing", []],
     ["landing", "stairs", []],
     ["landing", "lift", []],
-    ["lift", "dock", [[423, 435]]],
-    ["stairs", "terrace", [[338, 342], [342, 315], [346, 286], [351, 263]], "climb"],
+    ["lift", "dock", [[446, 402]]],
+    ["stairs", "terrace", [[377, 395], [282, 393]]],
     ["terrace", "spring", []],
-    ["terrace", "behind", [[299, 200]]],
-    ["behind", "summit", [[349, 178], [369, 180], [400, 157], [427, 147]], "climb"],
-    ["terrace", "balcony", [[354, 247]], "bridge"],
-    ["landing", "plazaLeft", []], ["landing", "plazaCenter", []], ["landing", "plazaRight", []],
+    ["terrace", "behind", [[282, 297], [268, 283]]],
+    ["stairs", "summit", [[405, 347], [405, 313]], "climb"],
+    ["summit", "balcony", []],
   ];
 
   function svg(tag, attributes = {}) {
@@ -61,21 +77,33 @@ const island2Renderer = (() => {
   function person(role) {
     const root = svg("g", { id: `i2-person-${role}`, class: "i2-person" });
     root.append(svg("ellipse", { class: "i2-person-shadow", cy: 0, rx: 12, ry: 4, fill: "#486b53", opacity: ".2" }));
+    const figure = svg("g", { transform: "scale(.76)" });
     const facing = svg("g", { class: "i2-facing" });
-    const body = svg("g", { class: "i2-body", stroke: "#627567", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" });
-    body.append(svg("path", { class: "i2-leg-back", d: "M-4-18Q-5-9-6-2", stroke: "#94a48d", "stroke-width": "5", fill: "none" }));
-    body.append(svg("path", { class: "i2-arm-back", d: "M-6-32Q-13-25-12-19", stroke: "#9baa90", "stroke-width": "4.5", fill: "none" }));
-    body.append(svg("ellipse", { cx: 0, cy: -27, rx: 7.5, ry: 12, fill: "#f0e8c5" }));
-    body.append(svg("path", { d: "M-3-35Q3-38 4-24", stroke: "#fff9e0", "stroke-width": "3", fill: "none" }));
-    body.append(svg("path", { class: "i2-leg-front", d: "M4-18Q5-9 7-2", stroke: "#6b7b66", "stroke-width": "5", fill: "none" }));
-    body.append(svg("path", { class: "i2-arm-front", d: "M6-32Q12-25 12-18", stroke: "#6b7b66", "stroke-width": "4.5", fill: "none" }));
+    const body = svg("g", { class: "i2-body", stroke: "#3d5347", "stroke-width": "2.5", "stroke-linecap": "round", "stroke-linejoin": "round" });
+    const limb = (name, d, back = false) => [
+      svg("path", { class: name, d, stroke: "#3d5347", "stroke-width": "7", fill: "none" }),
+      svg("path", { class: `${name}-core`, d, stroke: back ? "#dedec4" : "#fffdee", "stroke-width": "3.5", fill: "none" }),
+    ];
+    body.append(...limb("i2-leg-back", "M-4-18Q-5-9-6-2", true));
+    body.append(...limb("i2-arm-back", "M-6-32Q-13-25-12-19", true));
+    body.append(svg("path", { d: "M-8-35q8-5 16 0l2 14q-10 7-20 0Z", fill: "#fffdee" }));
+    body.append(svg("path", { d: "M-8-25q8 4 16 0", stroke: { maker: "#ce8e70", gardener: "#83a86b", scout: "#c4a765" }[role], "stroke-width": "3.5", fill: "none" }));
+    body.append(...limb("i2-leg-front", "M4-18Q5-9 7-2"));
+    body.append(...limb("i2-arm-front", "M6-32Q12-25 12-18"));
     const head = svg("g", { class: "i2-head" });
-    head.append(svg("circle", { cy: -47, r: 13, fill: "#faf9df" }));
-    head.append(svg("path", { d: "M-10-48Q-7-36 4-36", stroke: "#d7dfbf", "stroke-width": "3.5", fill: "none" }));
-    head.append(svg("path", { d: "M-7-52Q-4-57 3-57", stroke: "#fff", "stroke-width": "3", fill: "none" }));
-    body.append(head, svg("g", { class: "i2-hand" }));
+    head.append(svg("circle", { cy: -47, r: 12, fill: "#fffef2" }));
+    head.append(svg("path", { d: "M-9-47Q-7-37 3-37", stroke: "#dedec4", "stroke-width": "2.5", fill: "none" }));
+    head.append(svg("circle", { cx: 5, cy: -48, r: 1.5, fill: "#3d5347", stroke: "none" }));
+    const hand = svg("g", { class: "i2-hand" });
+    const tool = svg("g", { class: "i2-task-prop", stroke: "#514f3e", "stroke-width": "2.5", "stroke-linejoin": "round" });
+    tool.append(svg("path", { d: role === "gardener" ? "M0 0 8 8m-2-2 4-2 4 5-4 3Z"
+      : role === "maker" ? "M0 0 7-9m-3 1 4-3 6 6-4 3Z"
+        : "M-4-7 5-11 13-7V3L5 7-4 3Zm0 0 9 4 8-4M5-3V7", fill: role === "gardener" ? "#b9c9a8" : "#edc98a" }));
+    hand.append(tool);
+    body.append(head, hand);
     facing.append(body);
-    root.append(facing);
+    figure.append(facing);
+    root.append(figure);
     return root;
   }
 
@@ -161,26 +189,41 @@ const island2Renderer = (() => {
     const front = Math.sin(phase);
     const back = -front;
     const walking = mode === "walk" || mode === "climb";
-    const working = mode === "work";
+    const working = mode === "work" || mode === "repair";
+    const tending = mode === "tend";
+    const shaping = mode === "shape";
+    const carrying = mode === "cargo";
+    const chatting = mode === "chat";
     const cheering = mode === "cheer";
-    const holding = entity.node.querySelector(".i2-hand").childElementCount > 0;
+    const holding = Boolean(entity.node.querySelector("#i2-parcel"));
     const lift = walking ? Math.max(0, front) * 5 : 0;
     const stride = walking ? front * 10 : 0;
     const otherLift = walking ? Math.max(0, back) * 5 : 0;
     const otherStride = walking ? back * 10 : 0;
-    const crouch = working ? (1 - Math.cos(phase)) * 2.5 : 0;
+    const crouch = working || tending ? (1 - Math.cos(phase)) * 2.5 : 0;
+    if (shaping) entity.direction = -1;
+    if (tending || carrying) entity.direction = 1;
+    if (mode === "repair") entity.direction = entity.point[0] > 350 ? -1 : 1;
+    if (chatting) entity.direction = entity.point[0] < island2Layout.wheelRest[0] ? 1 : -1;
     entity.node.querySelector(".i2-facing").setAttribute("transform", `scale(${entity.direction} 1)`);
     body.setAttribute("transform", `translate(0 ${walking ? -Math.abs(front) * 1.7 : cheering ? -Math.max(0, front) * 8 : crouch})`);
-    entity.node.querySelector(".i2-leg-front").setAttribute("d", `M4-18Q${4 + stride * .45} ${-9 - lift} ${5 + stride} ${-2 - lift}`);
-    entity.node.querySelector(".i2-leg-back").setAttribute("d", `M-4-18Q${-4 + otherStride * .45} ${-9 - otherLift} ${-5 + otherStride} ${-2 - otherLift}`);
-    const handY = mode === "climb" || cheering ? -43 - front * 9 : working ? -24 - Math.max(0, front) * 18 : holding ? -25 : -18;
-    const handX = working || holding ? 17 : 12 - stride * .55;
+    entity.node.querySelector(".i2-leg-front").setAttribute("d", `M4-18Q${4 + stride * .45} ${-9 - lift - crouch * .4} ${5 + stride} ${-2 - lift - crouch}`);
+    entity.node.querySelector(".i2-leg-back").setAttribute("d", `M-4-18Q${-4 + otherStride * .45} ${-9 - otherLift - crouch * .4} ${-5 + otherStride} ${-2 - otherLift - crouch}`);
+    const handY = mode === "climb" || cheering ? -43 - front * 9 : shaping ? -50 + front * 3
+      : tending ? -23 + front * 3 : chatting ? -31 + front * 2 : carrying || holding ? -26 : working ? -24 - Math.max(0, front) * 18 : -18;
+    const handX = shaping ? 19 : working || holding || tending || carrying ? 17 : 12 - stride * .55;
     entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q${handX + 2} ${handY - 3} ${handX} ${handY}`);
-    entity.node.querySelector(".i2-arm-back").setAttribute("d", `M-6-32Q${-12 - otherStride * .4} ${mode === "climb" || cheering ? -47 + front * 8 : -25} ${-12 - otherStride * .55} ${mode === "climb" || cheering ? -44 + front * 8 : -19}`);
+    entity.node.querySelector(".i2-arm-back").setAttribute("d", shaping || carrying
+      ? `M-6-32Q8 ${handY - 5} 15 ${handY}`
+      : `M-6-32Q${-12 - otherStride * .4} ${mode === "climb" || cheering ? -47 + front * 8 : -25} ${-12 - otherStride * .55} ${mode === "climb" || cheering ? -44 + front * 8 : -19}`);
+    for (const limb of ["i2-leg-front", "i2-leg-back", "i2-arm-front", "i2-arm-back"]) {
+      entity.node.querySelector(`.${limb}-core`).setAttribute("d", entity.node.querySelector(`.${limb}`).getAttribute("d"));
+    }
     entity.node.querySelector(".i2-hand").setAttribute("transform", `translate(${handX} ${handY})`);
-    entity.node.querySelector(".i2-head").setAttribute("transform", `translate(${working ? 2 : 0} ${working ? crouch * .3 : 0})`);
+    entity.node.querySelector(".i2-head").setAttribute("transform", `translate(${working || shaping ? 2 : 0} ${shaping ? 1 : working ? crouch * .3 : 0})`);
     entity.node.dataset.pose = mode;
     entity.node.querySelector(".i2-person-shadow").setAttribute("opacity", mode === "climb" ? ".05" : ".2");
+    entity.node.querySelector(".i2-task-prop").style.display = tending || mode === "repair" || carrying ? "" : "none";
   }
 
   function move(id, points, duration, offsets, options = {}) {
@@ -238,6 +281,43 @@ const island2Renderer = (() => {
     }
   }
 
+  function settledPose(entity) {
+    if (context.story.ending === "workshop" && context.levels.wheel === 1 && entity.id !== "i2-person-gardener") return "chat";
+    if (entity.id === "i2-person-maker") {
+      if (context.branches.wheel === "pottery" && context.levels.wheel >= 2) return "shape";
+      if (context.levels.timber >= 2) return "repair";
+    }
+    if (entity.id === "i2-person-gardener" && context.levels.seeds >= 2) return "tend";
+    if (entity.id === "i2-person-scout" && context.story.ending === "beacon") return "cargo";
+    return "idle";
+  }
+
+  function mechanisms(now = performance.now()) {
+    const cabin = entities.get("i2-crate");
+    document.getElementById("i2-lift-rope").setAttribute("d", `M416 163V${Math.max(164, cabin.point[1] - 61)}`);
+    let tip = [537, 365];
+    let hook = [537, 419];
+    const delivery = journeys.get("i2-cargo");
+    if (delivery && context.story.cargo === "moving") {
+      const progress = Math.max(0, (now - delivery.start) / delivery.duration);
+      if (progress < .4) {
+        const load = entities.get("i2-cargo").point;
+        hook = [load[0], load[1] - 20];
+        tip = [hook[0], hook[1] - 45];
+      } else {
+        const returning = Math.min(1, (progress - .4) / .2);
+        const load = island2LoadPoint(island2Layout.cabinBase);
+        hook = [load[0] + (537 - load[0]) * returning, load[1] - 20 + (419 - load[1] + 20) * returning];
+        tip = [hook[0], hook[1] - (45 + 9 * returning)];
+      }
+    }
+    const boom = `M448 325 ${tip[0]} ${tip[1]}`;
+    document.getElementById("i2-crane-boom").setAttribute("d", boom);
+    document.getElementById("i2-crane-boom-core").setAttribute("d", boom);
+    document.getElementById("i2-crane-line").setAttribute("d", `M${tip[0]} ${tip[1]} ${hook[0]} ${hook[1]}`);
+    document.getElementById("i2-crane-hook").setAttribute("transform", `translate(${hook[0]} ${hook[1]})`);
+  }
+
   function tick(now) {
     frame = undefined;
     if (!context?.live) return;
@@ -273,14 +353,15 @@ const island2Renderer = (() => {
     }
     for (const entity of entities.values()) {
       if (entity.id.startsWith("i2-person-") && !journeys.has(entity.id)) {
-        pose(entity, context.story.celebrating ? "cheer" : entity.pose, clock / (context.story.celebrating ? 110 : 180));
+        const mode = context.finished || !context.busy ? settledPose(entity) : context.story.celebrating ? "cheer" : entity.pose;
+        pose(entity, mode, clock / (context.story.celebrating ? 110 : 180));
       }
     }
     const angle = clock / 9;
     const rotate = (id, value) => document.getElementById(id).setAttribute("transform", `rotate(${value})`);
     if (context.levels.wheel >= 2 && context.branches.wheel !== "pottery") rotate("i2-wheel-rotor", angle);
     if (context.levels.rope >= 3) rotate("i2-pulley-rotor", -angle * .7);
-    if (context.story.producing) document.getElementById("i2-mill-arm").setAttribute("transform", `translate(0 ${-Math.max(0, Math.sin(clock / 180)) * 18})`);
+    if (context.story.producing) document.getElementById("i2-mill-arm").setAttribute("transform", `translate(0 ${-Math.max(0, Math.sin(clock / 180)) * 5})`);
     if (context.branches.wheel === "pottery" && context.levels.wheel >= 2) rotate("i2-table-rotor", angle * .5);
     if (context.levels.lamp >= 3) document.getElementById("i2-beam-pivot").setAttribute("transform", `scale(${Math.cos(clock / 1000)} 1)`);
     if (context.levels.lamp >= 3) document.getElementById("i2-lens-rings").setAttribute("transform", `scale(${.65 + Math.abs(Math.cos(clock / 1000)) * .35} 1)`);
@@ -295,6 +376,7 @@ const island2Renderer = (() => {
       }
       idleAt = now + 2600;
     }
+    mechanisms(now);
     sort();
     wake();
   }
@@ -335,7 +417,7 @@ const island2Renderer = (() => {
 
   function mount() {
     const root = document.querySelector("#island2-art > svg");
-    for (const name of ["background", "sea-back", "base", "ground-back", "walls", "cave", "terrace", "peak-walls", "peak", "front", "sea-front"]) {
+    for (const name of ["background", "sea-back", "base", "ground-back", "walls", "cave", "terrace", "peak", "front", "sea-front"]) {
       const layer = svg("g", { id: `i2-layer-${name}` });
       if (name === "cave") layer.setAttribute("clip-path", "url(#i2-cave-mask)");
       layers.set(name, layer);
@@ -343,25 +425,24 @@ const island2Renderer = (() => {
     }
     for (const [id, plane, point, anchor] of [
       ["i2-background", "background", [0, 0], -1000], ["i2-base-terrain", "base", [0, 0], -1000],
-      ["i2-middle-walls", "walls", [0, 0], -1000], ["i2-cave", "walls", [0, 0], 1], ["i2-cover", "front", [0, 0], 357],
-      ["i2-middle-floor", "terrace", [0, 0], -1000], ["i2-water", "terrace", [0, 0], 230],
-      ["i2-peak-walls", "peak-walls", [0, 0], -1000], ["i2-peak-floor", "peak", [0, 0], -1000],
-      ["i2-tower", "peak", [0, 0], 191], ["i2-lamp", "peak", [436, 142], 192], ["i2-glass", "front", [193, 330], 360],
-      ["i2-beam", "peak", [0, 0], 193], ["i2-seeds", "front", [0, 0], 309], ["i2-stream", "front", [0, 0], 300],
-      ["i2-overflow", "front", [0, 0], 308],
-      ["i2-cliff-steps", "front", [0, 0], 320], ["i2-scaffold", "front", [0, 0], 380],
-      ["i2-crate", "front", [286, 355], 408], ["i2-wheel", "front", [144, 390], 400],
-      ["i2-rope-coil", "front", [448, 341], 359], ["i2-copper", "front", [316, 416], 432],
+      ["i2-middle-walls", "walls", [0, 0], -1000], ["i2-cave", "walls", [0, 0], 1], ["i2-cover", "front", [0, 0], 382],
+      ["i2-water", "walls", [0, 0], 230],
+      ["i2-tower", "peak", [0, 0], -1000], ["i2-lamp", "front", island2Layout.lampRest, 360], ["i2-glass", "front", island2Layout.glassRest, 401],
+      ["i2-beam", "peak", [0, 0], 189], ["i2-seeds", "front", [0, 0], 356], ["i2-stream", "front", [0, 0], 339],
+      ["i2-overflow", "front", [0, 0], 355],
+      ["i2-cliff-steps", "front", [0, 0], 368], ["i2-scaffold", "front", [0, 0], 372], ["i2-scaffold-short", "front", [0, 0], 372],
+      ["i2-crate", "front", island2Layout.crateRest, 374], ["i2-wheel", "front", island2Layout.wheelRest, 420],
+      ["i2-rope-coil", "front", island2Layout.rope, 290], ["i2-copper", "front", island2Layout.copper, 436],
       ["i2-drive", "front", [0, 0], 390], ["i2-wire", "front", [0, 0], 391],
-      ["i2-coconut", "front", [214, 416], 428], ["i2-dock", "front", [0, 0], 450],
-      ["i2-port-rope", "front", [0, 0], 409], ["i2-cargo", "front", [480, 452], 410],
-      ["i2-production", "front", [0, 0], 446], ["i2-cave-lip", "front", [0, 0], 358],
-      ["i2-boat", "sea-back", [523, 341], 0],
+      ["i2-dock", "front", [0, 0], 413],
+      ["i2-port-rope", "front", [0, 0], 375], ["i2-cargo", "front", island2Layout.cargoBoat, 376],
+      ["i2-production", "cave", [0, 0], 365], ["i2-cave-lip", "front", [0, 0], 383],
+      ["i2-boat", "sea-back", island2Layout.boatWaiting, 0],
     ]) register(id, plane, point, anchor);
-    for (const [role, point, plane] of [["scout", [309, 244], "terrace"], ["maker", [267, 338], "cave"], ["gardener", [148, 318], "front"]]) {
+    for (const [role, name] of [["scout", "spring"], ["maker", "inside"], ["gardener", "rear"]]) {
       const old = document.getElementById(`i2-person-${role}`);
       old.replaceWith(person(role));
-      register(`i2-person-${role}`, plane, point);
+      register(`i2-person-${role}`, nodes[name].plane, nodes[name].point);
     }
     document.getElementById("i2-person-scout").querySelector(".i2-facing").append(document.getElementById("i2-reaction"));
     document.getElementById("i2-reaction").setAttribute("transform", "translate(0 -77)");
@@ -373,6 +454,10 @@ const island2Renderer = (() => {
     context = next;
     if (!next.live) freeze();
     else wake();
+    if (!next.busy || next.finished) for (const entity of entities.values()) {
+      if (entity.id.startsWith("i2-person-") && !journeys.has(entity.id)) pose(entity, settledPose(entity), .9);
+    }
+    mechanisms();
     sort();
   }
 
@@ -393,7 +478,7 @@ const island2Renderer = (() => {
     }
     document.getElementById("i2-beam-pivot").setAttribute("transform", "scale(1 1)");
     document.getElementById("i2-lens-rings").setAttribute("transform", "scale(1 1)");
-    for (const [role, node] of [["scout", "terrace"], ["maker", "inside"], ["gardener", "rear"]]) {
+    for (const [role, node] of [["scout", "spring"], ["maker", "inside"], ["gardener", "rear"]]) {
       const entity = entities.get(`i2-person-${role}`);
       entity.pose = "idle";
       setPlane(entity, nodes[node].plane);
@@ -407,7 +492,7 @@ const island2Renderer = (() => {
     if (carrier) {
       document.getElementById(`i2-person-${carrier}`).querySelector(".i2-hand").append(node);
       node.setAttribute("transform", "translate(2 2) scale(.65)");
-    } else register("i2-parcel", "front", [0, 0], 411);
+    } else register("i2-parcel", "front", [0, 0], 376);
   }
 
   function clear() {
@@ -421,14 +506,16 @@ const island2Renderer = (() => {
     }
   }
 
-  function glass(raised, moving = false) {
-    const entity = entities.get("i2-glass");
-    if (moving) { setPlane(entity, "front"); entity.depth = 409; }
+  function elevate(id, raised, moving = false) {
+    const entity = entities.get(id);
+    if (moving) { setPlane(entity, "front"); entity.depth = 375; }
     else if (!journeys.has(entity.id)) {
       setPlane(entity, raised ? "peak" : "front");
-      entity.depth = raised ? 194 : 360;
+      entity.depth = raised ? id === "i2-glass" ? 194 : 192 : entity.point[1] + 2;
     }
   }
 
-  return { mount, position, move, actor, sync, reset, clear, parcel, glass, stopIdle, nodes, entities, journeys };
+  const glass = (raised, moving) => elevate("i2-glass", raised, moving);
+  const lamp = (raised, moving) => elevate("i2-lamp", raised, moving);
+  return { mount, position, move, actor, sync, reset, clear, parcel, glass, lamp, stopIdle, nodes, entities, journeys };
 })();

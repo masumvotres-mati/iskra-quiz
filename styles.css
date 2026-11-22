@@ -343,20 +343,19 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 #island2-count { flex-shrink: 0; padding: 5px 9px; border-radius: 9px; background: #e5eee0; color: #527362; font-size: 12px; font-weight: 800; }
 .island2-goal { margin: 7px 0 11px; color: #648174; font-size: 12px; }
 #island2-exit { min-height: 44px; margin: 0; padding: 6px 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
-.island2-scene { position: sticky; top: 0; z-index: 1; overflow: hidden; width: 100%; max-width: 640px; margin: auto; border: 2px solid #99c5bb; border-radius: 19px; background: #e6f7ed; box-shadow: 0 4px 0 #c4d9cd; }
+.island2-scene { position: sticky; top: 0; z-index: 1; overflow: hidden; width: 100%; max-width: 640px; margin: auto; border: 1px solid #c4d6c6; border-radius: 16px; background: #fffbed; }
 #island2:has(#island2-results:not([hidden])) .island2-scene { position: relative; }
 #island2-art > svg { display: block; width: 100%; height: auto; }
-.island2-look { position: absolute; right: 7px; bottom: 7px; width: 44px; height: 44px; border: 2px solid #a1c9be; border-radius: 50%; background: #fffce7d9; color: #9c7465; font-size: 24px; cursor: pointer; }
 .island2-status { display: flex; align-items: center; min-height: 47px; margin: 9px 0; padding: 8px 11px; border: 1px solid #d5e6ca; border-radius: 12px; background: #edf5e6; color: #476d57; font-size: 12px; line-height: 1.5; }
 .island2-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; max-width: 640px; margin: auto; }
-.island2-controls button { display: grid; grid-template-columns: 31px 1fr; align-items: center; gap: 0 3px; min-height: 64px; padding: 6px; border: 2px solid #acc1a7; border-radius: 12px; box-shadow: 0 3px 0 #acc1a7; background: #fffdf0; color: #526e54; font-size: 11px; font-weight: 800; line-height: 1.4; cursor: pointer; }
+.island2-controls button { display: grid; grid-template-columns: 31px 1fr; align-items: center; gap: 0 3px; min-height: 60px; padding: 6px; border: 1.5px solid #b2c4ac; border-radius: 10px; box-shadow: 0 2px 0 #cbd6c0; background: #fffdf2; color: #526e54; font-size: 11px; font-weight: 750; line-height: 1.4; cursor: pointer; }
 .island2-controls svg { grid-row: span 2; width: 30px; height: 34px; }
 .island2-controls small { font-size: 9px; color: #72816b; }
 .island2-controls button:active:not(:disabled) { transform: translateY(3px); box-shadow: none; }
 .island2-controls button:disabled { cursor: default; opacity: .6; }
 .island2-controls button.placed { background: #eaf1dd; }
-.island2-controls button.maxed { border-color: #6fa88b; box-shadow: 0 3px 0 #6fa88b; background: #ddf0d7; }
-.island2-controls button:focus-visible, .island2-look:focus-visible { outline: 3px solid #b58534; outline-offset: 3px; }
+.island2-controls button.maxed { border-color: #8eb193; box-shadow: 0 2px 0 #b6cba8; background: #edf4df; }
+.island2-controls button:focus-visible { outline: 3px solid #b58534; outline-offset: 3px; }
 .island2-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 13px; margin-top: 10px; }
 .island2-tools .button { width: auto; min-height: 44px; margin: 0; padding: 7px 4px; font-size: 12px; }
 #island2-learning > details { margin-top: 12px; padding: 0 10px; border: 1px solid #d5e2cc; border-radius: 10px; background: #ffffff80; }
@@ -364,6 +363,7 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .island2-scene[data-seeds="2"] .i2-sprouts, .island2-scene[data-seeds="3"] .i2-harvest { display: inline; }
 .island2-scene[data-seeds="2"] .i2-seed-first, .island2-scene[data-seeds="3"] .i2-seed-first { display: none; }
 .island2-scene[data-seeds-form="pond"] .i2-sprouts, .island2-scene[data-seeds-form="pond"] .i2-harvest { display: none; }
+.island2-scene[data-seeds-form="pond"] .i2-field-bed { display: none; }
 .i2-person { pointer-events: none; }
 .island2-scene[data-live="true"] .i2-waves { animation: i2-water 4s ease-in-out infinite; }
 .island2-scene[data-live="true"] .i2-boat-bob { animation: i2-boat 2.8s ease-in-out infinite; }
@@ -375,7 +375,7 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 @keyframes i2-boat { 50% { transform: translateY(-4px); } }
 @keyframes i2-spark { 50% { opacity: .25; } }
 @media (max-width: 370px) {
-  .island2-controls button { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 79px; padding: 5px 2px; font-size: 11px; }
+  .island2-controls button { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 76px; padding: 5px 2px; font-size: 11px; }
   .island2-heading h1 { font-size: 23px; }
 }
 .noscript { padding: 20px; border: 2px solid #ac4c3a; border-radius: 15px; }

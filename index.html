@@ -20,6 +20,7 @@
     <script src="./island-music.js" defer></script>
     <script src="./island.js" defer></script>
     <script src="./island2-renderer.js" defer></script>
+    <script src="./island2-art.js" defer></script>
     <script src="./island2.js" defer></script>
   </head>
   <body>
@@ -485,11 +486,11 @@
           <p class="island2-goal">Wybierz kolejność. Patrz, co wymyślą mieszkańcy.</p>
           <div id="island2-scene" class="island2-scene" data-live="false">
             <div id="island2-art"></div>
-            <button id="island2-look" class="island2-look" type="button" aria-label="Obejrzyj mieszkańców wyspy">♡</button>
           </div>
           <p id="island2-status" class="island2-status" role="status" aria-live="polite" aria-atomic="true"></p>
           <div id="island2-controls" class="island2-controls" role="group" aria-label="Dodaj przedmiot do wyspy" aria-busy="false"></div>
           <div class="island2-tools">
+            <button id="island2-look" class="button text-button" type="button">Obejrzyj wyspę ♡</button>
             <button id="island2-skip" class="button text-button" data-feedback-sound type="button" hidden>Pomiń scenkę</button>
             <button id="island2-reset" class="button text-button" type="button">Od nowa ↻</button>
             <button id="island2-motion" class="button text-button" type="button" aria-pressed="false">Pauza animacji</button>
