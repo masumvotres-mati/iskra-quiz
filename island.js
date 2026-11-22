@@ -59,6 +59,7 @@ let islandVisualLevels = null;
 let islandVisualTimers = [];
 let islandAnimations = [];
 let islandMotionPaused = false;
+let islandTurnMessage = "";
 
 const islandRoutes = {
   irrigation: { type: "water", points: [[203, 185], [270, 202], [356, 185], [442, 182]] },
@@ -69,7 +70,40 @@ const islandRoutes = {
   generatorDrive: { type: "gear", points: [[350, 279], [389, 298], [427, 316], [462, 330]] },
   power: { type: "power", points: [[507, 326], [550, 292], [582, 302], [607, 319]] },
   message: { type: "message", points: [[607, 319], [589, 260], [575, 198], [578, 133]] },
+  harvest: { type: "farmer", points: [[551, 215], [504, 189], [478, 202], [526, 227]] },
+  wheelTools: { type: "tools", points: [[217, 327], [261, 313], [303, 289], [332, 266]] },
+  lighting: { type: "power", points: [[499, 324], [398, 263], [276, 262], [156, 314]] },
 };
+
+function islandInteraction(id, level) {
+  const interactions = {
+    water: [
+      { route: "irrigation", during: "Kanał doprowadza wodę do nowych pól…", result: "Woda płynie teraz również do upraw." },
+      { route: "tools", during: "Rzemieślnik montuje regulator dopływu…", result: "Gotowe wrota pomagają regulować wodę." },
+    ],
+    crops: [
+      { route: "irrigation", during: "Woda dociera do zasianego pola…", result: "Nawodnione nasiona wypuszczają kiełki!" },
+      { route: "harvest", during: "Rolnik dogląda nawodnionych upraw…", result: "Zboże dojrzało. Osada ma zapasy żywności!" },
+    ],
+    workshop: [
+      { route: "food", during: "Zapasy jadą do rzemieślników…", result: "Żywność pozwala mieszkańcom rozbudować warsztat." },
+      { route: "workshopDrive", during: "Koło przekazuje ruch do warsztatu…", result: "Napęd dotarł. Młot zaczyna pracować!" },
+    ],
+    wheel: [
+      { route: "river", during: "Strumień napiera na łopatki koła…", result: "Płynąca woda wprawia koło w ruch!" },
+      { route: "wheelTools", during: "Z warsztatu docierają nowe części…", result: "Przekładnie mogą przekazać napęd dalej." },
+    ],
+    generator: [
+      { route: "generatorDrive", during: "Koło napędza nową prądnicę…", result: "Prądnica ruszyła i wytwarza prąd!" },
+      { route: "lighting", during: "Prąd płynie do zabudowań…", result: "W oknach warsztatu zapala się światło!" },
+    ],
+    telegraph: [
+      { route: "power", during: "Prądnica zasila stanowisko telegrafu…", result: "Obwód działa. Można nadać sygnał!" },
+      { route: "message", during: "Wiadomość biegnie do drugiej stacji…", result: "Wiadomość odebrana — druga stacja odpowiada!" },
+    ],
+  };
+  return level >= 2 ? interactions[id][level - 2] : null;
+}
 
 function islandCanAnimate() {
   return !motionPreference.matches && !islandMotionPaused;
@@ -81,7 +115,9 @@ function clearIslandEffects() {
   for (const animation of islandAnimations) animation.cancel();
   islandAnimations = [];
   element("island-effects").replaceChildren();
-  for (const item of element("island").querySelectorAll(".inspected")) item.classList.remove("inspected");
+  for (const item of element("island").querySelectorAll(".inspected, .receiving")) {
+    item.classList.remove("inspected", "receiving");
+  }
 }
 
 function animateIslandAsset(id) {
@@ -94,37 +130,30 @@ function animateIslandAsset(id) {
   ], { duration: 390, easing: "ease-out" }));
 }
 
-function sendIslandEffect(routeId) {
+function sendIslandEffect(routeId, recipient) {
   if (!islandCanAnimate()) return;
   const route = islandRoutes[routeId];
   const token = document.createElementNS("http://www.w3.org/2000/svg", "g");
   token.classList.add("island-traveller");
   token.dataset.route = routeId;
+  token.dataset.recipient = recipient;
   const icon = document.createElementNS("http://www.w3.org/2000/svg", "use");
   icon.setAttribute("href", `#island-token-${route.type}`);
+  icon.setAttribute("transform", "scale(1.25)");
   token.append(icon);
   element("island-effects").append(token);
   const animation = token.animate(route.points.map(([x, y], index) => ({
     transform: `translate(${x}px, ${y}px)`,
     opacity: index === 0 || index === route.points.length - 1 ? 0 : 1,
-  })), { duration: 500, easing: "ease-in-out" });
+  })), { duration: 560, easing: "ease-in-out" });
   animation.onfinish = () => token.remove();
   islandAnimations.push(animation);
 }
 
 function reactIslandAsset(id, levels = islandState.levels) {
   animateIslandAsset(id);
-  if (id === "water" && levels.water >= 3) sendIslandEffect("tools");
-  if (id === "water" && levels.water >= 2 && levels.crops) sendIslandEffect("irrigation");
-  if (id === "crops" && levels.water) sendIslandEffect("irrigation");
-  if (id === "workshop" && levels.workshop >= 2) {
-    sendIslandEffect(levels.workshop >= 3 ? "workshopDrive" : "food");
-  }
-  if (id === "wheel" && levels.wheel >= 2) sendIslandEffect("river");
-  if (id === "generator" && levels.generator >= 2) sendIslandEffect("generatorDrive");
-  if (id === "telegraph" && levels.telegraph >= 2) {
-    sendIslandEffect(levels.telegraph >= 3 ? "message" : "power");
-  }
+  const interaction = islandInteraction(id, levels[id]);
+  if (interaction) sendIslandEffect(interaction.route, id);
 }
 
 function cancelIslandMotion() {
@@ -135,6 +164,7 @@ function cancelIslandMotion() {
   islandVisualLevels = null;
   clearIslandEffects();
   element("island-scene").dataset.busy = "false";
+  element("island-scene").dataset.phase = "idle";
 }
 
 function renderIsland(grown = []) {
@@ -145,6 +175,7 @@ function renderIsland(grown = []) {
   element("island-scene").dataset.busy = String(islandState.busy);
   element("island-scene").dataset.live = String(islandCanAnimate() && !document.hidden && !element("island").hidden);
   element("island-scene").dataset.powered = String(levels.generator >= 2);
+  element("island-scene").dataset.gridReady = String(levels.generator >= 3);
   element("island-scene").dataset.complete = String(completed === islandItems.length);
   element("island-motion").textContent = islandMotionPaused ? "Wznów animacje" : "Pauza animacji";
   element("island-motion").setAttribute("aria-pressed", String(islandMotionPaused));
@@ -183,6 +214,7 @@ function startIsland() {
   element("island-learning").replaceChildren();
   element("island-explanations").open = false;
   element("island-build-order").textContent = "";
+  islandTurnMessage = "";
   showScreen("island");
   renderIsland();
   element("island-status").textContent = "Wybierz pierwszy element. Każdy dodasz tylko raz.";
@@ -199,7 +231,7 @@ function finishIslandTurn() {
   } else {
     element("island-status").textContent = islandState.order.length === islandItems.length
       ? "Wszystko dodane. Daj osadzie jeszcze jeden sezon."
-      : "Wyspa się zmienia. Wybierz następny element.";
+      : islandTurnMessage || "Wyspa się zmienia. Wybierz następny element.";
   }
   renderIsland();
   const next = islandState.finished ? element("island-result-title")
@@ -216,25 +248,42 @@ function runIslandTurn(grown, finishing, previous, added = null) {
   islandVisualLevels = islandState.busy ? { ...previous } : null;
   if (islandVisualLevels && added) islandVisualLevels[added] = 1;
   renderIsland();
-  const names = grown.map((id) => islandItems.find((item) => item.id === id).name);
-  element("island-status").textContent = names.length > 1
-    ? `Reakcja łańcuchowa: ${names.join(" · ")}`
-    : names.length ? `Rozwija się: ${names[0]}` : "Osada czeka na brakujące połączenia.";
-  if (!finishing) playSound(grown.length > 1 ? "streak" : "correct");
+  const item = islandItems.find((other) => other.id === added);
+  islandTurnMessage = item ? `${item.name}: ${item.stages[0]}.` : "Osada czeka na brakujące połączenia.";
+  element("island-status").textContent = item ? `Najpierw pojawia się: ${item.name}.` : "Zobaczmy efekty ostatniego sezonu.";
+  if (!finishing) playSound("click");
   if (!islandState.busy) {
+    const last = grown.map((id) => islandInteraction(id, islandState.levels[id])).filter(Boolean).at(-1);
+    if (last) islandTurnMessage = last.result;
     finishIslandTurn();
     return;
   }
+  element("island-scene").dataset.phase = added ? "placing" : "waiting";
   if (added) animateIslandAsset(added);
   const steps = grown.filter((id) => islandState.levels[id] > islandVisualLevels[id]);
+  const placementDelay = added ? 520 : 160;
   steps.forEach((id, index) => {
+    const arrival = placementDelay + index * 800 + 560;
+    const interaction = islandInteraction(id, islandState.levels[id]);
     islandVisualTimers.push(window.setTimeout(() => {
+      element("island-scene").dataset.phase = "interacting";
+      element(`island-asset-${id}`).classList.add("receiving");
+      element("island-status").textContent = interaction.during;
+      sendIslandEffect(interaction.route, id);
+    }, placementDelay + index * 800));
+    islandVisualTimers.push(window.setTimeout(() => {
+      element("island-scene").dataset.phase = "result";
       islandVisualLevels[id] = islandState.levels[id];
       renderIsland([id]);
-      reactIslandAsset(id);
-    }, 140 + index * 110));
+      element(`island-asset-${id}`).classList.remove("receiving");
+      animateIslandAsset(id);
+      islandTurnMessage = interaction.result;
+      element("island-status").textContent = interaction.result;
+      if (id === added) playSound("correct");
+    }, arrival));
   });
-  islandTimer = window.setTimeout(finishIslandTurn, Math.max(500, 140 + (steps.length - 1) * 110 + 510));
+  islandTimer = window.setTimeout(finishIslandTurn,
+    steps.length ? placementDelay + (steps.length - 1) * 800 + 970 : 520);
 }
 
 function pickIslandItem(id) {

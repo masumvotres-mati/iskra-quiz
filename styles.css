@@ -43,8 +43,9 @@ h1:focus { outline: none; }
 .chapter-copy small { display: block; margin-top: 5px; font-size: 11px; line-height: 1.6; font-weight: 400; }
 .chapter-state { color: var(--green-dark); font-weight: 700 !important; }
 .chapter-button:disabled .chapter-state { color: #6d7864; }
-.practice { margin-top: 26px; padding: 16px; border: 1px solid #dfe7d2; border-radius: 16px; text-align: left; }
-.practice summary { cursor: pointer; font-size: 13px; font-weight: 750; line-height: 1.6; }
+.practice, .games { margin-top: 26px; padding: 16px; border: 1px solid #dfe7d2; border-radius: 16px; text-align: left; }
+.practice summary, .games > summary { cursor: pointer; font-size: 13px; font-weight: 750; line-height: 1.6; }
+.games > .game-entry { margin: 16px 0 0; padding: 14px; }
 .practice p { color: var(--muted); font-size: 12px; line-height: 1.6; }
 .welcome .invention-art { width: 130px; height: 130px; margin: 12px auto; }
 .welcome { padding-top: 8px; }
@@ -263,6 +264,7 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .island-asset[data-level="3"] .island-seedlings { opacity: .25; }
 .island-grow-body { transform-box: fill-box; transform-origin: center; }
 .island-asset.inspected .island-grow-body { filter: drop-shadow(0 0 5px #fff3a2); }
+.island-asset.receiving .island-grow-body { filter: drop-shadow(0 0 7px #fff6cf); }
 .island-scene[data-live="true"] #island-asset-wheel:not([data-level="0"]):not([data-level="1"]) .island-rotor { animation: island-turn 2300ms linear infinite; }
 .island-scene[data-live="true"] .island-power-pulse { animation: island-pulse 2400ms ease-in-out infinite; }
 .island-scene[data-live="true"] .island-signal { animation: island-signal 900ms linear infinite; }
@@ -271,8 +273,10 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .island-scene[data-live="true"] .island-wheat { transform-box: fill-box; transform-origin: center bottom; animation: island-wheat 3400ms ease-in-out infinite; }
 .island-scene[data-live="true"] .island-sea-ripples { animation: island-water-drift 4000ms ease-in-out infinite; }
 .island-scene[data-live="true"] .island-boat-float { animation: island-boat-float 3000ms ease-in-out infinite; }
+.island-scene[data-live="true"] .island-helper { animation: island-helper-bob 3600ms ease-in-out infinite; }
 .island-scene .island-window { transition: fill 250ms; }
-.island-scene[data-powered="true"] .island-window { fill: #ffe989; }
+.island-scene[data-grid-ready="true"] #island-asset-workshop .island-window,
+.island-scene[data-powered="true"] #island-asset-telegraph:not([data-level="0"]):not([data-level="1"]) .island-window { fill: #ffe989; }
 #island-finale { display: none; }
 .island-scene[data-complete="true"] #island-finale { display: inline; }
 .island-traveller { opacity: 0; pointer-events: none; }
@@ -312,6 +316,7 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 @keyframes island-wheat { 50% { transform: rotate(2deg); } }
 @keyframes island-water-drift { 50% { transform: translateX(5px); opacity: .65; } }
 @keyframes island-boat-float { 50% { transform: translateY(-3px); } }
+@keyframes island-helper-bob { 50% { transform: translateY(-2px); } }
 @keyframes lock-flow { to { stroke-dashoffset: -38; } }
 @keyframes enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes answer-in { from { opacity: .6; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
