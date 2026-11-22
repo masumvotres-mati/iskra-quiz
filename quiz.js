@@ -218,6 +218,16 @@ function selectAnswer(index) {
   const explanation = document.createElement("p");
   explanation.className = "fact";
   annotateTerms(explanation, current.explanation, () => answered);
+  feedback.append(explanation);
+  appendStudySources(feedback, current, () => answered);
+
+  element("score-count").textContent = `Punkty: ${score}`;
+  element("progress").setAttribute("aria-valuenow", String(questionIndex + 1));
+  element("progress-fill").style.width = `${((questionIndex + 1) / questions.length) * 100}%`;
+  element("next").disabled = false;
+}
+
+function appendStudySources(container, current, canRevealDefinition) {
   const excerpt = document.createElement("figure");
   excerpt.className = "source-excerpt";
   const excerptLabel = document.createElement("p");
@@ -225,7 +235,7 @@ function selectAnswer(index) {
   excerptLabel.textContent = "Fragment źródła";
   const quote = document.createElement("blockquote");
   const quoteText = document.createElement("p");
-  annotateTerms(quoteText, current.quote, () => answered);
+  annotateTerms(quoteText, current.quote, canRevealDefinition);
   quote.append(quoteText);
   const reference = document.createElement("figcaption");
   const link = document.createElement("a");
@@ -241,7 +251,7 @@ function selectAnswer(index) {
   reference.className = "source-reference";
   reference.append(citation, link);
   excerpt.append(excerptLabel, quote, reference);
-  feedback.append(explanation, excerpt);
+  container.append(excerpt);
 
   const note = factCheckNotes[current.id];
   if (note) {
@@ -253,7 +263,7 @@ function selectAnswer(index) {
     comparison.append(heading);
     for (const text of [`Materiał organizatora: ${note.material}`, `Doprecyzowanie: ${note.comparison}`]) {
       const paragraph = document.createElement("p");
-      annotateTerms(paragraph, text, () => answered);
+      annotateTerms(paragraph, text, canRevealDefinition);
       comparison.append(paragraph);
     }
     const references = document.createElement("ul");
@@ -270,13 +280,8 @@ function selectAnswer(index) {
       references.append(item);
     }
     comparison.append(references);
-    feedback.append(comparison);
+    container.append(comparison);
   }
-
-  element("score-count").textContent = `Punkty: ${score}`;
-  element("progress").setAttribute("aria-valuenow", String(questionIndex + 1));
-  element("progress-fill").style.width = `${((questionIndex + 1) / questions.length) * 100}%`;
-  element("next").disabled = false;
 }
 
 function startSession(items, isReview = false) {
