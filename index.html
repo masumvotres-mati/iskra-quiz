@@ -19,6 +19,7 @@
     <script src="./workshop.js" defer></script>
     <script src="./island-music.js" defer></script>
     <script src="./island.js" defer></script>
+    <script src="./island2.js" defer></script>
   </head>
   <body>
     <div class="app">
@@ -87,6 +88,13 @@
               <p>Sześć elementów, różne kolejności. Dodawaj wynalazki i obserwuj, jak pomagają rozwijać się całej osadzie.</p>
               <button id="island-open" class="button secondary" type="button">Rozwiń własną wyspę →</button>
               <small>Bez zegara i bez wpływu na zaliczenia.</small>
+            </div>
+            <div class="game-entry island2-entry">
+              <p class="eyebrow">NOWA WYSPA · GRA GRAFICZNA</p>
+              <h2>Latarnia na Skale</h2>
+              <p>Osiem drobiazgów i statek czekający na horyzoncie. Co stanie się ze skrzynią, sznurkiem i szklanym krążkiem?</p>
+              <button id="island2-open" class="button secondary" type="button">Odkryj wyspę 2.0 →</button>
+              <small>Nowa, osobna przygoda — bez wpływu na zaliczenia.</small>
             </div>
           </details>
           <details class="practice">
@@ -467,6 +475,33 @@
               <summary>Co z czym współpracuje? Wyjaśnienia i źródła</summary>
               <p>To uproszczony model osady, nie chronologia pierwszych wynalazków. Poziomy i czas rozwoju są regułami gry. Istnieje więcej niż jedna kolejność pełnego rozwoju.</p>
               <div id="island-learning"></div>
+            </details>
+          </div>
+        </section>
+        <section id="island2" class="screen" aria-labelledby="island2-title" hidden>
+          <button id="island2-exit" class="game-back" type="button">← Wróć do nauki</button>
+          <div class="island2-heading"><h1 id="island2-title" tabindex="-1">Latarnia na Skale</h1><span id="island2-count">0 / 8</span></div>
+          <p class="island2-goal">Wybierz kolejność. Patrz, co wymyślą mieszkańcy.</p>
+          <div id="island2-scene" class="island2-scene" data-live="false">
+            <div id="island2-art"></div>
+            <button id="island2-look" class="island2-look" type="button" aria-label="Obejrzyj mieszkańców wyspy">♡</button>
+          </div>
+          <p id="island2-status" class="island2-status" role="status" aria-live="polite" aria-atomic="true"></p>
+          <div id="island2-controls" class="island2-controls" role="group" aria-label="Dodaj przedmiot do wyspy" aria-busy="false"></div>
+          <div class="island2-tools">
+            <button id="island2-skip" class="button text-button" data-feedback-sound type="button" hidden>Pomiń scenkę</button>
+            <button id="island2-reset" class="button text-button" type="button">Od nowa ↻</button>
+            <button id="island2-motion" class="button text-button" type="button" aria-pressed="false">Pauza animacji</button>
+          </div>
+          <div id="island2-results" class="island-results" hidden>
+            <h2 id="island2-result-title" tabindex="-1"></h2>
+            <p id="island2-result-text"></p>
+            <p id="island2-order" class="island-build-order"></p>
+            <button id="island2-replay" class="button primary" type="button">Jeszcze jedna wyspa →</button>
+            <details id="island2-explanations" class="sources">
+              <summary>Jak to działa? Odkryte połączenia i źródła</summary>
+              <p>To baśniowa łamigłówka, nie historia budowy prawdziwej latarni. Kolejność i czas dojrzewania to reguły gry. Gotowe części mogą zadziałać od razu; rośliny i prace stolarskie potrzebują wcześniejszego przygotowania.</p>
+              <div id="island2-learning"></div>
             </details>
           </div>
         </section>

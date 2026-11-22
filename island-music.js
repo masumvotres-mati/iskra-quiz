@@ -71,7 +71,8 @@ function scheduleIslandMusic() {
 }
 
 function updateIslandMusic() {
-  if (courseState.muted || document.hidden || document.getElementById("island").hidden) {
+  const active = ["island", "island2"].some((id) => !document.getElementById(id).hidden);
+  if (courseState.muted || document.hidden || !active) {
     stopIslandMusic();
     return;
   }
