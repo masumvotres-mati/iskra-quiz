@@ -253,7 +253,44 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .lock-success h2:focus { outline: none; }
 .lock-success > p { font-size: 14px; line-height: 1.7; }
 .lock-success .sources { margin-top: 12px; }
+.island-entry { border-color: #b7cba0; background: #eef5df; }
+#island-title { font-size: 32px; }
+.island-scene { position: sticky; top: 0; z-index: 1; overflow: hidden; border: 2px solid #a6cdd0; border-radius: 22px; background: #dff3f5; }
+.island-scene svg { display: block; width: 100%; height: auto; }
+.is-finished .island-scene { position: static; }
+.island-asset[data-level="0"], .island-asset[data-level="1"] [data-island-stage="2"], .island-asset[data-level="1"] [data-island-stage="3"], .island-asset[data-level="2"] [data-island-stage="3"] { display: none; }
+.island-asset[data-level="2"] .island-first-stage, .island-asset[data-level="3"] .island-first-stage { display: none; }
+.island-asset[data-level="3"] .island-seedlings { opacity: .25; }
+.island-asset.grew .island-grow-body { transform-box: fill-box; transform-origin: center; animation: island-grow 420ms ease-out; }
+.island-scene[data-busy="true"] #island-asset-wheel:not([data-level="0"]):not([data-level="1"]) .island-rotor { animation: island-turn 1100ms linear infinite; }
+.island-scene[data-busy="true"] .island-power-pulse { animation: island-pulse 600ms ease-out infinite; }
+.island-scene[data-busy="true"] .island-signal { animation: island-signal 400ms linear infinite; }
+.island-status { min-height: 48px; display: flex; align-items: center; margin: 12px 0; padding: 10px 12px; border-radius: 12px; background: #eaf3df; color: var(--green-dark); font-size: 12px; line-height: 1.6; }
+.island-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.island-choice { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 112px; padding: 12px 4px; border: 2px solid #d5e2d0; border-radius: 15px; box-shadow: 0 3px 0 #d5e2d0; background: white; color: #365b20; font-size: 12px; font-weight: 750; line-height: 1.4; cursor: pointer; transition: transform 90ms, border-color 100ms; }
+.island-choice > svg { width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.island-choice > small:last-child { min-height: 15px; font-size: 10px; font-weight: 650; color: var(--muted); }
+.island-choice:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+.island-choice:disabled { cursor: default; opacity: .55; }
+.island-choice.placed { opacity: 1; background: #f0f5e8; }
+.island-choice.maxed { border-color: #91b65f; background: #e7f2d5; }
+.island-choice.maxed > small:last-child { color: var(--green-dark); }
+.island-choice-order { position: absolute; top: 5px; left: 7px; font-size: 10px; color: var(--muted); }
+.island-level-dots { display: flex; gap: 5px; }
+.island-level-dots > span { width: 7px; height: 7px; border-radius: 50%; background: #d4dfcb; }
+.island-level-dots > span.filled { background: #71a13e; }
+.island-season { margin-top: 20px; }
+.island-results { margin-top: 20px; padding: 18px; border: 2px solid #9cbe77; border-radius: 18px; background: #eef5e5; }
+.island-results h2 { margin: 0; font-size: 24px; line-height: 1.4; }
+.island-results h2:focus { outline: none; }
+#island-result-score { color: var(--green-dark); font-size: 16px; font-weight: 750; }
+.island-build-order { margin: 16px 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+#island-learning > details { margin-top: 12px; padding: 0 10px; border: 1px solid #d5e2cc; border-radius: 10px; background: #ffffff80; }
 .noscript { padding: 20px; border: 2px solid #ac4c3a; border-radius: 15px; }
+@keyframes island-grow { from { opacity: .45; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes island-turn { to { transform: rotate(360deg); } }
+@keyframes island-pulse { 50% { opacity: .3; } }
+@keyframes island-signal { to { stroke-dashoffset: -38; } }
 @keyframes lock-flow { to { stroke-dashoffset: -38; } }
 @keyframes enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes answer-in { from { opacity: .6; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
