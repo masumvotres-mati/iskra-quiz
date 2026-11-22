@@ -10,6 +10,9 @@ const soundPatterns = {
   streak: { notes: [659.25, 783.99, 1046.5], duration: 0.18, spacing: 0.075, volume: 0.045 },
   complete: { notes: [523.25, 659.25, 783.99, 1046.5], duration: 0.24, spacing: 0.09, volume: 0.045 },
   finish: { notes: [523.25, 659.25], duration: 0.18, spacing: 0.08, volume: 0.035 },
+  "island-place": { notes: [392, 523.25], duration: 0.1, spacing: 0.055, volume: 0.025 },
+  "island-grow": { notes: [659.25, 880], duration: 0.16, spacing: 0.07, volume: 0.035 },
+  "island-signal": { notes: [1046.5, 1318.51, 1046.5], duration: 0.1, spacing: 0.08, volume: 0.025 },
 };
 
 function updateSoundControl() {
@@ -18,19 +21,14 @@ function updateSoundControl() {
   button.setAttribute("aria-label", courseState.muted ? "Włącz dźwięki" : "Wycisz dźwięki");
   button.setAttribute("aria-pressed", String(!courseState.muted));
   if (soundOutput) soundOutput.gain.setTargetAtTime(courseState.muted ? 0 : 1, soundContext.currentTime, 0.01);
+  document.dispatchEvent(new Event("iskra-sound-change"));
 }
 
-function playSound(kind) {
-  if (courseState.muted) return;
-  const pattern = soundPatterns[kind];
-  if (!pattern) {
-    notifyCourse("Nie rozpoznano efektu dźwiękowego.");
-    return;
-  }
+function getSoundContext() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) {
     notifyCourse("Ta przeglądarka nie obsługuje dźwięków quizu.");
-    return;
+    return null;
   }
   try {
     if (!soundContext) {
@@ -41,6 +39,22 @@ function playSound(kind) {
     if (soundContext.state === "suspended") {
       soundContext.resume().catch(() => notifyCourse("Nie udało się włączyć dźwięku. Sprawdź ustawienia przeglądarki."));
     }
+    return soundContext;
+  } catch (error) {
+    notifyCourse("Dźwięk jest niedostępny. Możesz nadal korzystać z quizu bez dźwięku.");
+    return null;
+  }
+}
+
+function playSound(kind) {
+  if (courseState.muted) return;
+  const pattern = soundPatterns[kind];
+  if (!pattern) {
+    notifyCourse("Nie rozpoznano efektu dźwiękowego.");
+    return;
+  }
+  if (!getSoundContext()) return;
+  try {
     pattern.notes.forEach((frequency, index) => {
       const start = soundContext.currentTime + index * pattern.spacing;
       const oscillator = soundContext.createOscillator();

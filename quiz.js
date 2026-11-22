@@ -123,6 +123,7 @@ function showScreen(id) {
     screen.hidden = screen.id !== id;
   }
   window.scrollTo({ top: 0, behavior: "instant" });
+  document.dispatchEvent(new CustomEvent("iskra-screen-change", { detail: id }));
 }
 
 function renderQuestion() {

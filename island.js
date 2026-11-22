@@ -54,12 +54,23 @@ function growIsland(levels) {
 
 let islandState = { levels: emptyIslandLevels(), order: [], busy: false, finished: false };
 let islandTimer;
-let islandFinalSeason = false;
+let islandFinalResolution = false;
 let islandVisualLevels = null;
 let islandVisualTimers = [];
 let islandAnimations = [];
 let islandMotionPaused = false;
 let islandTurnMessage = "";
+let islandEnding = false;
+let islandSkipMotion = false;
+
+function newIslandStory() {
+  return {
+    waterOpen: false, bridgeBuilt: false, harbour: "closed", celebrating: false,
+    people: { foreman: [282, 216], farmer: [517, 309], maker: [128, 422], operator: [566, 429] },
+  };
+}
+
+let islandStory = newIslandStory();
 
 const islandRoutes = {
   irrigation: { kind: "flow", points: [[220, 254], [262, 277], [367, 242], [409, 259]] },
@@ -106,7 +117,42 @@ function islandInteraction(id, level) {
 }
 
 function islandCanAnimate() {
-  return !motionPreference.matches && !islandMotionPaused;
+  return !motionPreference.matches && !islandMotionPaused && !islandSkipMotion;
+}
+
+function islandTiming(route) {
+  const timings = {
+    irrigation: [180, 640, 100, 240], river: [120, 550, 240, 260],
+    harvest: [120, 700, 420, 230], food: [380, 700, 500, 300],
+    tools: [100, 620, 430, 250], wheelTools: [100, 680, 430, 240],
+    workshopDrive: [100, 420, 340, 250], generatorDrive: [180, 620, 420, 240],
+    power: [300, 450, 260, 200], lighting: [140, 740, 100, 240],
+    message: [350, 620, 360, 280],
+  };
+  const [prepare, travel, work, settle] = timings[route];
+  return { prepare, travel, work, settle };
+}
+
+function moveIslandPerson(role, points, duration, delay = 0, carry = null) {
+  const actor = element(`island-person-${role}`);
+  const origin = islandStory.people[role];
+  const destination = points.at(-1);
+  islandStory.people[role] = [...destination];
+  actor.style.transform = `translate(${destination[0]}px, ${destination[1]}px)`;
+  const cargo = actor.querySelector(".island-person-cargo");
+  cargo.style.display = carry ? "inline" : "none";
+  if (carry) cargo.querySelector("use").setAttribute("href", `#island-token-${carry}`);
+  if (!islandCanAnimate()) return;
+  actor.classList.add("walking");
+  actor.classList.remove("working");
+  const journey = [origin, ...points];
+  islandAnimations.push(actor.animate(journey.map(([x, y], index) => ({
+    transform: `translate(${x}px, ${y}px)`, offset: index / (journey.length - 1),
+  })), { duration, delay, fill: "both", easing: "ease-in-out" }));
+  islandVisualTimers.push(window.setTimeout(() => {
+    actor.classList.remove("walking");
+    actor.classList.add("working");
+  }, delay + duration));
 }
 
 function clearIslandEffects() {
@@ -119,19 +165,30 @@ function clearIslandEffects() {
   for (const item of element("island").querySelectorAll(".inspected, .receiving")) {
     item.classList.remove("inspected", "receiving");
   }
+  for (const actor of element("island-residents").children) {
+    actor.classList.remove("walking", "working");
+    actor.querySelector(".island-person-cargo").style.display = "none";
+  }
 }
 
-function animateIslandAsset(id) {
+function animateIslandAsset(id, placement = false) {
   if (!islandCanAnimate()) return;
-  const body = element(`island-asset-${id}`).querySelector(".island-grow-body");
-  islandAnimations.push(body.animate([
+  const asset = element(`island-asset-${id}`);
+  const body = id === "telegraph" && islandState.levels.telegraph === 3 && !placement
+    ? asset.querySelector(".island-paper") : asset.querySelector(".island-grow-body");
+  const frames = placement ? [
     { transform: "translateY(-58px) scale(.82)", opacity: 0 },
     { transform: "translateY(4px) scale(1.03)", opacity: 1, offset: 0.7 },
     { transform: "translateY(0) scale(1)" },
-  ], { duration: 420, easing: "ease-out" }));
+  ] : id === "crops" || id === "workshop" ? [
+    { transform: "scaleY(.75)", opacity: 0.5 }, { transform: "scaleY(1)", opacity: 1 },
+  ] : id === "telegraph" ? [
+    { transform: "translateY(17px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 },
+  ] : [{ transform: "scale(1)" }, { transform: "scale(1.05)", offset: 0.5 }, { transform: "scale(1)" }];
+  islandAnimations.push(body.animate(frames, { duration: 420, easing: "ease-out" }));
 }
 
-function sendIslandEffect(routeId, recipient) {
+function sendIslandEffect(routeId, recipient, timing = islandTiming(routeId)) {
   if (!islandCanAnimate()) return;
   const route = islandRoutes[routeId];
   const svg = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
@@ -143,34 +200,27 @@ function sendIslandEffect(routeId, recipient) {
   element("island-effects").append(action);
   element("island-scene").dataset.action = routeId;
   if (route.kind === "worker") {
-    const pose = svg("g");
-    pose.classList.add("island-person-pose");
-    const person = svg("use");
-    person.setAttribute("href", "#island-resident");
-    person.setAttribute("x", "-23");
-    person.setAttribute("y", "-78");
-    person.setAttribute("width", "46");
-    person.setAttribute("height", "78");
-    const cargo = svg("use");
-    cargo.setAttribute("href", `#island-token-${route.carry}`);
-    cargo.classList.add("island-hand-tool");
-    const holder = svg("g");
-    holder.setAttribute("transform", route.carry === "food" ? "translate(25 -3)" : "translate(20 -29)");
-    holder.append(cargo);
-    pose.append(person, holder);
-    action.append(pose);
-    action.classList.add("walking");
-    const frames = route.points.map(([x, y], index) => ({
-      transform: `translate(${x}px, ${y}px)`, offset: index * 0.22,
-    }));
-    const [x, y] = route.points.at(-1);
-    frames.push({ transform: `translate(${x}px, ${y}px)`, offset: 1 });
-    islandAnimations.push(action.animate(frames, { duration: 560, fill: "forwards", easing: "ease-in-out" }));
-    islandVisualTimers.push(window.setTimeout(() => {
-      action.classList.remove("walking");
-      action.classList.add("working");
-    }, 370));
+    const role = route.carry === "food" ? "farmer" : "maker";
+    action.dataset.person = role;
+    if (routeId === "food" && !islandStory.bridgeBuilt) {
+      moveIslandPerson("maker", [[221, 404], [289, 392]], 300, 0, "tools");
+      islandVisualTimers.push(window.setTimeout(() => {
+        islandStory.bridgeBuilt = true;
+        renderIsland();
+        islandAnimations.push(element("island-bridge").animate([
+          { opacity: 0, transform: "translateY(7px)" },
+          { opacity: 1, transform: "translateY(0)" },
+        ], { duration: 250, easing: "ease-out" }));
+      }, 300));
+    }
+    moveIslandPerson(role, route.points, timing.travel, timing.prepare, route.carry);
   } else {
+    if (routeId === "message" || routeId === "power") {
+      moveIslandPerson("operator", [[550, 406], [548, 388]], timing.prepare);
+    }
+    if (routeId === "irrigation") {
+      moveIslandPerson("foreman", [[252, 294], [260, 292]], timing.prepare);
+    }
     const path = svg("path");
     path.setAttribute("d", route.points.map(([x, y], index) => `${index ? "L" : "M"}${x} ${y}`).join(" "));
     path.setAttribute("fill", "none");
@@ -183,7 +233,7 @@ function sendIslandEffect(routeId, recipient) {
     path.style.strokeDasharray = `${length} ${length}`;
     islandAnimations.push(path.animate([
       { strokeDashoffset: length }, { strokeDashoffset: 0 },
-    ], { duration: 560, fill: "forwards", easing: "ease-in-out" }));
+    ], { duration: timing.travel, delay: timing.prepare, fill: "both", easing: "ease-in-out" }));
     if (route.kind === "drive") {
       const bearing = svg("g");
       const [x, y] = route.points.at(-1);
@@ -195,7 +245,8 @@ function sendIslandEffect(routeId, recipient) {
       action.append(bearing);
     }
   }
-  islandVisualTimers.push(window.setTimeout(() => action.remove(), 950));
+  islandVisualTimers.push(window.setTimeout(() => action.remove(),
+    timing.prepare + timing.travel + timing.work + timing.settle));
 }
 
 function reactIslandAsset(id, levels = islandState.levels) {
@@ -208,7 +259,8 @@ function cancelIslandMotion() {
   window.clearTimeout(islandTimer);
   islandTimer = undefined;
   islandState.busy = false;
-  islandFinalSeason = false;
+  islandFinalResolution = false;
+  islandEnding = false;
   islandVisualLevels = null;
   clearIslandEffects();
   element("island-scene").dataset.busy = "false";
@@ -225,10 +277,25 @@ function renderIsland(grown = []) {
   element("island-scene").dataset.powered = String(levels.generator >= 2);
   element("island-scene").dataset.gridReady = String(levels.generator >= 3);
   element("island-scene").dataset.complete = String(completed === islandItems.length);
+  element("island-scene").dataset.waterOpen = String(islandStory.waterOpen);
+  element("island-scene").dataset.bridge = String(islandStory.bridgeBuilt);
+  element("island-scene").dataset.harbour = islandStory.harbour;
+  element("island-scene").dataset.celebrating = String(islandStory.celebrating);
+  element("island-scene").dataset.harvest = String(levels.crops >= 3);
+  element("island-scene").dataset.industry = String(levels.workshop >= 3 && levels.water >= 2);
+  setIslandMusicStage(levels.generator >= 2 ? 2 : levels.wheel >= 2 || levels.workshop >= 2 ? 1 : 0);
   element("island-motion").textContent = islandMotionPaused ? "Wznów animacje" : "Pauza animacji";
   element("island-motion").setAttribute("aria-pressed", String(islandMotionPaused));
   element("island").classList.toggle("is-finished", islandState.finished);
   element("island-controls").setAttribute("aria-busy", String(islandState.busy));
+  element("island-skip").hidden = !islandState.busy;
+  const personNeeds = { foreman: true, farmer: levels.crops > 0, maker: levels.workshop > 0, operator: levels.telegraph > 0 };
+  for (const [role, ready] of Object.entries(personNeeds)) {
+    const person = element(`island-person-${role}`);
+    const [x, y] = islandStory.people[role];
+    person.style.display = ready ? "" : "none";
+    person.style.transform = `translate(${x}px, ${y}px)`;
+  }
   const descriptions = [];
   for (const item of islandItems) {
     const level = levels[item.id];
@@ -255,13 +322,14 @@ function renderIsland(grown = []) {
   }
   element("island-scene-description").textContent = descriptions.length
     ? descriptions.join(". ") + "." : "Pusta wyspa ze źródłem wody. Wybierz pierwszy element rozwoju.";
-  element("island-season").hidden = islandState.order.length !== islandItems.length || islandState.finished;
-  element("island-season").disabled = islandState.busy;
 }
 
 function startIsland() {
   cancelIslandMotion();
   islandState = { levels: emptyIslandLevels(), order: [], busy: false, finished: false };
+  islandStory = newIslandStory();
+  islandSkipMotion = false;
+  setIslandMusicStage(0);
   element("island-results").hidden = true;
   element("island-learning").replaceChildren();
   element("island-explanations").open = false;
@@ -274,36 +342,43 @@ function startIsland() {
 }
 
 function finishIslandTurn() {
-  const finishing = islandFinalSeason;
+  if (islandEnding) {
+    completeIslandRound();
+    return;
+  }
+  const finishing = islandFinalResolution;
   cancelIslandMotion();
   if (element("island").hidden) return;
+  islandStory.waterOpen = islandState.levels.water > 0;
+  if (islandState.levels.workshop >= 2 && islandState.levels.water >= 2) islandStory.bridgeBuilt = true;
   if (finishing) {
-    islandState.finished = true;
-    showIslandResults();
+    playIslandFinale();
+    return;
+  } else if (islandState.order.length === islandItems.length) {
+    resolveIslandFinale();
+    return;
   } else {
-    element("island-status").textContent = islandState.order.length === islandItems.length
-      ? "Wszystko dodane. Daj osadzie jeszcze jeden sezon."
-      : islandTurnMessage || "Wyspa się zmienia. Wybierz następny element.";
+    element("island-status").textContent = islandTurnMessage || "Wyspa się zmienia. Wybierz następny element.";
   }
+  islandSkipMotion = false;
   renderIsland();
   const next = islandState.finished ? element("island-result-title")
-    : islandState.order.length === islandItems.length ? element("island-season")
-      : islandItems.filter((item) => islandState.levels[item.id] === 0)
+    : islandItems.filter((item) => islandState.levels[item.id] === 0)
         .map((item) => element(`island-pick-${item.id}`)).find((button) => !button.disabled);
   if (islandState.finished || document.activeElement === document.body) next.focus({ preventScroll: true });
 }
 
 function runIslandTurn(grown, finishing, previous, added = null) {
   clearIslandEffects();
-  islandFinalSeason = finishing;
+  islandFinalResolution = finishing;
   islandState.busy = islandCanAnimate();
   islandVisualLevels = islandState.busy ? { ...previous } : null;
   if (islandVisualLevels && added) islandVisualLevels[added] = 1;
   renderIsland();
   const item = islandItems.find((other) => other.id === added);
   islandTurnMessage = item ? `${item.name}: ${item.stages[0]}.` : "Osada czeka na brakujące połączenia.";
-  element("island-status").textContent = item ? `Najpierw pojawia się: ${item.name}.` : "Zobaczmy efekty ostatniego sezonu.";
-  if (!finishing) playSound("click");
+  element("island-status").textContent = item ? `Najpierw pojawia się: ${item.name}.` : "Ostatni wybór uruchamia końcowe reakcje…";
+  if (!finishing) playSound("island-place");
   if (!islandState.busy) {
     const last = grown.map((id) => islandInteraction(id, islandState.levels[id])).filter(Boolean).at(-1);
     if (last) islandTurnMessage = last.result;
@@ -311,18 +386,38 @@ function runIslandTurn(grown, finishing, previous, added = null) {
     return;
   }
   element("island-scene").dataset.phase = added ? "placing" : "waiting";
-  if (added) animateIslandAsset(added);
+  if (added) animateIslandAsset(added, true);
   const steps = grown.filter((id) => islandState.levels[id] > islandVisualLevels[id]);
-  const placementDelay = added ? 520 : 160;
-  steps.forEach((id, index) => {
-    const arrival = placementDelay + index * 800 + 560;
+  let cursor = added ? 520 : 180;
+  if (added === "water") {
+    islandVisualTimers.push(window.setTimeout(() => {
+      element("island-scene").dataset.action = "source";
+      element("island-status").textContent = "Mieszkaniec otwiera źródło i przekopuje odpływ…";
+      moveIslandPerson("foreman", [[235, 260], [245, 288]], 450, 0, "tools");
+    }, 480));
+    islandVisualTimers.push(window.setTimeout(() => {
+      islandStory.waterOpen = true;
+      renderIsland();
+      const stream = element("island-asset-water").querySelector(".island-stream");
+      const length = stream.getTotalLength();
+      islandAnimations.push(stream.animate([
+        { strokeDasharray: `${length} ${length}`, strokeDashoffset: length },
+        { strokeDasharray: `${length} ${length}`, strokeDashoffset: 0 },
+      ], { duration: 600, fill: "both", easing: "ease-out" }));
+      islandTurnMessage = "Źródło otwarte — woda wyrzeźbiła odpływ w zboczu!";
+    }, 1050));
+    cursor = 1700;
+  }
+  for (const id of steps) {
     const interaction = islandInteraction(id, islandState.levels[id]);
+    const timing = islandTiming(interaction.route);
+    const arrival = cursor + timing.prepare + timing.travel + timing.work;
     islandVisualTimers.push(window.setTimeout(() => {
       element("island-scene").dataset.phase = "interacting";
       element(`island-asset-${id}`).classList.add("receiving");
       element("island-status").textContent = interaction.during;
-      sendIslandEffect(interaction.route, id);
-    }, placementDelay + index * 800));
+      sendIslandEffect(interaction.route, id, timing);
+    }, cursor));
     islandVisualTimers.push(window.setTimeout(() => {
       element("island-scene").dataset.phase = "result";
       islandVisualLevels[id] = islandState.levels[id];
@@ -331,11 +426,11 @@ function runIslandTurn(grown, finishing, previous, added = null) {
       animateIslandAsset(id);
       islandTurnMessage = interaction.result;
       element("island-status").textContent = interaction.result;
-      if (id === added) playSound("correct");
+      playSound(id === "telegraph" ? "island-signal" : "island-grow");
     }, arrival));
-  });
-  islandTimer = window.setTimeout(finishIslandTurn,
-    steps.length ? placementDelay + (steps.length - 1) * 800 + 970 : 520);
+    cursor = arrival + timing.settle;
+  }
+  islandTimer = window.setTimeout(finishIslandTurn, cursor + 80);
 }
 
 function pickIslandItem(id) {
@@ -356,12 +451,57 @@ function pickIslandItem(id) {
   runIslandTurn(islandItems.filter((item) => islandState.levels[item.id] > previous[item.id]).map((item) => item.id), false, previous, id);
 }
 
-function playIslandSeason() {
+function resolveIslandFinale() {
   if (element("island").hidden || islandState.busy || islandState.finished ||
       islandState.order.length !== islandItems.length) return;
   const previous = islandState.levels;
   islandState.levels = growIsland(previous);
   runIslandTurn(islandItems.filter((item) => islandState.levels[item.id] > previous[item.id]).map((item) => item.id), true, previous);
+}
+
+function playIslandFinale() {
+  const perfect = islandItems.every((item) => islandState.levels[item.id] === 3);
+  if (!perfect || !islandCanAnimate()) {
+    completeIslandRound();
+    return;
+  }
+  islandEnding = true;
+  islandState.busy = true;
+  islandStory.harbour = "signalling";
+  renderIsland();
+  element("island-scene").dataset.phase = "finale";
+  element("island-status").textContent = "Wiadomość dotarła! Mieszkaniec odczytuje zamówienie dla portu…";
+  moveIslandPerson("foreman", [[385, 275], [515, 284]], 700, 0, "note");
+  playSound("island-signal");
+  islandVisualTimers.push(window.setTimeout(() => {
+    islandStory.harbour = "arriving";
+    renderIsland();
+    element("island-status").textContent = "Port odpowiada. Statek z dostawą podpływa do osady!";
+    islandAnimations.push(element("island-supply-boat").animate([
+      { transform: "translate(170px, 0)" }, { transform: "translate(0, 0)" },
+    ], { duration: 1100, fill: "both", easing: "ease-out" }));
+  }, 900));
+  islandVisualTimers.push(window.setTimeout(() => {
+    islandStory.celebrating = true;
+    renderIsland();
+    playSound("island-grow");
+  }, 2000));
+  islandTimer = window.setTimeout(completeIslandRound, 2600);
+}
+
+function completeIslandRound() {
+  cancelIslandMotion();
+  if (element("island").hidden) return;
+  const perfect = islandItems.every((item) => islandState.levels[item.id] === 3);
+  islandStory.waterOpen = islandState.levels.water > 0;
+  islandStory.bridgeBuilt = islandState.levels.workshop >= 2 && islandState.levels.water >= 2;
+  islandStory.harbour = perfect ? "arrived" : "closed";
+  islandStory.celebrating = perfect;
+  islandState.finished = true;
+  islandSkipMotion = false;
+  renderIsland();
+  showIslandResults();
+  element("island-result-title").focus({ preventScroll: true });
 }
 
 function inspectIslandItem(id) {
@@ -380,7 +520,8 @@ function inspectIslandItem(id) {
 function showIslandResults() {
   const maxed = islandItems.filter((item) => islandState.levels[item.id] === 3).length;
   element("island-results").hidden = false;
-  element("island-result-title").textContent = maxed === islandItems.length ? "Wyspa tętni życiem!" : "Twoja wyspa już żyje";
+  element("island-result-title").textContent = maxed === islandItems.length ? "Osada połączona ze światem!"
+    : islandState.levels.generator >= 2 ? "Wyspa pierwszych świateł" : "Osada rzemieślników";
   element("island-result-score").textContent = `${maxed} / ${islandItems.length} na poziomie MAX`;
   element("island-status").textContent = maxed === islandItems.length
     ? "Wszystkie elementy rozwinęły się w pełni!" : "Inna kolejność może dać osadzie więcej czasu na rozwój.";
@@ -418,7 +559,11 @@ function showIslandResults() {
 element("island-open").addEventListener("click", startIsland);
 element("island-reset").addEventListener("click", startIsland);
 element("island-replay").addEventListener("click", startIsland);
-element("island-season").addEventListener("click", playIslandSeason);
+element("island-skip").addEventListener("click", () => {
+  if (!islandState.busy) return;
+  islandSkipMotion = true;
+  finishIslandTurn();
+});
 element("island-exit").addEventListener("click", () => {
   cancelIslandMotion();
   showScreen("welcome");

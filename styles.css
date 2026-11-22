@@ -287,13 +287,26 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .island-scene[data-live="true"] .island-gauge { transform-box: fill-box; transform-origin: left bottom; animation: island-gauge 3s ease-in-out infinite; }
 .island-scene .island-window { transition: fill 250ms; }
 .island-scene[data-grid-ready="true"] #island-asset-workshop .island-window,
+.island-scene[data-powered="true"] #island-asset-generator .island-window,
 .island-scene[data-powered="true"] #island-asset-telegraph:not([data-level="0"]):not([data-level="1"]) .island-window { fill: #ffe989; }
-#island-finale { display: none; }
-.island-scene[data-complete="true"] #island-finale { display: inline; }
+#island-finale, #island-earthworks, #island-bridge, #island-road, #island-dock, .island-delivery { display: none; }
+.island-scene[data-water-open="true"] #island-earthworks,
+.island-scene[data-bridge="true"] #island-bridge,
+.island-scene[data-harvest="true"][data-bridge="true"] #island-road,
+.island-scene[data-industry="true"] #island-dock,
+.island-scene[data-harbour="arriving"] #island-finale,
+.island-scene[data-harbour="arrived"] #island-finale,
+.island-scene[data-harbour="arrived"] .island-delivery { display: inline; }
+.island-scene[data-water-open="false"] .island-stream, .island-scene[data-water-open="false"] .island-current { opacity: 0; }
+.island-scene[data-live="true"][data-action="source"] .island-valve-handle,
+.island-scene[data-live="true"][data-action="irrigation"] .island-valve-handle { animation: island-turn 600ms linear infinite; }
+.island-person-cargo { display: none; }
 .island-action { pointer-events: none; }
-.island-scene[data-live="true"] .island-action.walking .island-person-pose { animation: island-walk 160ms ease-in-out infinite; }
-.island-scene[data-live="true"] .island-action.working .island-person-pose { transform-origin: 0 0; animation: island-work 220ms ease-in-out infinite; }
-.island-scene[data-live="true"] .island-action.working .island-hand-tool { transform-box: fill-box; transform-origin: center; animation: island-key-tap 220ms ease-in-out infinite; }
+.island-scene[data-live="true"] .island-person.walking .island-person-pose { animation: island-walk 160ms ease-in-out infinite; }
+.island-scene[data-live="true"] .island-person.working .island-person-pose { transform-origin: 0 0; animation: island-work 220ms ease-in-out infinite; }
+.island-scene[data-live="true"] .island-person.working .island-person-cargo > use { transform-box: fill-box; transform-origin: center; animation: island-key-tap 220ms ease-in-out infinite; }
+.island-scene[data-live="true"][data-celebrating="true"] .island-person-pose { animation: island-cheer 750ms ease-in-out infinite; }
+.island-scene[data-celebrating="true"] .island-person:nth-child(2n) .island-person-pose { animation-delay: 150ms; }
 .island-scene[data-live="true"] .island-contact-gear { animation: island-turn 650ms linear infinite; }
 .island-status { min-height: 38px; display: flex; align-items: center; margin: 8px 0; padding: 7px 10px; border-radius: 9px; background: #eaf3df; color: var(--green-dark); font-size: 12px; line-height: 1.5; }
 .island-controls { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; max-width: 640px; margin: auto; }
@@ -314,7 +327,6 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .island-level-dots { display: flex; gap: 3px; }
 .island-level-dots > span { width: 5px; height: 5px; border-radius: 50%; background: #d4dfcb; }
 .island-level-dots > span.filled { background: #71a13e; }
-.island-season { margin-top: 20px; }
 .island-tools { display: flex; gap: 12px; margin: 16px 0 0; }
 .island-tools .button { min-height: 44px; margin: 0; padding: 10px 4px; font-size: 12px; }
 .island-results { margin-top: 20px; padding: 18px; border: 2px solid #9cbe77; border-radius: 18px; background: #eef5e5; }
@@ -336,6 +348,7 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 @keyframes island-work { 50% { transform: rotate(7deg); } }
 @keyframes island-key-tap { 50% { transform: translateY(3px) rotate(7deg); } }
 @keyframes island-gauge { 50% { transform: rotate(-12deg); } }
+@keyframes island-cheer { 50% { transform: translateY(-6px) rotate(4deg); } }
 @keyframes lock-flow { to { stroke-dashoffset: -38; } }
 @keyframes enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes answer-in { from { opacity: .6; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
