@@ -13,6 +13,10 @@ const soundPatterns = {
   "island-place": { notes: [392, 523.25], duration: 0.1, spacing: 0.055, volume: 0.025 },
   "island-grow": { notes: [659.25, 880], duration: 0.16, spacing: 0.07, volume: 0.035 },
   "island-signal": { notes: [1046.5, 1318.51, 1046.5], duration: 0.1, spacing: 0.08, volume: 0.025 },
+  "island-notice": { notes: [587.33, 880], duration: .12, spacing: .09, volume: .025 },
+  "island-effort": { notes: [196, 220, 196], duration: .075, spacing: .11, volume: .023 },
+  "island-splash": { notes: [1174.66, 783.99, 523.25], duration: .075, spacing: .045, volume: .022 },
+  "island-discover": { notes: [659.25, 987.77, 1318.51], duration: .16, spacing: .09, volume: .027 },
 };
 
 function updateSoundControl() {

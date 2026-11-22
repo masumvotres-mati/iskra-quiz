@@ -7,6 +7,8 @@ const island2Layout = {
   glassRest: [188, 374], glassRough: [291, 386], glassReady: [378, 400], glassTop: [471, 190],
   lamp: [471, 205], lampRest: [497, 358], cargoLanding: [445, 285], cargoBoat: [567, 438],
   boatWaiting: [574, 304], boatDock: [574, 446], loadOffset: [0, -29],
+  coverHome: [341, 380], coverBench: [284, 401], coverBridge: [283, 446],
+  lily: [177, 323], fish: [157, 340], craftShore: [551, 409], craftSea: [510, 454],
 };
 
 function island2LoadPoint(point) {
@@ -18,6 +20,8 @@ const island2Renderer = (() => {
   const entities = new Map();
   const journeys = new Map();
   const layers = new Map();
+  const acts = new Map();
+  const followers = new Map();
   let frame;
   let context;
   let idleAt = 0;
@@ -45,6 +49,10 @@ const island2Renderer = (() => {
     behind: { point: [237, 283], plane: "ground-back" },
     summit: { point: [439, 286], plane: "peak" },
     balcony: { point: [427, 294], plane: "peak" },
+    tunnel: { point: [238, 470], plane: "underground" },
+    bridge: { point: [283, 438], plane: "front" },
+    pondEdge: { point: [155, 359], plane: "front" },
+    shore: { point: [524, 362], plane: "front" },
   };
   const edges = [
     ["rear", "farm", [[278, 341], [249, 348], [204, 357]], "around"],
@@ -66,6 +74,10 @@ const island2Renderer = (() => {
     ["terrace", "behind", [[282, 297], [268, 283]]],
     ["stairs", "summit", [[405, 347], [405, 313]], "climb"],
     ["summit", "balcony", []],
+    ["inside", "tunnel", [[317, 410], [289, 447], [254, 463]], "crawl", "cutaway"],
+    ["wheel", "bridge", [[236, 414]], "walk", "bridge"],
+    ["bridge", "generator", [], "walk", "bridge"],
+    ["farm", "pondEdge", []], ["lift", "shore", [[481, 375]]],
   ];
 
   function svg(tag, attributes = {}) {
@@ -93,13 +105,16 @@ const island2Renderer = (() => {
     const head = svg("g", { class: "i2-head" });
     head.append(svg("circle", { cy: -47, r: 12, fill: "#fffef2" }));
     head.append(svg("path", { d: "M-9-47Q-7-37 3-37", stroke: "#dedec4", "stroke-width": "2.5", fill: "none" }));
-    head.append(svg("circle", { cx: 5, cy: -48, r: 1.5, fill: "#3d5347", stroke: "none" }));
+    head.append(svg("circle", { class: "i2-eye", cx: 5, cy: -48, r: 1.5, fill: "#3d5347", stroke: "none" }));
+    head.append(svg("path", { class: "i2-mouth", d: "", fill: "#3d5347", stroke: "none" }));
     const hand = svg("g", { class: "i2-hand" });
     const tool = svg("g", { class: "i2-task-prop", stroke: "#514f3e", "stroke-width": "2.5", "stroke-linejoin": "round" });
     tool.append(svg("path", { d: role === "gardener" ? "M0 0 8 8m-2-2 4-2 4 5-4 3Z"
       : role === "maker" ? "M0 0 7-9m-3 1 4-3 6 6-4 3Z"
         : "M-4-7 5-11 13-7V3L5 7-4 3Zm0 0 9 4 8-4M5-3V7", fill: role === "gardener" ? "#b9c9a8" : "#edc98a" }));
     hand.append(tool);
+    hand.append(svg("path", { class: "i2-dig-tool", d: "M0 0 11 12m-5-3 9-5 5 9-9 5Z",
+      fill: "#b9c9a8", stroke: "#514f3e", "stroke-width": "2.5", display: "none" }));
     body.append(head, hand);
     facing.append(body);
     figure.append(facing);
@@ -137,7 +152,7 @@ const island2Renderer = (() => {
       document.getElementById(id).style.transform = `translate(${point[0]}px, ${point[1]}px)`;
       return;
     }
-    if (journeys.has(id)) return;
+    if (journeys.has(id) || followers.has(id)) return;
     if (plane) setPlane(entity, plane);
     if (id === "i2-boat") setPlane(entity, point[1] < 397 ? "sea-back" : "sea-front");
     place(entity, point);
@@ -159,7 +174,8 @@ const island2Renderer = (() => {
       const path = queue.shift();
       const key = path.at(-1);
       if (key === end) { chain = path; break; }
-      for (const [a, b] of edges) {
+      for (const [a, b, , , requirement] of edges) {
+        if (requirement === "cutaway" && !context.story.cutawayOpen || requirement === "bridge" && !context.story.bridgeBuilt) continue;
         const next = a === key ? b : b === key ? a : undefined;
         if (next && !visited.has(next)) {
           visited.add(next);
@@ -177,29 +193,34 @@ const island2Renderer = (() => {
       const [a, , points, mode = "walk"] = edges.find(([a, b]) => a === from && b === to || a === to && b === from);
       const waypoints = a === from ? points : [...points].reverse();
       for (const point of waypoints) result.push({ point,
-        plane: mode === "climb" ? "front" : mode === "around" ? point[1] > 335 ? "front" : "ground-back" : nodes[from].plane, mode });
+        plane: mode === "climb" ? "front" : mode === "crawl" ? "underground"
+          : mode === "around" ? point[1] > 335 ? "front" : "ground-back" : nodes[from].plane, mode });
       result.push({ ...nodes[to], mode });
+    }
+    if (Math.hypot(result.at(-1).point[0] - destination[0], result.at(-1).point[1] - destination[1]) > 2) {
+      result.push({ point: destination, plane: nodes[end].plane, mode: "walk" });
     }
     return result;
   }
 
-  function pose(entity, mode, phase = 0) {
+  function pose(entity, mode, phase = 0, progress = 0) {
     const body = entity.node.querySelector(".i2-body");
     if (!body) return;
     const front = Math.sin(phase);
     const back = -front;
-    const walking = mode === "walk" || mode === "climb";
+    const walking = ["walk", "climb", "run", "heavy", "umbrella"].includes(mode);
     const working = mode === "work" || mode === "repair";
     const tending = mode === "tend";
     const shaping = mode === "shape";
     const carrying = mode === "cargo";
+    const balancing = mode === "balance";
     const chatting = mode === "chat";
     const cheering = mode === "cheer";
     const holding = Boolean(entity.node.querySelector("#i2-parcel"));
     const lift = walking ? Math.max(0, front) * 5 : 0;
-    const stride = walking ? front * 10 : 0;
+    const stride = walking ? front * (mode === "heavy" ? 5 : mode === "run" ? 12 : 10) : 0;
     const otherLift = walking ? Math.max(0, back) * 5 : 0;
-    const otherStride = walking ? back * 10 : 0;
+    const otherStride = walking ? back * (mode === "heavy" ? 5 : mode === "run" ? 12 : 10) : 0;
     const crouch = working || tending ? (1 - Math.cos(phase)) * 2.5 : 0;
     if (shaping) entity.direction = -1;
     if (tending || carrying) entity.direction = 1;
@@ -216,14 +237,57 @@ const island2Renderer = (() => {
     entity.node.querySelector(".i2-arm-back").setAttribute("d", shaping || carrying
       ? `M-6-32Q8 ${handY - 5} 15 ${handY}`
       : `M-6-32Q${-12 - otherStride * .4} ${mode === "climb" || cheering ? -47 + front * 8 : -25} ${-12 - otherStride * .55} ${mode === "climb" || cheering ? -44 + front * 8 : -19}`);
+    let activeHand = [handX, handY];
+    if (mode === "push" || mode === "pull") {
+      body.setAttribute("transform", "skewX(-12)");
+      entity.node.querySelector(".i2-leg-front").setAttribute("d", "M4-18Q15-9 17-2");
+      entity.node.querySelector(".i2-leg-back").setAttribute("d", "M-4-18Q-12-10-13-2");
+      entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q19-33 24 ${-27 + front * 2}`);
+      entity.node.querySelector(".i2-arm-back").setAttribute("d", `M-6-32Q10-36 22 ${-31 + front * 2}`);
+      activeHand = [24, -27 + front * 2];
+    } else if (balancing) {
+      activeHand = [0, -23];
+      entity.node.querySelector(".i2-arm-front").setAttribute("d", "M6-32Q12-25 0-23");
+      entity.node.querySelector(".i2-arm-back").setAttribute("d", "M-6-32Q-12-25 0-23");
+    } else if (mode === "kneel" || mode === "dig" || mode === "polish") {
+      body.setAttribute("transform", "translate(0 10)");
+      entity.node.querySelector(".i2-leg-front").setAttribute("d", "M4-18Q20-13 18-12");
+      entity.node.querySelector(".i2-leg-back").setAttribute("d", "M-4-18Q-12-4-16-12");
+      activeHand = [mode === "polish" ? 20 + front * 5 : 20, mode === "dig" ? -25 + front * 9 : -21 + front * 2];
+      entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q24-26 ${activeHand.join(" ")}`);
+    } else if (mode === "crawl") {
+      body.setAttribute("transform", "translate(-18 10) rotate(75 0 -18)");
+      entity.node.querySelector(".i2-leg-front").setAttribute("d", `M4-18Q14 ${-11 + front * 3}-2-11`);
+      entity.node.querySelector(".i2-leg-back").setAttribute("d", `M-4-18Q-12 ${-10 - front * 3}-10-15`);
+      entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q19-35 17 ${-43 + front * 3}`);
+      entity.node.querySelector(".i2-arm-back").setAttribute("d", `M-6-32Q8-40 11 ${-45 - front * 3}`);
+      activeHand = [17, -43 + front * 3];
+    } else if (mode === "sit" || mode === "row") {
+      body.setAttribute("transform", `translate(0 ${12 + (mode === "row" ? front * 1.5 : 0)})`);
+      entity.node.querySelector(".i2-leg-front").setAttribute("d", "M4-18Q20-18 20-12");
+      entity.node.querySelector(".i2-leg-back").setAttribute("d", "M-4-18Q-13-17-16-12");
+      activeHand = [22 + (mode === "row" ? front * 7 : 0), -29 + (mode === "row" ? Math.cos(phase) * 5 : 0)];
+      entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q20-37 ${activeHand.join(" ")}`);
+      entity.node.querySelector(".i2-arm-back").setAttribute("d", `M-6-32Q9-35 ${activeHand[0] - 4} ${activeHand[1] - 2}`);
+    } else if (mode === "startle") {
+      body.setAttribute("transform", `translate(0 ${-Math.sin(progress * Math.PI) * 18})`);
+      entity.node.querySelector(".i2-arm-front").setAttribute("d", "M6-32Q20-40 18-54");
+      entity.node.querySelector(".i2-arm-back").setAttribute("d", "M-6-32Q-20-40-18-54");
+      activeHand = [18, -54];
+    } else if (mode === "look" || mode === "shelter" || mode === "offer" || mode === "umbrella") {
+      activeHand = mode === "look" ? [11, -47] : mode === "shelter" || mode === "umbrella" ? [15, -43] : [25, -27];
+      entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q20-39 ${activeHand.join(" ")}`);
+    }
     for (const limb of ["i2-leg-front", "i2-leg-back", "i2-arm-front", "i2-arm-back"]) {
       entity.node.querySelector(`.${limb}-core`).setAttribute("d", entity.node.querySelector(`.${limb}`).getAttribute("d"));
     }
-    entity.node.querySelector(".i2-hand").setAttribute("transform", `translate(${handX} ${handY})`);
+    entity.node.querySelector(".i2-hand").setAttribute("transform", `translate(${activeHand.join(" ")})`);
     entity.node.querySelector(".i2-head").setAttribute("transform", `translate(${working || shaping ? 2 : 0} ${shaping ? 1 : working ? crouch * .3 : 0})`);
     entity.node.dataset.pose = mode;
-    entity.node.querySelector(".i2-person-shadow").setAttribute("opacity", mode === "climb" ? ".05" : ".2");
+    entity.node.querySelector(".i2-person-shadow").setAttribute("opacity", ["climb", "crawl", "row", "sit"].includes(mode) ? ".05" : ".2");
     entity.node.querySelector(".i2-task-prop").style.display = tending || mode === "repair" || carrying ? "" : "none";
+    entity.node.querySelector(".i2-dig-tool").setAttribute("display", mode === "dig" ? "" : "none");
+    entity.node.querySelector(".i2-mouth").setAttribute("d", mode === "startle" || mode === "look" ? "M4-41a3 4 0 1 0 6 0 3 4 0 1 0-6 0" : "");
   }
 
   function move(id, points, duration, offsets, options = {}) {
@@ -248,14 +312,14 @@ const island2Renderer = (() => {
     wake();
   }
 
-  function actor(role, destination, idle = false, delay = 0) {
+  function actor(role, destination, idle = false, delay = 0, options = {}) {
     const entity = entities.get(`i2-person-${role}`);
     const path = route(entity.point, destination);
     const distances = path.slice(1).map((step, index) => Math.hypot(step.point[0] - path[index].point[0], step.point[1] - path[index].point[1]));
     const total = distances.reduce((sum, length) => sum + length, 0);
     let distance = 0;
     const offsets = [0, ...distances.map((length) => { distance += length; return distance / Math.max(total, 1); })];
-    const duration = Math.max(200, total / (idle ? .1 : .2));
+    const duration = Math.max(200, total / (idle ? .1 : options.gait === "run" ? .29 : options.gait === "heavy" ? .13 : .2));
     const target = path.at(-1).point;
     if (!idle) context.story.people[role] = [...target];
     entity.pose = "walk";
@@ -263,12 +327,72 @@ const island2Renderer = (() => {
       entity.pose = idle ? "idle" : "work";
       return 250;
     }
-    move(entity.id, path.map((step) => step.point), duration, offsets, { path, idle, role, delay });
+    move(entity.id, path.map((step) => step.point), duration, offsets, { path, idle, role, delay, length: total, ...options });
     return duration;
   }
 
   function depth(entity) {
     return entity.depth ?? entity.point[1] + (entity.id.startsWith("i2-person-") ? 0 : 16);
+  }
+
+  function act(role, mode, duration, delay = 0, direction) {
+    const entity = entities.get(`i2-person-${role}`);
+    acts.set(entity.id, { mode, duration, start: performance.now() + delay, direction });
+    if (!context?.live) {
+      if (direction) entity.direction = direction;
+      pose(entity, mode, .9, .5);
+    }
+    wake();
+  }
+
+  function follow(id, target, offset = [0, 0], options = {}) {
+    journeys.delete(id);
+    followers.set(id, { target, offset, from: [...entities.get(id).point], start: performance.now(), ...options });
+    updateFollowers(Boolean(options.hand));
+  }
+
+  function release(id) {
+    followers.delete(id);
+    const entity = entities.get(id);
+    entity.depth = entity.initial.depth;
+    if (entity.id.startsWith("i2-person-") && context) context.story.people[entity.id.slice(10)] = [...entity.point];
+  }
+
+  function updateFollowers(hands) {
+    const root = document.querySelector("#island2-art > svg");
+    for (const [id, link] of followers) {
+      if (Boolean(link.hand) !== hands) continue;
+      const entity = entities.get(id);
+      const target = entities.get(link.target);
+      let point = target.point;
+      if (hands) {
+        const hand = target.node.querySelector(".i2-hand");
+        let matrix = new DOMMatrix();
+        for (let node = hand; node !== root; node = node.parentElement) {
+          const transform = node.transform.baseVal.consolidate()?.matrix;
+          if (transform) matrix = new DOMMatrix([transform.a, transform.b, transform.c, transform.d, transform.e, transform.f]).multiply(matrix);
+        }
+        const origin = new DOMPoint(0, 0).matrixTransform(matrix);
+        point = [origin.x, origin.y];
+      }
+      const desired = point.map((value, axis) => value + link.offset[axis]);
+      const blend = link.blend && context?.live ? Math.min(1, (performance.now() - link.start) / link.blend) : 1;
+      place(entity, desired.map((value, axis) => link.from[axis] + (value - link.from[axis]) * blend));
+      if (!context?.live) link.blend = 0;
+      setPlane(entity, link.plane || target.plane);
+      entity.depth = depth(target) + (link.depthBias ?? 1);
+    }
+  }
+
+  function perform(role, points, duration, mode, delay = 0, direction = 1, plane = "front") {
+    const id = `i2-person-${role}`;
+    context.story.people[role] = [...points.at(-1)];
+    const lengths = points.slice(1).map((point, index) => Math.hypot(point[0] - points[index][0], point[1] - points[index][1]));
+    const total = lengths.reduce((sum, length) => sum + length, 0);
+    let cursor = 0;
+    const offsets = [0, ...lengths.map((length) => { cursor += length; return cursor / Math.max(1, total); })];
+    move(id, points, duration, offsets, { path: points.map((point) => ({ point, plane, mode: "walk" })), length: total, role, delay });
+    act(role, mode, duration, delay, direction);
   }
 
   function sort() {
@@ -282,17 +406,22 @@ const island2Renderer = (() => {
   }
 
   function settledPose(entity) {
+    if (entity.id === "i2-person-scout" && context.story.sailing) return context.story.leafSail || context.story.craftKind === "leaf" ? "sit" : "row";
     if (context.story.ending === "workshop" && context.levels.wheel === 1 && entity.id !== "i2-person-gardener") return "chat";
     if (entity.id === "i2-person-maker") {
       if (context.branches.wheel === "pottery" && context.levels.wheel >= 2) return "shape";
       if (context.levels.timber >= 2) return "repair";
     }
+    if (entity.id === "i2-person-gardener" && context.story.giftReturned) return "offer";
     if (entity.id === "i2-person-gardener" && context.levels.seeds >= 2) return "tend";
     if (entity.id === "i2-person-scout" && context.story.ending === "beacon") return "cargo";
     return "idle";
   }
 
   function mechanisms(now = performance.now()) {
+    const stone = entities.get("i2-cover");
+    stone.depth = stone.point[1] + 2;
+    if (context.story.crateBoat) entities.get("i2-crate").depth = entities.get("i2-crate").point[1] + 2;
     const cabin = entities.get("i2-crate");
     document.getElementById("i2-lift-rope").setAttribute("d", `M416 163V${Math.max(164, cabin.point[1] - 61)}`);
     let tip = [537, 365];
@@ -316,6 +445,12 @@ const island2Renderer = (() => {
     document.getElementById("i2-crane-boom-core").setAttribute("d", boom);
     document.getElementById("i2-crane-line").setAttribute("d", `M${tip[0]} ${tip[1]} ${hook[0]} ${hook[1]}`);
     document.getElementById("i2-crane-hook").setAttribute("transform", `translate(${hook[0]} ${hook[1]})`);
+    const tether = document.getElementById("i2-tether");
+    tether.style.display = context.story.tether ? "" : "none";
+    if (context.story.tether) {
+      const owner = entities.get(`i2-person-${context.story.tether}`);
+      tether.setAttribute("d", `M${owner.point[0]} ${owner.point[1] - 12} ${stone.point[0]} ${stone.point[1] - 6}`);
+    }
   }
 
   function tick(now) {
@@ -326,7 +461,8 @@ const island2Renderer = (() => {
     for (const [id, journey] of journeys) {
       if (now < journey.start) continue;
       const entity = entities.get(id);
-      const progress = Math.min(1, (now - journey.start) / journey.duration);
+      const time = Math.min(1, (now - journey.start) / journey.duration);
+      const progress = journey.path ? time * time * (3 - 2 * time) : time;
       let index = journey.offsets.findIndex((offset) => offset > progress) - 1;
       if (index < 0) index = journey.points.length - 2;
       const span = journey.offsets[index + 1] - journey.offsets[index];
@@ -339,7 +475,12 @@ const island2Renderer = (() => {
         const step = journey.path[index + 1];
         setPlane(entity, elapsed < .5 ? journey.path[index].plane : step.plane);
         entity.direction = b[0] < a[0] ? -1 : 1;
-        pose(entity, step.mode === "climb" ? "climb" : "walk", clock / 75);
+        const gait = step.mode === "climb" ? "climb" : step.mode === "crawl" ? "crawl" : journey.gait || "walk";
+        const acting = acts.get(id);
+        if (acting && now >= acting.start && now < acting.start + acting.duration) {
+          if (acting.direction) entity.direction = acting.direction;
+          pose(entity, acting.mode, (now - acting.start) / 160, (now - acting.start) / acting.duration);
+        } else pose(entity, gait, progress * journey.length / 7);
       } else if (id === "i2-boat") setPlane(entity, entity.point[1] < 397 ? "sea-back" : "sea-front");
       if (progress === 1) {
         journeys.delete(id);
@@ -351,12 +492,23 @@ const island2Renderer = (() => {
         if (journey.plane) setPlane(entity, journey.plane);
       }
     }
+    if (context.story.crateBoat) entities.get("i2-crate").depth = entities.get("i2-crate").point[1] + 2;
+    updateFollowers(false);
     for (const entity of entities.values()) {
       if (entity.id.startsWith("i2-person-") && !journeys.has(entity.id)) {
-        const mode = context.finished || !context.busy ? settledPose(entity) : context.story.celebrating ? "cheer" : entity.pose;
-        pose(entity, mode, clock / (context.story.celebrating ? 110 : 180));
+        const performance = acts.get(entity.id);
+        if (performance && now >= performance.start && now < performance.start + performance.duration) {
+          if (performance.direction) entity.direction = performance.direction;
+          pose(entity, performance.mode, (now - performance.start) / 160,
+            (now - performance.start) / performance.duration);
+        } else {
+          const mode = context.finished || !context.busy || entity.id === "i2-person-scout" && context.story.sailing
+            ? settledPose(entity) : context.story.celebrating ? "cheer" : entity.pose;
+          pose(entity, mode, clock / (context.story.celebrating ? 110 : 180));
+        }
       }
     }
+    updateFollowers(true);
     const angle = clock / 9;
     const rotate = (id, value) => document.getElementById(id).setAttribute("transform", `rotate(${value})`);
     if (context.levels.wheel >= 2 && context.branches.wheel !== "pottery") rotate("i2-wheel-rotor", angle);
@@ -376,6 +528,8 @@ const island2Renderer = (() => {
       }
       idleAt = now + 2600;
     }
+    if (context.story.oarMade) document.getElementById("i2-lid-paddle").setAttribute("transform",
+      `rotate(${context.story.sailing && !context.story.leafSail ? -15 + Math.sin(clock / 180) * 22 : 0})`);
     mechanisms(now);
     sort();
     wake();
@@ -402,6 +556,9 @@ const island2Renderer = (() => {
       pose(entity, "idle");
     }
     journeys.clear();
+    acts.clear();
+    updateFollowers(false);
+    updateFollowers(true);
     sort();
   }
 
@@ -417,26 +574,33 @@ const island2Renderer = (() => {
 
   function mount() {
     const root = document.querySelector("#island2-art > svg");
-    for (const name of ["background", "sea-back", "base", "ground-back", "walls", "cave", "terrace", "peak", "front", "sea-front"]) {
+    for (const name of ["background", "sea-back", "base", "underground", "ground-back", "walls", "cave", "terrace", "peak", "front", "sea-front"]) {
       const layer = svg("g", { id: `i2-layer-${name}` });
       if (name === "cave") layer.setAttribute("clip-path", "url(#i2-cave-mask)");
+      if (name === "underground") layer.setAttribute("clip-path", "url(#i2-under-mask)");
       layers.set(name, layer);
       root.append(layer);
     }
     for (const [id, plane, point, anchor] of [
       ["i2-background", "background", [0, 0], -1000], ["i2-base-terrain", "base", [0, 0], -1000],
-      ["i2-middle-walls", "walls", [0, 0], -1000], ["i2-cave", "walls", [0, 0], 1], ["i2-cover", "front", [0, 0], 382],
+      ["i2-cutaway", "base", [0, 0], 1], ["i2-magnet", "underground", [254, 475], 476],
+      ["i2-middle-walls", "walls", [0, 0], -1000], ["i2-cave", "walls", [0, 0], 1], ["i2-cover", "front", island2Layout.coverHome, 382],
       ["i2-water", "walls", [0, 0], 230],
       ["i2-tower", "peak", [0, 0], -1000], ["i2-lamp", "front", island2Layout.lampRest, 360], ["i2-glass", "front", island2Layout.glassRest, 401],
       ["i2-beam", "peak", [0, 0], 189], ["i2-seeds", "front", [0, 0], 356], ["i2-stream", "front", [0, 0], 339],
       ["i2-overflow", "front", [0, 0], 355],
       ["i2-cliff-steps", "front", [0, 0], 368], ["i2-scaffold", "front", [0, 0], 372], ["i2-scaffold-short", "front", [0, 0], 372],
       ["i2-crate", "front", island2Layout.crateRest, 374], ["i2-wheel", "front", island2Layout.wheelRest, 420],
+      ["i2-crate-lid", "front", island2Layout.crateRest, 376],
+      ["i2-lily", "front", island2Layout.lily, 355], ["i2-fish", "front", island2Layout.fish, 356],
       ["i2-rope-coil", "front", island2Layout.rope, 290], ["i2-copper", "front", island2Layout.copper, 436],
       ["i2-drive", "front", [0, 0], 390], ["i2-wire", "front", [0, 0], 391],
       ["i2-dock", "front", [0, 0], 413],
       ["i2-port-rope", "front", [0, 0], 375], ["i2-cargo", "front", island2Layout.cargoBoat, 376],
       ["i2-production", "cave", [0, 0], 365], ["i2-cave-lip", "front", [0, 0], 383],
+      ["i2-splash", "front", [0, 0], 450], ["i2-gift", "front", [0, 0], 450],
+      ["i2-tether", "front", [0, 0], 447],
+      ["i2-reflection", "front", [0, 0], 449],
       ["i2-boat", "sea-back", island2Layout.boatWaiting, 0],
     ]) register(id, plane, point, anchor);
     for (const [role, name] of [["scout", "spring"], ["maker", "inside"], ["gardener", "rear"]]) {
@@ -447,6 +611,7 @@ const island2Renderer = (() => {
     document.getElementById("i2-person-scout").querySelector(".i2-facing").append(document.getElementById("i2-reaction"));
     document.getElementById("i2-reaction").setAttribute("transform", "translate(0 -77)");
     for (const entity of entities.values()) place(entity, entity.point);
+    follow("i2-crate-lid", "i2-crate", [0, 0], { depthBias: 2 });
     sort();
   }
 
@@ -458,11 +623,14 @@ const island2Renderer = (() => {
       if (entity.id.startsWith("i2-person-") && !journeys.has(entity.id)) pose(entity, settledPose(entity), .9);
     }
     mechanisms();
+    updateFollowers(false);
+    updateFollowers(true);
     sort();
   }
 
   function reset() {
     freeze();
+    followers.clear();
     clock = 0;
     idleAt = performance.now() + 1600;
     idleRole = 0;
@@ -478,6 +646,7 @@ const island2Renderer = (() => {
     }
     document.getElementById("i2-beam-pivot").setAttribute("transform", "scale(1 1)");
     document.getElementById("i2-lens-rings").setAttribute("transform", "scale(1 1)");
+    document.getElementById("i2-lid-paddle").setAttribute("transform", "rotate(0)");
     for (const [role, node] of [["scout", "spring"], ["maker", "inside"], ["gardener", "rear"]]) {
       const entity = entities.get(`i2-person-${role}`);
       entity.pose = "idle";
@@ -485,6 +654,7 @@ const island2Renderer = (() => {
       place(entity, nodes[node].point);
       pose(entity, "idle");
     }
+    follow("i2-crate-lid", "i2-crate", [0, 0], { depthBias: 2 });
   }
 
   function parcel(node, carrier) {
@@ -517,5 +687,6 @@ const island2Renderer = (() => {
 
   const glass = (raised, moving) => elevate("i2-glass", raised, moving);
   const lamp = (raised, moving) => elevate("i2-lamp", raised, moving);
-  return { mount, position, move, actor, sync, reset, clear, parcel, glass, lamp, stopIdle, nodes, entities, journeys };
+  return { mount, position, move, actor, act, perform, follow, release, sync, reset, clear, parcel,
+    glass, lamp, stopIdle, nodes, entities, journeys, followers, acts };
 })();

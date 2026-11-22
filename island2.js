@@ -9,6 +9,8 @@ const island2Items = [
   { id: "seeds", name: "Nasiona", icon: '<path d="M16 29V15M16 21C4 21 3 10 4 7c9 0 14 5 12 14Zm0-6C16 6 22 3 29 4c0 8-5 13-13 11Z" fill="#91ce6e"/>',
     growth: [{ age: 1, needs: { water: 1 } }, { age: 4, needs: { water: 2, timber: 1 } }],
     stages: ["Nasiona w ziemi", "Zielony ogródek", "Zbiory dla budowniczych"],
+    alternate: { id: "pond", growth: [{ age: 1, needs: { water: 1 } }, { age: 3, needs: { water: 2, glass: 2 } }],
+      stages: ["Nasiona w zalanej ziemi", "Staw z liliami", "Wielki liść do nowych przygód"] },
     explanation: "Nawodnione rośliny potrzebują czasu, by wyrosnąć. Żywność wspiera rozbudowę pracowni. W tej łamigłówce włączenie kanału przed zasianiem pustej grządki zamienia ją w staw — to reguła tej wyspy, nie uniwersalna zasada nawadniania.",
     sources: ["history-4", "history-6"] },
   { id: "timber", name: "Skrzynia", icon: '<path d="m3 9 13-6 13 6v17l-13 5-13-5Z" fill="#edb574"/><path d="m3 9 13 6 13-6M16 15v16M8 7l13 6M8 20l5 2"/>',
@@ -19,17 +21,19 @@ const island2Items = [
   { id: "wheel", name: "Krążek", icon: '<ellipse cx="16" cy="12" rx="13" ry="8" fill="#e1ae70"/><path d="M3 12v5c0 11 26 11 26 0v-5M16 8v8m-7-6 14 4"/>',
     growth: [{ age: 1, needs: { water: 2, timber: 1 } }, { age: 2, needs: { copper: 2 } }, { age: 4, needs: { rope: 3 } }],
     stages: ["Stolik na herbatę", "Koło wodne", "Napęd prądnicy", "Napęd windy i optyki"],
-    explanation: "Krążek jest najpierw blatem. Dopiero dołożenie osi i łopatek zmienia go w koło wodne. Koła historycznie napędzały m.in. młyny, tartaki i młoty kuźnicze. Tu ruch trafia też do prądnicy i windy.",
+    alternate: { id: "pottery", growth: [{ age: 1, needs: { timber: 2 } }, { age: 3, needs: { water: 2, rope: 2 } }],
+      stages: ["Krążek dla garncarza", "Koło garncarskie", "Gliniane formy związane do transportu"] },
+    explanation: "Krążek jest najpierw blatem. Oś i łopatki zmieniają go w koło wodne, a garncarz może wykorzystać go do formowania naczyń. Lepienie, suszenie i wypał to osobne procesy: transport glinianych form nie oznacza, że mokra glina stała się ceramiką. Koła wodne historycznie napędzały m.in. tartaki i młoty.",
     sources: ["history-10", "history-64"] },
   { id: "rope", name: "Lina", icon: '<path d="M22 28V12a7 7 0 0 0-14 0v8a4 4 0 0 0 8 0V10m6 11h6m-6 5h6" fill="none" stroke="#b48b4e" stroke-width="4"/>',
     growth: [{ age: 1, needs: { timber: 2 } }, { age: 2, needs: { wheel: 2 } }, { age: 3, needs: { timber: 3, seeds: 3 } }],
     stages: ["Zwinięta lina", "Bloczek i przeciwwaga", "Wciągarka z napędem", "Dźwig portowy"],
     explanation: "Lina przez bloczek przenosi siłę i zmienia kierunek ciągnięcia. Dopiero koło wodne dostarcza tu energii do podnoszenia. Winda i dźwig to uproszczone, autorskie konstrukcje.",
     sources: ["history-64"] },
-  { id: "copper", name: "Miedź", icon: '<path d="M4 23h4V11c0-8 7-8 7 0v12c0 7 7 7 7 0V11c0-7 6-7 6 0v12" fill="none" stroke="#dc8763" stroke-width="4"/>',
+  { id: "copper", name: "Drut", icon: '<path d="M4 23h4V11c0-8 7-8 7 0v12c0 7 7 7 7 0V11c0-7 6-7 6 0v12" fill="none" stroke="#dc8763" stroke-width="4"/>',
     growth: [{ age: 0, needs: { timber: 2 } }, { age: 0, needs: { wheel: 3 } }],
     stages: ["Zwój drutu", "Zwojnica i magnes", "Prądnica zasila latarnię"],
-    explanation: "Sam miedziany drut nie wytwarza prądu. Mieszkańcy łączą zwojnicę z magnesem znalezionym w pracowni. Koło dostarcza ruchu; indukcja elektromagnetyczna pozwala zamienić energię mechaniczną w elektryczną.",
+    explanation: "Sam miedziany drut nie wytwarza prądu. Mieszkańcy łączą zwojnicę z magnesem znalezionym pod pracownią. Koło dostarcza ruchu; indukcja elektromagnetyczna pozwala zamienić energię mechaniczną w elektryczną.",
     sources: ["history-38"] },
   { id: "glass", name: "Szkło", icon: '<ellipse cx="16" cy="16" rx="10" ry="13" fill="#b9eff0"/><path d="m12 9 7-3m-9 10 12-6" stroke="#fff"/>',
     growth: [{ age: 1, needs: { timber: 1 } }, { age: 4, needs: { timber: 2 } }, { age: 5, needs: { lamp: 2, rope: 3, timber: 3 } }],
@@ -54,20 +58,32 @@ function island2BranchOnPlacement(levels, branches, id) {
   return next;
 }
 
+function island2Track(item, branches) {
+  return item.alternate && item.alternate.id === branches[item.id] ? item.alternate : item;
+}
+
+function island2NeedsReady(levels, needs, branches) {
+  return Object.entries(needs).every(([id, minimum]) => levels[id] >= minimum &&
+    !(id === "wheel" && minimum >= 2 && branches.wheel === "pottery") &&
+    !(id === "seeds" && minimum >= 3 && branches.seeds === "pond"));
+}
+
+function island2Preparation(item, levels, placed, turn, branches) {
+  const rule = island2Track(item, branches).growth[levels[item.id] - 1];
+  if (!rule || !levels[item.id]) return null;
+  const age = turn - placed[item.id];
+  return { done: Math.min(age, rule.age), total: rule.age,
+    ready: island2NeedsReady(levels, rule.needs, branches) };
+}
+
 function advanceIsland2(levels, placed, turn, branches = {}) {
   const next = { ...levels };
   const waves = [];
   while (true) {
     const changes = island2Items.filter((item) => {
-      const rule = item.growth[next[item.id] - 1];
-      if (next[item.id] >= 2 && (item.id === "seeds" && branches.seeds === "pond" ||
-          item.id === "wheel" && branches.wheel === "pottery")) return false;
-      if (next[item.id] === 1 && item.id === "wheel" && branches.wheel === "pottery") {
-        return turn - placed.wheel >= 1 && next.timber >= 2;
-      }
+      const rule = island2Track(item, branches).growth[next[item.id] - 1];
       return next[item.id] > 0 && rule && turn - placed[item.id] >= rule.age &&
-        Object.entries(rule.needs).every(([id, minimum]) => next[id] >= minimum &&
-          !(id === "wheel" && minimum >= 2 && branches.wheel === "pottery"));
+        island2NeedsReady(next, rule.needs, branches);
     }).map(({ id }) => ({ id, level: next[id] + 1 }));
     if (!changes.length) break;
     for (const { id, level } of changes) next[id] = level;
@@ -127,12 +143,14 @@ function island2Actor(role, destination) {
 }
 
 function island2Carry(kind, points, duration, offsets, delay = 0) {
-  element("i2-held").innerHTML = kind === "planks"
+  element("i2-held").innerHTML = kind === "magnet"
+    ? '<g id="i2-parcel"><use href="#i2-magnet-token" transform="scale(.8)"/></g>'
+    : kind === "planks"
     ? '<g id="i2-parcel" stroke="#886849" stroke-width="2.5" stroke-linejoin="round"><path d="m-20-10 34-13 12 9-35 14Z" fill="#f3cd8c"/><path d="m-20-3 34-13 12 9-35 14Z" fill="#e1ae6f"/><path d="m-20 4 34-13 12 9-35 14Z" fill="#f3cd8c"/><path d="M0-15 9-8v13L0-2Z" fill="#b68e59"/></g>'
     : kind === "food"
     ? '<g id="i2-parcel"><path d="m-10-7 22 5-4 17-20-6Z" fill="#edbe7b" stroke="#806a49" stroke-width="3"/><ellipse cy="-8" rx="9" ry="8" fill="#efb566" stroke="#806a49" stroke-width="2"/></g>'
     : '<g id="i2-parcel" stroke="#67877a" stroke-width="4" stroke-linecap="round"><path d="M-8-7 9 10m-3-22L-7 8"/><path d="m-11-9 7-5 6 7-7 5" fill="#e5be7f"/></g>';
-  const carrier = island2Current?.kind === "grow" && island2Current.carry === kind ? island2Current.actor : undefined;
+  const carrier = island2Current?.carry === kind ? island2Current.actor : undefined;
   island2Renderer.parcel(element("i2-parcel"), carrier);
   if (carrier) return;
   island2Position("i2-parcel", points.at(-1));
@@ -153,8 +171,9 @@ function renderIsland2() {
     ["i2-wheel", "wheel"], ["i2-rope-coil", "rope"], ["i2-copper", "copper"], ["i2-glass", "glass"], ["i2-lamp", "lamp"]]) {
     show(id, l[key] > 0);
   }
-  show("i2-cave", l.water >= 2);
-  show("i2-cover", l.water < 2);
+  show("i2-cave", l.water >= 2 || island2Story.workshopOpen);
+  show("i2-cutaway", island2Story.cutawayOpen);
+  show("i2-cover", l.water < 2 || island2Story.stoneSaved);
   show("i2-stream", l.water >= 2);
   show("i2-valve", l.water >= 3);
   show("i2-scaffold", l.rope >= 2 && l.timber >= 3);
@@ -180,7 +199,7 @@ function renderIsland2() {
   show("i2-rope-coil", l.rope === 1);
   show("i2-loose-coil", l.copper === 1);
   show("i2-generator", l.copper >= 2);
-  show("i2-magnet", l.copper < 2);
+  show("i2-magnet", island2Story.cutawayOpen && !island2Story.magnetTaken && l.copper < 2);
   show("i2-sparks", l.copper >= 3);
   show("i2-wire", l.copper >= 3);
   show("i2-light-halo", l.lamp >= 2);
@@ -190,10 +209,43 @@ function renderIsland2() {
   show("i2-production", island2Story.producing);
   show("i2-cargo", island2Story.cargo !== "hidden");
   show("i2-reaction", island2Story.reaction);
-  show("i2-person-maker", l.water >= 2);
+  show("i2-person-maker", l.water >= 2 || island2Story.workshopOpen);
   show("i2-person-gardener", l.seeds >= 2);
+  show("i2-splash", false);
+  show("i2-boat", island2Story.boatSeen);
+  show("i2-lily", island2State.branches.seeds === "pond" && l.seeds >= 2);
+  show("i2-fish", island2State.branches.seeds === "pond" && l.seeds >= 2);
+  show("i2-lily-stem", island2Story.lilyMoved && (!island2Story.leafFlat || island2Story.leafSail));
+  show("i2-crate-open", island2Story.crateOpen);
+  show("i2-crate-lid", !island2Story.oarStowed && l.timber > 0);
+  show("i2-lid-board", !island2Story.oarMade);
+  show("i2-lid-paddle", island2Story.oarMade);
+  show("i2-gift", island2Story.giftSeen);
+  show("i2-crate-ripple", island2Story.crateBoat);
+  show("i2-stone-bridge-face", island2Story.bridgeBuilt);
+  show("i2-cover-panel", !island2Story.bridgeBuilt);
+  show("i2-reflection", false);
+  show("i2-pot-tie", pottery && l.wheel >= 3);
+  island2Position("i2-cover", island2Story.stonePoint);
+  element("i2-cover-panel").setAttribute("transform", island2Story.stoneFlat ? "scale(1 .25)" : "");
+  const leafTransform = island2Story.leafSail && island2Renderer.followers.get("i2-lily")?.target === "i2-crate"
+    ? "rotate(-35) scale(1.45 2.1)" : island2Story.leafGrown ? "scale(1.45)" : "";
+  element("i2-lily-body").setAttribute("transform", leafTransform);
+  island2Position("i2-lily", island2Story.leafPoint);
+  island2Position("i2-fish", island2Layout.fish);
+  element("i2-lid-board").setAttribute("transform", l.timber >= 3 && !island2Story.crateBoat ? "translate(0 -19) scale(1.16)" : "");
+  if (l.glass) {
+    const age = island2State.order.length - island2State.placed.glass;
+    const passes = l.glass >= 3 ? 3 : l.glass >= 2 ? Math.min(2, Math.max(0, age - 1)) : 0;
+    [...element("i2-glass-roughness").children].forEach((patch, index) => { patch.style.opacity = index < passes ? "0" : ".8"; });
+  }
+  const cropAge = l.seeds ? island2State.order.length - island2State.placed.seeds : 0;
+  const sprouts = element("i2-seeds").querySelector(".i2-sprouts");
+  sprouts.setAttribute("transform", `translate(157 336) scale(1 ${.65 + Math.min(1, cropAge / 4) * .6}) translate(-157 -336)`);
+  const timberAge = l.timber ? island2State.order.length - island2State.placed.timber : 0;
+  element("i2-saw-cuts").style.opacity = String(Math.min(1, timberAge / 4));
   island2Position("i2-wheel", l.wheel >= 2 ? pottery ? island2Layout.wheelPottery : island2Layout.wheelDrive : island2Layout.wheelRest);
-  island2Position("i2-crate", l.timber >= 3 ? island2Story.cabin : island2Layout.crateRest);
+  island2Position("i2-crate", island2Story.crateBoat ? island2Story.craftPoint : l.timber >= 3 ? island2Story.cabin : island2Layout.crateRest);
   island2Position("i2-rope-coil", island2Layout.rope);
   island2Position("i2-copper", island2Layout.copper);
   island2Position("i2-glass", l.glass >= 4 ? island2Layout.glassTop : l.glass >= 3 ? island2Layout.glassReady
@@ -211,9 +263,12 @@ function renderIsland2() {
     const level = l[item.id];
     button.disabled = island2State.busy;
     button.classList.toggle("placed", level > 0);
-    button.classList.toggle("maxed", level === item.stages.length);
-    button.querySelector("small").textContent = level ? `${island2State.order.indexOf(item.id) + 1} · ${level === item.stages.length ? "MAX" : `${level}/${item.stages.length}`}` : "Dodaj";
-    button.setAttribute("aria-label", level ? `${item.name}: ${island2Stage(item.id, level)}. Obejrzyj.` : `Dodaj: ${item.name}`);
+    const track = island2Track(item, island2State.branches);
+    const preparation = island2Preparation(item, l, island2State.placed, island2State.order.length, island2State.branches);
+    button.classList.toggle("maxed", level === track.stages.length);
+    button.querySelector("small").textContent = level ? `${island2State.order.indexOf(item.id) + 1} · ${level === track.stages.length ? "MAX" : `${level}/${track.stages.length}`}` : "Dodaj";
+    const work = preparation?.total ? ` Przygotowanie: ${preparation.done} z ${preparation.total} etapów.` : "";
+    button.setAttribute("aria-label", level ? `${item.name}: ${island2Stage(item.id, level)}.${work} Obejrzyj.` : `Dodaj: ${item.name}`);
   }
   element("island2-skip").hidden = !island2State.busy;
   element("island2-look").disabled = island2State.busy;
@@ -221,7 +276,7 @@ function renderIsland2() {
   element("island2-motion").textContent = island2Paused ? "Wznów animacje" : "Pauza animacji";
   island2Renderer.sync({ live: island2CanAnimate() && !element("island2").hidden, levels: l,
     branches: island2State.branches, story: island2Story, busy: island2State.busy, finished: island2State.finished });
-  if (!element("island2").hidden) setIslandMusicStage(l.copper >= 3 ? 2 : l.wheel >= 2 ? 1 : 0);
+  if (!element("island2").hidden) setIslandMusicStage(l.copper >= 3 || island2Story.sailing || island2Story.tradeDone ? 2 : l.wheel >= 2 ? 1 : 0);
 }
 
 const island2Actions = {
@@ -250,6 +305,12 @@ const island2Actions = {
 function island2StartStep(step) {
   element("island2-status").textContent = step.text;
   element("island2-scene").dataset.action = step.key || step.kind;
+  if (step.kind === "scene") {
+    element("island2-scene").dataset.action = step.scene;
+    island2Cinema.start(step);
+    return;
+  }
+  if (step.kind === "reveal") return;
   if (step.kind === "place") {
     if (step.id === "lamp" && island2Visual.timber >= 3 && island2Visual.rope >= 3) island2Story.lampRaised = true;
     island2Visual[step.id] = 1;
@@ -407,8 +468,10 @@ function island2StartStep(step) {
 }
 
 function island2CommitStep(step) {
-  if (step.kind === "grow") {
+  if (step.kind === "scene") island2Cinema.commit(step);
+  if (step.kind === "grow" || step.kind === "reveal") {
     island2Visual[step.id] = step.level;
+    if (step.id === "lamp" && step.level >= 2) island2Story.boatSeen = true;
     if (island2CanAnimate()) playSound(step.id === "lamp" ? "island-signal" : "island-grow");
   }
   if (step.kind === "unload") island2Story.cargo = "unloaded";
@@ -452,9 +515,7 @@ function island2Skip() {
 }
 
 function island2Stage(id, level) {
-  if (id === "seeds" && island2State.branches.seeds === "pond") return level >= 2 ? "Staw z liliami i rybkami" : "Nasiona w zalanej ziemi";
-  if (id === "wheel" && island2State.branches.wheel === "pottery") return level >= 2 ? "Koło garncarskie" : "Krążek dla garncarza";
-  return island2Items.find((item) => item.id === id).stages[level - 1];
+  return island2Track(island2Items.find((item) => item.id === id), island2State.branches).stages[level - 1];
 }
 
 function island2BranchHint(id) {
@@ -479,6 +540,8 @@ function island2EndingSteps() {
     { kind: "lower", text: "Paczka na tarasie. Pusta kabina wraca po następny ładunek.", duration: 750 },
     { kind: "cheer", text: "Dostawa dotarła na górę. Mała wyspa połączyła się ze światem!", duration: 1000 },
   ];
+  const alternate = island2Cinema.ending(levels, island2State.branches);
+  if (alternate) return alternate;
   if (island2Story.ending === "pond") return [{ kind: "pond", text: levels.seeds >= 2
     ? "Woda zajęła grządkę. Zamiast zboża mieszkańcy mają staw z liliami!"
     : "Woda zajęła grządkę. Na liście lilii jest jeszcze za wcześnie.", duration: 1700 }];
@@ -500,11 +563,17 @@ function pickIsland2(id) {
   }
   if (island2State.levels[id]) {
     const level = island2State.levels[id];
-    element("island2-status").textContent = `${item.name}: ${island2Stage(id, level)}.`;
+    const preparation = island2Preparation(item, island2State.levels, island2State.placed,
+      island2State.order.length, island2State.branches);
+    const clue = preparation?.total && preparation.done < preparation.total
+      ? ` Przygotowanie: ${preparation.done}/${preparation.total}. Każdy wybór daje czas na dalszą pracę.`
+      : preparation && !preparation.ready ? " Dalsza praca wymaga współpracy z innymi przedmiotami." : "";
+    element("island2-status").textContent = `${item.name}: ${island2Stage(id, level)}.${clue}`;
     playSound("click");
     return;
   }
   if (island2State.finished) return;
+  const previous = { ...island2State.levels };
   island2Renderer.stopIdle();
   island2State.branches = island2BranchOnPlacement(island2State.levels, island2State.branches, id);
   island2State.order.push(id);
@@ -520,6 +589,7 @@ function pickIsland2(id) {
       { kind: "lower", text: "Lampa na miejscu. Kabina wraca po następny ładunek.", duration: 750 });
     lampFitted = true;
   };
+  const queued = { ...seeded };
   for (const wave of result.waves) for (const change of wave) {
     const key = `${change.id}-${change.level}`;
     if (key === "glass-4" && !lampFitted) fitLamp();
@@ -531,11 +601,20 @@ function pickIsland2(id) {
       action.to = island2Renderer.nodes.wheel.point;
       action.carry = undefined;
     }
-    if (!lampFitted && island2State.levels.lamp && island2State.levels.timber >= 3 && island2State.levels.rope >= 3) fitLamp();
-    island2Queue.push({ kind: "grow", ...change, key, ...action });
+    const cinematic = island2Cinema.grow(change, island2State.branches);
+    if (cinematic) island2Queue.push(...cinematic);
+    else island2Queue.push({ kind: "grow", ...change, key, ...action });
+    queued[change.id] = change.level;
+    if (key === "wheel-2" && island2State.branches.wheel !== "pottery") {
+      island2Queue.push(island2Cinema.scene("wheel-splash", "Koło ruszyło! Trochę zbyt ochoczo…", 900));
+    }
     if (key === "glass-4" || key === "timber-4") island2Queue.push({ kind: "lower",
       text: key === "glass-4" ? "Soczewka na miejscu. Kabina wraca na dół." : "Deski na tarasie. Kabina wraca po następny ładunek.", duration: 750 });
   }
+  if (!lampFitted && queued.lamp && queued.timber >= 3 && queued.rope >= 3) fitLamp();
+  island2Queue.push(...island2Cinema.milestones(queued, island2Story));
+  island2Queue.push(...island2Cinema.preparation(previous, queued, island2State.placed,
+    island2State.order.length, island2State.branches));
   if (island2State.order.length === 8) island2Queue.push(...island2EndingSteps());
   renderIsland2();
   island2Pump();
@@ -546,25 +625,29 @@ function finishIsland2() {
   island2State.finished = true;
   const l = island2State.levels;
   const full = island2Story.ending === "beacon";
-  const maxed = island2Items.filter((item) => l[item.id] === item.stages.length).length;
+  const maxed = island2Items.filter((item) => l[item.id] === island2Track(item, island2State.branches).stages.length).length;
   const late = island2Items.filter((item) => {
     if (island2BranchHint(item.id)) return false;
-    const rule = item.growth[l[item.id] - 1];
+    const rule = island2Track(item, island2State.branches).growth[l[item.id] - 1];
     return rule && 8 - island2State.placed[item.id] < rule.age &&
-      Object.entries(rule.needs).every(([id, minimum]) => l[id] >= minimum);
+      island2NeedsReady(l, rule.needs, island2State.branches);
   }).map((item) => item.name);
   element("island2-results").hidden = false;
-  element("island2-result-title").textContent = full ? "Witaj w Porcie Świetlików!"
+  element("island2-result-title").textContent = island2Story.tradeDone
+    ? island2Story.leafSail ? "Żeglujący ogrodnicy" : island2Story.craftKind === "leaf" ? "Ogród wypłynął w świat!" : "Mała wyprawa garncarzy"
+    : full ? "Witaj w Porcie Świetlików!"
     : island2Story.ending === "pond" ? l.seeds >= 2 ? "Wyspa lilii wodnych" : "Wyspa małego stawu"
       : island2Story.ending === "pottery" ? "Osada garncarzy"
       : island2Story.ending === "light" ? "Światło to nie wszystko" : l.wheel === 1 ? "Herbaciarnia na Skale" : "Wyspa małych rzemieślników";
   const branchAdvice = island2BranchHint("seeds") || island2BranchHint("wheel");
-  const advice = full
+  const advice = island2Story.tradeDone ? "Niezwykła wyprawa wróciła z nowymi nasionami. Inna kolejność tworzy inną historię."
+    : full
     ? "Woda, praca mieszkańców, napęd i światło złożyły się w jedną działającą wyspę."
     : branchAdvice || (late.length ? `Wcześniej dodaj: ${late.join(", ")}. Pozostałe przedmioty czekały na ich rozwój.`
       : "Ta wyspa znalazła inne zastosowania. Sprawdź odkryte połączenia poniżej.");
   element("island2-result-text").textContent = `${maxed} / 8 elementów w pełni rozwiniętych. ${advice}`;
-  element("island2-status").textContent = full ? "Statek w porcie, dostawa na górze. Udało się!"
+  element("island2-status").textContent = island2Story.tradeDone ? "Podarunek dotarł. Teraz ogrodnik ma nowy pomysł!"
+    : full ? "Statek w porcie, dostawa na górze. Udało się!"
     : island2Story.ending === "pond" ? "Powstał staw zamiast pola. Mieszkańcy znaleźli inne zastosowanie!"
       : island2Story.ending === "pottery" ? "Krążek napędza dłonie garncarza, nie latarnię."
         : l.lamp >= 3 ? "Statek widzi światło, ale nie ma gdzie bezpiecznie zacumować."
@@ -576,14 +659,20 @@ function finishIsland2() {
     const details = document.createElement("details");
     const summary = document.createElement("summary");
     const level = l[item.id];
-    summary.textContent = `${item.name} · ${level}/${item.stages.length} — ${island2Stage(item.id, level)}`;
+    const track = island2Track(item, island2State.branches);
+    summary.textContent = `${item.name} · ${level}/${track.stages.length} — ${island2Stage(item.id, level)}`;
     const explanation = document.createElement("p");
     annotateTerms(explanation, item.explanation, () => island2State.finished);
     details.append(summary, explanation);
-    if (level < item.stages.length) {
-      const rule = item.growth[level - 1];
-      const missing = Object.entries(rule.needs).filter(([id, minimum]) => l[id] < minimum)
-        .map(([id]) => island2Items.find((other) => other.id === id).name);
+    if (level < track.stages.length) {
+      const rule = track.growth[level - 1];
+      const missing = Object.entries(rule.needs)
+        .filter(([id, minimum]) => !island2NeedsReady(l, { [id]: minimum }, island2State.branches))
+        .map(([id, minimum]) => id === "wheel" && minimum >= 2 && island2State.branches.wheel === "pottery"
+          ? "napęd wodny (krążek został kołem garncarskim)"
+          : id === "seeds" && minimum >= 3 && island2State.branches.seeds === "pond"
+            ? "zapasy zboża (zamiast pola powstał staw)"
+            : island2Items.find((other) => other.id === id).name);
       const hint = document.createElement("p");
       hint.textContent = island2BranchHint(item.id) || (missing.length ? `Nie były jeszcze gotowe: ${missing.join(", ")}.`
         : "Warunki są już gotowe, ale ten przedmiot trafił na wyspę zbyt późno.");
@@ -598,13 +687,15 @@ function finishIsland2() {
     element("island2-learning").append(details);
   }
   if (full) celebrate();
-  else if (!document.hidden) playSound("finish");
+  else if (!document.hidden) playSound(island2Story.tradeDone ? "complete" : "finish");
   renderIsland2();
   element("island2-result-title").focus({ preventScroll: true });
 }
 
 function startIsland2() {
   island2ClearMotion();
+  stopIslandMusic();
+  setIslandMusicStage(0);
   island2Queue = [];
   island2Current = undefined;
   island2Skipping = false;
@@ -615,6 +706,12 @@ function startIsland2() {
       gardener: [...island2Renderer.nodes.rear.point] },
     boat: [...island2Layout.boatWaiting], cabin: [...island2Layout.cabinBase],
     cargo: "hidden", ending: "", celebrating: false, producing: false, reaction: false, lampRaised: false,
+    cutawayOpen: false, workshopOpen: false, stoneSaved: false, stoneFlat: false,
+    stonePoint: [...island2Layout.coverHome], magnetTaken: false, bridgeBuilt: false, tether: "",
+    leafGrown: false, lilyMoved: false, leafFlat: false, leafSail: false, leafPoint: [...island2Layout.lily],
+    formsReady: false, crateOpen: false, crateBoat: false, craftKind: "", craftPoint: [...island2Layout.crateRest],
+    oarMade: false, oarStowed: false, lidSeat: false, sailing: false, boatSeen: false,
+    giftSeen: false, giftReturned: false, tradeDone: false,
   };
   island2Renderer.reset();
   element("island2-results").hidden = true;
@@ -622,7 +719,7 @@ function startIsland2() {
   element("island2-learning").replaceChildren();
   showScreen("island2");
   renderIsland2();
-  element("island2-status").textContent = "Statek czeka na sygnał. Od czego zaczniemy?";
+  element("island2-status").textContent = "Osiem drobiazgów. Od czego zaczną mieszkańcy?";
   element("island2-title").focus({ preventScroll: true });
 }
 

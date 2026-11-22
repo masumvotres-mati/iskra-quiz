@@ -2,10 +2,12 @@
 
 const island2SceneArtwork = `
 <svg viewBox="0 0 640 580" role="img" aria-labelledby="i2-art-title i2-art-description" xmlns="http://www.w3.org/2000/svg">
-<title id="i2-art-title">Latarnia na Skale</title>
-<desc id="i2-art-description">Mała zielona wyspa. Po lewej źródło, ogródek i koło wodne, pośrodku kamienna pracownia, po prawej latarnia z windą i przystanią.</desc>
+<title id="i2-art-title">Wyspa małych spraw</title>
+<desc id="i2-art-description">Mały świat, w którym mieszkańcy odkrywają przejścia, przerabiają przedmioty i pomagają sobie w nieoczekiwanych zadaniach.</desc>
 <defs>
  <clipPath id="i2-cave-mask"><path d="M325 383v-39a15 15 0 0 1 30 0v39Z"/></clipPath>
+ <clipPath id="i2-under-mask"><path d="m210 425 80 36v35l-80-36Z"/></clipPath>
+ <g id="i2-magnet-token" fill="none" stroke="#cf836d" stroke-width="6"><path d="M-7 0v-12q7-12 14 0V0"/><path d="M-7-3v5m14-5v5" stroke="#fff1d2" stroke-width="5"/></g>
  <radialGradient id="i2-glow"><stop stop-color="#ffe486" stop-opacity=".65"/><stop offset="1" stop-color="#ffe486" stop-opacity="0"/></radialGradient>
  <g id="i2-box" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round">
   <path d="m-21-26 21-10 22 10v17L0 1-21-9Z" fill="#e1ae6b"/>
@@ -18,7 +20,7 @@ const island2SceneArtwork = `
 </defs>
 <g id="i2-background">
  <rect width="640" height="580" fill="#fffbed"/>
- <path d="M0 258q170-10 320 0t320-2v324H0Z" fill="#dcf0ed"/>
+ <path d="M0 258q170-10 320 0t320-2v324H0Z" fill="#cfeae7"/>
  <g fill="#fff" opacity=".8"><path d="M79 222q-8-14 7-20 1-16 17-17 16-1 20 12 20-2 22 15 11 1 11 10Z"/><path d="M507 111q-4-10 7-14 2-15 17-13 13-4 18 9 16-2 18 11 10 0 12 7Z"/></g>
  <path d="m66 400 247 112q5 3 10 0l247-112 8 8-254 115q-6 3-13 0L59 408Z" fill="#a8d1c7" opacity=".45"/>
  <path d="m71 400 241 110q6 3 12 0l242-110" fill="none" stroke="#f4fff1" stroke-width="4" stroke-linecap="round"/>
@@ -26,11 +28,13 @@ const island2SceneArtwork = `
 </g>
 <g id="i2-base-terrain" stroke="#3d5847" stroke-width="4" stroke-linejoin="round">
  <path d="m70 350 248-112 248 112v48L318 510 70 398Z" fill="#91b96b"/>
- <path d="M70 350 318 462v48L207 460l-6-9-15-1L70 398Z" fill="#a8c77d"/>
- <path d="M318 462 566 350v48l-126 57-9-3-7 10-106 48Z" fill="#79ac73"/>
- <path d="M79 346 310 242q8-4 16 0l231 104q9 4 0 8L326 458q-8 4-16 0L79 354q-9-4 0-8Z" fill="#c5df8d"/>
+ <path d="M70 350 318 462v48L207 460l-6-9-15-1L70 398Z" fill="#9fc472"/>
+ <path d="M318 462 566 350v48l-126 57-9-3-7 10-106 48Z" fill="#6da568"/>
+ <path d="M79 346 310 242q8-4 16 0l231 104q9 4 0 8L326 458q-8 4-16 0L79 354q-9-4 0-8Z" fill="#b9da7c"/>
  <path d="m88 353 221 100q9 4 18 0l221-100" fill="none" stroke="#dcebb0" stroke-width="3"/>
 </g>
+<g id="i2-cutaway" stroke="#55735a" stroke-width="3" stroke-linejoin="round"><path d="m208 422 84 38v39l-84-38Z" fill="#78926e"/><path d="m212 428 76 34v30l-76-34Z" fill="#354d43"/><path d="m213 452 73 33" stroke="#b09a68" stroke-width="4"/><path d="m216 434 7 3m55 37 6 3" stroke="#67795d" stroke-width="2.5"/></g>
+<g id="i2-magnet"><use href="#i2-magnet-token"/></g>
 <g id="i2-middle-walls" stroke="#3d5847" stroke-width="4" stroke-linejoin="round">
  <ellipse cx="335" cy="374" rx="43" ry="17" fill="#9abb79" stroke="none"/>
  <path d="M296 366v-44q0-25 38-26 40 0 40 26v44l-34 16Z" fill="#b9c9ae"/>
@@ -42,11 +46,11 @@ const island2SceneArtwork = `
  <path d="M325 381v-37a15 15 0 0 1 30 0v37l-15 7Z" fill="#354d43"/>
  <path d="m327 375 13-6 13 6v8l-13 5-13-5Z" fill="#c5a06f" stroke-width="2.5"/>
  <path d="m339 355 12 5v8l-12-5m2 1v10m9-7v9" fill="#e1b779" stroke-width="2.5"/>
- <g id="i2-magnet"><path d="M336 372v-12q4-8 8 0v12" fill="none" stroke="#d78870" stroke-width="5"/><path d="M336 369v4m8-4v4" stroke="#faf2d5" stroke-width="4"/></g>
 </g>
 <path id="i2-cave-lip" d="M323 381v-37a17 17 0 0 1 34 0v37" fill="none" stroke="#7f9b83" stroke-width="4"/>
 <g id="i2-cover" stroke="#3d5847" stroke-width="3.5" stroke-linejoin="round">
- <path d="M324 380v-35q0-18 17-18t17 18v34l-17 7Z" fill="#bdcbae"/><path d="m331 336 7 11-5 13m5-13 13 9" fill="none" stroke="#9cb195" stroke-width="2.5"/>
+ <g id="i2-cover-panel"><path d="M-17 0v-35q0-18 17-18t17 18v34L0 6Z" fill="#bdcbae"/><path d="m-10-44 7 11-5 13m5-13 13 9" fill="none" stroke="#829b7d" stroke-width="2.5"/></g>
+ <g id="i2-stone-bridge-face"><path d="M-23.5-15.675 11.5 .075Q29.5 8.175 29.5 13.275 29.5 18.375 11.5 10.275L-22.5-5.025-29.5-13.275Z" fill="#bdcbae" stroke-width="3"/><path d="M20.5 6.225 9.5 3.375-3.5-3.975M9.5 3.375 .5 3.225" fill="none" stroke="#829b7d" stroke-width="2.5"/></g>
 </g>
 <g id="i2-water" stroke="#3d5847" stroke-width="4" stroke-linejoin="round">
  <ellipse cx="237" cy="316" rx="35" ry="15" fill="#a2c777" stroke="none"/>
@@ -76,8 +80,10 @@ const island2SceneArtwork = `
  <g class="i2-seed-first" fill="#f7d793" stroke="none"><ellipse cx="139" cy="331" rx="4" ry="2.5"/><ellipse cx="157" cy="326" rx="4" ry="2.5"/><ellipse cx="173" cy="338" rx="4" ry="2.5"/></g>
  <g class="i2-sprouts" fill="#7ab46b"><path d="M139 332v-17m0 8q-13-2-9-10 11 0 9 10m0-5q10-10 13-1-2 8-13 6M174 338v-19m0 10q-13-2-10-11 12 0 10 11m0-5q10-12 14-3-3 8-14 8"/></g>
  <g class="i2-harvest"><use href="#i2-ear" x="135" y="332"/><use href="#i2-ear" x="157" y="324"/><use href="#i2-ear" x="178" y="339"/><path d="m111 344 19 8-4 13-19-8Z" fill="#edc58b"/><path d="m111 348 16 7" fill="none" stroke-width="2.5"/></g>
- <g id="i2-pond"><path d="M109 327q10-8 28-8 15-14 32-3 23 0 35 14 9 11-16 17-22 14-41 5-29-1-38-13-7-7 0-12Z" fill="#83cbd2"/><path d="M116 331q14-9 26-5m24 19 24-9" fill="none" stroke="#bce9dd" stroke-width="3"/><path d="M134 329q-13-7-19 0-5 9 11 13 16 1 16-9l-8-4 3 9" fill="#91bd71"/><path d="M169 326q-8-10 7-12 18-1 19 8-1 10-18 10l-8-6 13-3" fill="#a0c97b"/><path d="M150 343q7-7 13 0-6 7-13 0Z" fill="#efb16e" stroke-width="2.5"/></g>
+ <g id="i2-pond"><path d="M109 327q10-8 28-8 15-14 32-3 23 0 35 14 9 11-16 17-22 14-41 5-29-1-38-13-7-7 0-12Z" fill="#83cbd2"/><path d="M116 331q14-9 26-5m24 19 24-9" fill="none" stroke="#bce9dd" stroke-width="3"/><path d="M134 329q-13-7-19 0-5 9 11 13 16 1 16-9l-8-4 3 9" fill="#91bd71"/></g>
 </g>
+<g id="i2-lily" stroke="#47754e" stroke-width="3"><g id="i2-lily-body"><path d="M-6 0q-11-12 5-14 20-2 23 8 4 13-17 15L-6 0 7-3Z" fill="#a0ce79"/><path d="m4-2 11-5M4-2l9 5" fill="none" stroke="#d5e9a1" stroke-width="2.5"/><path id="i2-lily-stem" d="M4 3v23" fill="none" stroke="#6b9455" stroke-width="4"/></g></g>
+<g id="i2-fish" fill="#efac63" stroke="#696849" stroke-width="2.5"><path d="M-10 0Q0-12 11 0 0 11-10 0Zm-1 0-7-6v12Z"/><circle cx="4" cy="-1" r="1.5" fill="#354d43" stroke="none"/></g>
 <path id="i2-cliff-steps" d="m286 368 14-6m-20-4 14-6m-19-4 14-6" fill="none" stroke="#a9c783" stroke-width="3" stroke-linecap="round"/>
 <g id="i2-scaffold-short" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
  <path d="M394 374v-69h7v69m30 0v-69h7v69" fill="#d3a66b"/><path d="M390 302h52v10h-52Z" fill="#edc98a"/>
@@ -115,12 +121,15 @@ const island2SceneArtwork = `
  <g id="i2-waterwheel"><path d="M-23 0v-31m46 31v-31" fill="none" stroke="#7f805c" stroke-width="5"/><g transform="translate(0 -38) scale(.86 1)"><circle r="34" fill="#cb9b60"/><g id="i2-wheel-rotor"><g id="i2-paddles" fill="#edc98d"><path d="M-8-41H8v15H-8Zm0 67H8v15H-8ZM-41-8h15V8h-15Zm67 0h15V8H26ZM-34-25l10-10 11 15-10 10Zm47 45 10-10 11 15-10 10Zm11-55 10 10-15 11-10-10Zm-48 45 10 10-11 15-10-10Z"/><circle r="24" fill="#d3a368"/><path d="M0-24v48m-21-36 42 24m-42 0 42-24" stroke="#f1cc91" stroke-width="5"/></g></g><circle r="5" fill="#6d6246"/></g></g>
  <g id="i2-tabletop"><ellipse cy="-23" rx="28" ry="12.5" fill="#dba867"/><g transform="translate(0 -26) scale(1 .45)"><g id="i2-table-rotor"><circle r="28" fill="#f0cd8b"/><path d="M-24-11 24 11m-48 0 48-22" fill="none" stroke="#d8ae6d" stroke-width="2.5"/></g></g></g>
  <g id="i2-tea" stroke-width="2.5"><path d="M-7-29v-10H6v10q-7 5-13 0m13-8q10-3 5 5H6" fill="#fff9e2"/><path d="M0-44q-3-4 0-7" fill="none" stroke="#fff9e2"/></g>
- <g id="i2-pottery"><path d="M-7-48v6q-12 3-12 10 1 7 19 7t19-7q0-7-12-10v-6Z" fill="#dc9d6c"/><ellipse cy="-48" rx="7" ry="3.5" fill="#76533f"/><path d="M-17-33q17 7 34 0" fill="none" stroke="#f1c99b" stroke-width="2.5"/></g>
+ <g id="i2-pottery"><path d="M-7-48v6q-12 3-12 10 1 7 19 7t19-7q0-7-12-10v-6Z" fill="#dc9d6c"/><ellipse cy="-48" rx="7" ry="3.5" fill="#76533f"/><path d="M-17-33q17 7 34 0" fill="none" stroke="#f1c99b" stroke-width="2.5"/><path id="i2-pot-tie" d="M-11-40q11 11 22 0M0-35v10m-3-7 6-5" fill="none" stroke="#7d7047" stroke-width="3"/></g>
 </g>
 <g id="i2-crate" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round">
- <g id="i2-crate-box"><use href="#i2-box"/></g>
- <g id="i2-cabin-detail"><path d="m-21-48 21-10 22 10v38L0 0-21-10Z" fill="#d3a365"/><path d="M0-38 22-48v38L0 0Z" fill="#b88954"/><path d="m-17-43 14 6v22l-14-6Zm22 6 12-6v22L5-15Z" fill="#6e7660"/><path d="m-25-49 25-12 26 12-26 12Z" fill="#efc98b"/><path d="m-23-8 23 10 24-11" fill="none"/></g>
+ <g id="i2-crate-ripple" fill="none" stroke="#e6faf1" stroke-width="2.5" stroke-linecap="round"><path d="M-32 1q-7 6 2 10m60-10q7 6-2 10m-44 0 14 4 14-4"/></g>
+ <g id="i2-crate-box"><path d="M-21-26 0-17l22-9v17L0 1-21-9Z" fill="#dfac69"/><path d="M0-17V1l22-10v-17Z" fill="#bd8b52"/><path d="m-14-14 7 3m14 0 8-3" fill="none" stroke-width="2.5"/><g id="i2-saw-cuts" fill="none" stroke="#926e45" stroke-width="2.5"><path d="m-15-18 3 4m5 1 3 4m11-4 3-4"/></g></g>
+ <g id="i2-crate-open"><path d="m-21-26 21-10 22 10-22 9Z" fill="#5b725c"/><path d="m-20-26 20 9 21-9" fill="none"/><path d="m5-24 10-4 8 6-10 4Z" fill="#d99d6d" stroke-width="2.5"/></g>
+ <g id="i2-cabin-detail"><path d="m-21-48 21-10 22 10v38L0 0-21-10Z" fill="#d3a365"/><path d="M0-38 22-48v38L0 0Z" fill="#b88954"/><path d="m-17-43 14 6v22l-14-6Zm22 6 12-6v22L5-15Z" fill="#6e7660"/><path d="m-23-8 23 10 24-11" fill="none"/></g>
 </g>
+<g id="i2-crate-lid" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round"><g id="i2-lid-board"><path d="m-21-26 21-10 22 10-22 9Z" fill="#f3ce8c"/><path d="m-13-26 14 6 13-6" fill="none" stroke-width="2.5"/></g><g id="i2-lid-paddle"><path d="M0-18v39m0-5-7 6 1 13q6 7 12 0l1-13Z" fill="#edc98a" stroke-linecap="round"/></g></g>
 <g id="i2-rope-coil" stroke="#8a744d" stroke-width="3.5" fill="none"><ellipse cy="-4" rx="14" ry="6"/><ellipse cy="-9" rx="14" ry="6"/><path d="M14-9q16 0 9 14" stroke-linecap="round"/></g>
 <g id="i2-copper" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
  <g id="i2-loose-coil" fill="none" stroke="#cc8d68" stroke-width="5"><path d="M-20-2h6v-17q0-12 8-9t8 11V-1q0 9 7 7t7-10v-15q0-9 7-7t7 10v13"/></g>
@@ -131,7 +140,7 @@ const island2SceneArtwork = `
  <circle id="i2-light-halo" cy="-13" r="37" fill="url(#i2-glow)" stroke="none"/>
  <path d="M-5-26v-5q5-7 10 0v5" fill="none"/><path d="M-9 0v-24H9V0m-23 2h28m-27-27h26" fill="#eac076"/><path d="M-5-20H5V-3H-5Z" fill="#788c76" stroke-width="2.5"/><path id="i2-bulb" d="M0-3v-6q-8-11 0-14 8 3 0 14" fill="#ffe38b"/>
 </g>
-<g id="i2-glass" stroke="#3d7375" stroke-width="3"><ellipse rx="12" ry="15" fill="#a6e0df"/><g id="i2-lens-rings"><path d="m-5-3 8-6" fill="none" stroke="#f1ffed" stroke-width="3" stroke-linecap="round"/></g></g>
+<g id="i2-glass" stroke="#3d7375" stroke-width="3"><ellipse rx="12" ry="15" fill="#a6e0df"/><g id="i2-glass-roughness" fill="#d3e2d0" stroke="none"><path d="M-9-9q10-8 17 0l-2 4H-6Z"/><path d="M-10-2H8v6H-9Z"/><path d="M-8 7H7q-7 10-15 0Z"/></g><g id="i2-lens-rings"><path d="m-5-3 8-6" fill="none" stroke="#f1ffed" stroke-width="3" stroke-linecap="round"/></g></g>
 <g id="i2-beam" pointer-events="none"><g transform="translate(471 190)"><g id="i2-beam-pivot"><path d="M0 0 147-25v58Z" fill="#ffe6a0" opacity=".35"/></g></g></g>
 <g id="i2-boat" stroke="#3d5847" stroke-width="3.5" stroke-linejoin="round"><g class="i2-boat-bob">
  <ellipse cy="17" rx="43" ry="8" fill="#a0ccc4" stroke="none"/>
@@ -140,8 +149,12 @@ const island2SceneArtwork = `
  <circle cx="-14" cy="6" r="3" fill="#f4d395"/><circle cx="7" cy="6" r="3" fill="#f4d395"/>
 </g></g>
 <g id="i2-cargo"><use href="#i2-box" transform="scale(.55)"/></g>
+<g id="i2-gift" stroke="#5b6848" stroke-width="2.5" stroke-linejoin="round"><path d="M-8-12H8V8H-8Z" fill="#fff0b7"/><path d="M0 3v-10m0 5q-9-1-6-7 8 0 6 7m0-3q7-7 10-1-3 6-10 5" fill="#93b96c"/></g>
+<g id="i2-splash" fill="none" stroke="#91dadd" stroke-width="4" stroke-linecap="round"><path d="M-16 2q-2-14-11-16M-6-2v-20m15 22q6-19 17-20M18 7l13-3"/></g>
 <g id="i2-production" stroke="#514f3e" stroke-width="2.5" stroke-linejoin="round"><g id="i2-mill-arm"><path d="M347 361v-13h-6" fill="none" stroke="#c4a06a" stroke-width="3"/><path d="m339 346 8 3v6l-8-3Z" fill="#edc98a"/></g></g>
 <g id="i2-people"><g id="i2-person-scout"></g><g id="i2-person-maker"></g><g id="i2-person-gardener"></g></g>
 <g id="i2-held" pointer-events="none"></g>
+<path id="i2-tether" d="" fill="none" stroke="#9b7b4f" stroke-width="3" stroke-linecap="round"/>
+<path id="i2-reflection" d="" fill="none" stroke="#f4d36d" stroke-width="3" stroke-dasharray="7 9" opacity=".8"/>
 <g id="i2-reaction"></g>
 </svg>`;
