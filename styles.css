@@ -220,7 +220,41 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .legal-case-choice.correct { border-color: #78ae3d; background: #eef8e3; color: var(--green-dark); animation: answer-confirm 220ms ease-out; }
 .legal-case-choice.incorrect { border-color: #d07768; background: #fff0ed; color: #963c2b; }
 .legal-case-choice:disabled { cursor: default; opacity: 1; }
+.workshop-entry { border-color: #9dcbd5; background: #eaf6f8; }
+#workshop-title { font-size: 32px; }
+.workshop-goal { margin: 12px 0 18px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.lock-stages { display: flex; justify-content: space-between; gap: 6px; list-style: none; padding: 0; margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+.lock-stages li { padding: 7px 9px; border-radius: 9px; background: #e9eee2; }
+.lock-stages li[aria-current="step"] { color: #785b1e; background: #fff0bf; font-weight: 750; }
+.lock-stages li.done { color: var(--green-dark); background: #e1efcf; }
+.lock-scene { position: sticky; top: 0; z-index: 1; overflow: hidden; border: 2px solid #a9ccd5; border-radius: 18px; background: #eaf5fb; }
+.is-complete .lock-scene { position: static; }
+.lock-scene svg { display: block; width: 100%; height: auto; }
+.lock-scene-label { fill: #557061; font: 750 20px "Segoe UI", sans-serif; letter-spacing: 1px; }
+.lock-gate-number { fill: #62452e; font: 750 24px "Segoe UI", sans-serif; }
+.lock-scene[data-busy="true"] .lock-moving { transition: transform var(--lock-duration) ease-in-out; }
+.lock-scene[data-busy="true"] #lock-left-gate, .lock-scene[data-busy="true"] #lock-right-gate { transition: opacity var(--lock-duration); }
+.lock-flow { opacity: 0; }
+.lock-scene[data-busy="true"][data-flow="in"] #lock-inflow, .lock-scene[data-busy="true"][data-flow="out"] #lock-outflow { opacity: 1; stroke-dasharray: 9 10; animation: lock-flow 400ms linear infinite; }
+.lock-status { min-height: 52px; display: flex; align-items: center; margin: 12px 0; padding: 10px 12px; border-radius: 12px; background: #eaf3df; color: var(--green-dark); font-size: 13px; font-weight: 650; line-height: 1.6; }
+.lock-status.warning { background: #fff0bf; color: #785b1e; }
+.lock-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.lock-control { display: flex; align-items: center; gap: 10px; min-height: 80px; padding: 12px; border: 2px solid #d5e2e4; border-radius: 14px; box-shadow: 0 3px 0 #d5e2e4; background: white; color: #293b20; font-size: 14px; font-weight: 750; line-height: 1.4; text-align: left; cursor: pointer; transition: transform 90ms, border-color 100ms; }
+.lock-control-icon { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border-radius: 8px; background: #eaf6f8; color: #347b8e; font-size: 21px; }
+.lock-control > span:last-child { min-width: 0; }
+.lock-control small { display: block; margin-top: 5px; font-size: 10px; font-weight: 500; color: var(--muted); }
+.lock-control:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+.lock-control:disabled { cursor: default; opacity: .6; }
+.lock-control.recommended { border-color: #d6ad35; background: #fff8df; box-shadow: 0 3px 0 #d6ad35; }
+.lock-tools { display: flex; gap: 10px; margin: 16px 0; }
+.lock-tools .button { min-height: 44px; margin: 0; padding: 10px 4px; font-size: 13px; }
+.lock-success { margin-top: 20px; padding: 18px; border: 2px solid #9cbe77; border-radius: 18px; background: #eef5e5; }
+.lock-success h2 { margin: 0; font-size: 24px; }
+.lock-success h2:focus { outline: none; }
+.lock-success > p { font-size: 14px; line-height: 1.7; }
+.lock-success .sources { margin-top: 12px; }
 .noscript { padding: 20px; border: 2px solid #ac4c3a; border-radius: 15px; }
+@keyframes lock-flow { to { stroke-dashoffset: -38; } }
 @keyframes enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes answer-in { from { opacity: .6; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes answer-confirm { 50% { transform: scale(1.015); } }

@@ -16,6 +16,7 @@
     <script src="./quiz.js" defer></script>
     <script src="./timeline.js" defer></script>
     <script src="./legal-games.js" defer></script>
+    <script src="./workshop.js" defer></script>
   </head>
   <body>
     <div class="app">
@@ -68,6 +69,13 @@
             <p>Patent, wzór przemysłowy czy znak towarowy? Dopasuj ochronę do celu klienta w pięciu krótkich sprawach.</p>
             <button id="office-open" class="button secondary" type="button">Otwórz Biuro pomysłów →</button>
             <small>Osobna gra — nie zmienia zaliczeń rozdziałów.</small>
+          </div>
+          <div class="game-entry workshop-entry">
+            <p class="eyebrow">GRA GRAFICZNA · HISTORIA</p>
+            <h2>Warsztat wynalazcy</h2>
+            <p>Otwieraj wrota, steruj wodą i przeprowadź statek przez śluzę. Tutaj działasz, zamiast wybierać odpowiedź.</p>
+            <button id="workshop-open" class="button secondary" type="button">Uruchom śluzę →</button>
+            <small>Bez zegara i bez wpływu na zaliczenia.</small>
           </div>
           <details class="practice">
             <summary>Swobodny trening — bez odblokowywania</summary>
@@ -190,6 +198,95 @@
           <p class="game-instructions">Gra nie zmienia zaliczeń rozdziałów. Każda nowa runda to nowy wybór spraw z puli.</p>
           <button id="legal-game-restart" class="button primary" type="button">Nowa runda →</button>
           <button id="legal-game-home" class="button text-button" type="button">Wróć do ścieżki</button>
+        </section>
+        <section id="workshop" class="screen" aria-labelledby="workshop-title" hidden>
+          <button id="workshop-exit" class="button text-button game-back" type="button">← Wróć do ścieżki</button>
+          <p class="eyebrow">WARSZTAT WYNALAZCY</p>
+          <h1 id="workshop-title" tabindex="-1">Przeprowadź statek</h1>
+          <p class="workshop-goal">Cel: z dolnego kanału na wyższy poziom.</p>
+          <ol id="lock-stages" class="lock-stages" aria-label="Etapy przeprawy">
+            <li>1. Wpłyń</li><li>2. Podnieś</li><li>3. Wypłyń</li>
+          </ol>
+          <div id="lock-scene" class="lock-scene" data-busy="false" data-flow="">
+            <svg viewBox="0 0 640 370" role="img" aria-labelledby="lock-scene-title lock-scene-description">
+              <title id="lock-scene-title">Statek i śluza pomiędzy dwoma poziomami kanału</title>
+              <desc id="lock-scene-description"></desc>
+              <defs>
+                <linearGradient id="lock-water-color" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#65c7e4"/><stop offset="1" stop-color="#3293bc"/></linearGradient>
+                <clipPath id="lock-chamber-clip"><rect x="220" y="100" width="200" height="205"/></clipPath>
+              </defs>
+              <rect width="640" height="370" fill="#eaf5fb"/>
+              <circle cx="548" cy="48" r="25" fill="#ffe397"/>
+              <path d="M0 130Q80 66 172 114T360 100T640 112V190H0Z" fill="#d2e8c1"/>
+              <path d="M0 157Q110 109 211 153T420 140T640 143V230H0Z" fill="#bdd8ad"/>
+              <text x="32" y="164" class="lock-scene-label">START</text>
+              <text x="267" y="69" class="lock-scene-label">KOMORA</text>
+              <rect x="0" y="220" width="220" height="85" fill="url(#lock-water-color)"/>
+              <path d="M0 222H214" stroke="#9de0ef" stroke-width="5"/>
+              <g clip-path="url(#lock-chamber-clip)">
+                <g id="lock-chamber-water" class="lock-moving">
+                  <rect x="220" y="0" width="200" height="240" fill="url(#lock-water-color)"/>
+                  <path d="M222 2H418" stroke="#bceff4" stroke-width="5"/>
+                  <path d="M235 28h36m30 18h42m21-18h37" stroke="#bceff4" stroke-width="3" opacity=".6"/>
+                </g>
+              </g>
+              <rect x="420" y="140" width="220" height="85" fill="url(#lock-water-color)"/>
+              <path d="M426 142H640M457 163h38m60 22h35" stroke="#bceff4" stroke-width="4"/>
+              <path d="M0 305H420V225H640V370H0Z" fill="#d9c5a0"/>
+              <path d="M0 305H420V225H640" fill="none" stroke="#b69c72" stroke-width="8" stroke-linejoin="round"/>
+              <path d="M550 191V330H320V284M300 284V348H114V274" fill="none" stroke="#a5a89a" stroke-width="12" stroke-linejoin="round"/>
+              <path id="lock-inflow" d="M550 191V330H320V284" class="lock-flow" fill="none" stroke="#2498c1" stroke-width="6" stroke-linejoin="round"/>
+              <path id="lock-outflow" d="M300 284V348H114V274" class="lock-flow" fill="none" stroke="#2498c1" stroke-width="6" stroke-linejoin="round"/>
+              <g transform="translate(220 0)">
+                <path d="M0 103V305" stroke="#796a53" stroke-width="18" stroke-dasharray="4 7" opacity=".3"/>
+                <g id="lock-left-gate">
+                  <rect x="-8" y="103" width="16" height="202" rx="3" fill="#93623c" stroke="#62452e" stroke-width="3"/>
+                  <path d="M-9 130H9m-18 65H9m-18 65H9" stroke="#d4ae6c" stroke-width="5"/>
+                </g>
+                <circle cy="83" r="17" fill="#fffdf5" stroke="#93623c" stroke-width="3"/>
+                <text y="91" text-anchor="middle" class="lock-gate-number">1</text>
+              </g>
+              <g transform="translate(420 0)">
+                <path d="M0 103V305" stroke="#796a53" stroke-width="18" stroke-dasharray="4 7" opacity=".3"/>
+                <g id="lock-right-gate">
+                  <rect x="-8" y="103" width="16" height="202" rx="3" fill="#93623c" stroke="#62452e" stroke-width="3"/>
+                  <path d="M-9 130H9m-18 65H9m-18 65H9" stroke="#d4ae6c" stroke-width="5"/>
+                </g>
+                <circle cy="83" r="17" fill="#fffdf5" stroke="#93623c" stroke-width="3"/>
+                <text y="91" text-anchor="middle" class="lock-gate-number">2</text>
+              </g>
+              <path d="M589 65v74" stroke="#4e733b" stroke-width="5"/>
+              <path d="M591 65h37l-11 13 11 13h-37Z" fill="#70aa42"/>
+              <g id="lock-boat" class="lock-moving">
+                <path d="M-54-12H54L39 8H-36Z" fill="#d47a52" stroke="#77482f" stroke-width="3" stroke-linejoin="round"/>
+                <rect x="-29" y="-39" width="63" height="26" rx="4" fill="#fff8d9" stroke="#77482f" stroke-width="3"/>
+                <path d="M-17-33h14v12h-14zm25 0h14v12H8Z" fill="#78bbd1"/>
+                <path d="M-34-41h73" stroke="#4e733b" stroke-width="5" stroke-linecap="round"/>
+                <path d="M-45 0H43" stroke="#f5bf7d" stroke-width="3"/>
+              </g>
+            </svg>
+          </div>
+          <p id="lock-status" class="lock-status" role="status" aria-live="polite" aria-atomic="true"></p>
+          <div id="lock-controls" class="lock-controls" role="group" aria-label="Sterowanie śluzą" aria-busy="false">
+            <button id="lock-left" class="lock-control" data-feedback-sound type="button"><span class="lock-control-icon" aria-hidden="true">1</span><span>Lewe wrota<small id="lock-left-state"></small></span></button>
+            <button id="lock-right" class="lock-control" data-feedback-sound type="button"><span class="lock-control-icon" aria-hidden="true">2</span><span>Prawe wrota<small id="lock-right-state"></small></span></button>
+            <button id="lock-water" class="lock-control" data-feedback-sound type="button"><svg class="lock-control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-13Z"/></svg><span>Woda<small id="lock-water-state"></small></span></button>
+            <button id="lock-sail" class="lock-control" data-feedback-sound type="button"><span class="lock-control-icon" aria-hidden="true">→</span><span>Statek<small id="lock-sail-state"></small></span></button>
+          </div>
+          <div class="lock-tools">
+            <button id="lock-hint" class="button text-button" type="button">Podpowiedź</button>
+            <button id="lock-reset" class="button text-button" type="button">Od początku ↻</button>
+          </div>
+          <div id="lock-success" class="lock-success" hidden>
+            <h2 id="lock-success-title" tabindex="-1">Statek na górze!</h2>
+            <p>To woda uniosła statek. Nie trzeba było podnosić go dźwigiem.</p>
+            <details id="lock-learning" class="sources">
+              <summary>Jak to działa? Wyjaśnienie i źródło</summary>
+              <div id="lock-source" class="feedback"></div>
+              <p>Model jest uproszczony: zawory dopływu i odpływu zamykają się automatycznie po wyrównaniu poziomu. Wrota pokazano schematycznie, bez odwzorowania ruchu ich skrzydeł.</p>
+              <p><a href="https://canalrivertrust.org.uk/canals-and-rivers/how-does-a-canal-lock-work" target="_blank" rel="noopener noreferrer">Canal &amp; River Trust — działanie śluzy (po angielsku)</a></p>
+            </details>
+          </div>
         </section>
         <noscript><p class="noscript">Włącz JavaScript w przeglądarce, aby uruchomić quiz.</p></noscript>
       </main>
