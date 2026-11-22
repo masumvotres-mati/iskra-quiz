@@ -72,7 +72,7 @@ document.getElementById("sound-toggle").addEventListener("click", () => {
 });
 document.addEventListener("click", (event) => {
   const button = event.target instanceof Element ? event.target.closest("button") : null;
-  if (button && !button.disabled && button.id !== "sound-toggle" && !button.matches(".answer-select, .timeline-place")) {
+  if (button && !button.disabled && button.id !== "sound-toggle" && !button.matches(".answer-select, .timeline-place, [data-feedback-sound]")) {
     if (button.id === "next" && !document.getElementById("results").hidden) return;
     if (button.id === "timeline-next" && !document.getElementById("timeline-results").hidden) return;
     playSound("click");

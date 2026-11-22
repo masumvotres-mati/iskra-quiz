@@ -15,6 +15,7 @@
     <script src="./sounds.js" defer></script>
     <script src="./quiz.js" defer></script>
     <script src="./timeline.js" defer></script>
+    <script src="./legal-games.js" defer></script>
   </head>
   <body>
     <div class="app">
@@ -52,6 +53,20 @@
             <h2>Wehikuł czasu</h2>
             <p>Co było wcześniej? Ułóż wydarzenia na osi czasu. Pięć ruchów, bez pośpiechu.</p>
             <button id="timeline-open" class="button secondary" type="button">Zagraj w Wehikuł czasu →</button>
+            <small>Osobna gra — nie zmienia zaliczeń rozdziałów.</small>
+          </div>
+          <div class="game-entry legal-game-entry">
+            <p class="eyebrow">GRA EDUKACYJNA · PRAWO</p>
+            <h2>Jedna zmiana</h2>
+            <p>Jeden szczegół zmienia sytuację. Czy zmieni też Twoją decyzję? Trzy sprawy, po dwie wersje.</p>
+            <button id="change-open" class="button secondary" type="button">Zagraj w Jedną zmianę →</button>
+            <small>Bez zegara i bez wpływu na zaliczenia.</small>
+          </div>
+          <div class="game-entry legal-game-entry">
+            <p class="eyebrow">GRA EDUKACYJNA · PRAWO</p>
+            <h2>Biuro pomysłów</h2>
+            <p>Patent, wzór przemysłowy czy znak towarowy? Dopasuj ochronę do celu klienta w pięciu krótkich sprawach.</p>
+            <button id="office-open" class="button secondary" type="button">Otwórz Biuro pomysłów →</button>
             <small>Osobna gra — nie zmienia zaliczeń rozdziałów.</small>
           </div>
           <details class="practice">
@@ -141,6 +156,40 @@
           <ol id="timeline-final-board" class="timeline-board" aria-label="Gotowa oś czasu"></ol>
           <button id="timeline-restart" class="button primary" type="button">Zagraj nową rundę →</button>
           <button id="timeline-home" class="button text-button" type="button">Wróć do ścieżki</button>
+        </section>
+        <section id="legal-game" class="screen" aria-labelledby="legal-game-title" hidden>
+          <button id="legal-game-exit" class="button text-button game-back" type="button">← Wróć do ścieżki</button>
+          <p class="eyebrow">GRA EDUKACYJNA · PRAWO (PDF 2023)</p>
+          <h1 id="legal-game-title" tabindex="-1"></h1>
+          <p id="legal-game-instructions" class="game-instructions"></p>
+          <div class="progress-label"><span id="legal-game-count"></span><span id="legal-game-score"></span></div>
+          <div id="legal-game-progress" class="progress-track" role="progressbar" aria-label="Podjęte decyzje" aria-valuemin="0" aria-valuenow="0" aria-valuemax="6"><div id="legal-game-progress-fill"></div></div>
+          <div class="legal-case-paper">
+            <p id="legal-case-label" class="eyebrow"></p>
+            <h2 id="legal-case-title" tabindex="-1"></h2>
+            <p id="legal-case-context"></p>
+            <p id="legal-case-previous" class="legal-case-previous" hidden></p>
+            <p id="legal-case-fact" class="legal-case-fact"></p>
+            <p id="legal-case-stamp" class="legal-case-stamp" hidden></p>
+          </div>
+          <h2 id="legal-case-prompt" class="legal-case-prompt"></h2>
+          <div id="legal-case-choices" class="legal-case-choices" role="group" aria-labelledby="legal-case-prompt"></div>
+          <p class="game-instructions">Podkreślone pojęcia: definicja i przykład po wyborze odpowiedzi. Przypadki są uproszczone; uczysz się według PDF-u organizatora z 2023 r.</p>
+          <div id="legal-game-feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
+          <div class="quiz-actions">
+            <button id="legal-game-next" class="button primary next-button" data-feedback-sound type="button" disabled>Dalej →</button>
+          </div>
+        </section>
+
+        <section id="legal-game-results" class="screen results" aria-labelledby="legal-game-results-title" hidden>
+          <div class="result-art" aria-hidden="true">✓</div>
+          <p id="legal-game-result-name" class="eyebrow"></p>
+          <h1 id="legal-game-results-title" tabindex="-1">Sprawy rozstrzygnięte!</h1>
+          <div class="score-card"><span id="legal-game-final-score" class="final-score"></span><span>poprawnych decyzji</span></div>
+          <p id="legal-game-result-note" class="result-note"></p>
+          <p class="game-instructions">Gra nie zmienia zaliczeń rozdziałów. Każda nowa runda to nowy wybór spraw z puli.</p>
+          <button id="legal-game-restart" class="button primary" type="button">Nowa runda →</button>
+          <button id="legal-game-home" class="button text-button" type="button">Wróć do ścieżki</button>
         </section>
         <noscript><p class="noscript">Włącz JavaScript w przeglądarce, aby uruchomić quiz.</p></noscript>
       </main>

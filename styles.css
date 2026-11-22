@@ -200,6 +200,26 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .timeline-place:hover { background: #e4efd7; }
 .timeline-place:active { transform: translateY(2px); }
 #timeline-progress-fill { height: 100%; width: 0; border-radius: inherit; background: #71ac28; transition: width 220ms ease-out; }
+.legal-game-entry { border-color: #c8d8e6; background: #f1f6fb; }
+#legal-game-title { font-size: 32px; }
+#legal-game-progress-fill { height: 100%; width: 0; border-radius: inherit; background: #71ac28; transition: width 220ms ease-out; }
+.legal-case-paper { margin-top: 20px; padding: 18px; border: 2px solid #e6d49a; border-top: 7px solid #d6ad35; border-radius: 16px; background: #fffdf5; }
+.legal-case-paper h2 { margin: 0; font-size: 20px; line-height: 1.4; overflow-wrap: anywhere; }
+.legal-case-paper h2:focus { outline: none; }
+.legal-case-paper p:not(.eyebrow) { font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.legal-case-previous { margin: 18px 0 10px; padding-top: 14px; border-top: 1px solid #e6ddc7; color: var(--muted); font-size: 12px !important; }
+.legal-case-fact { margin: 14px 0 0; padding: 12px; border-radius: 10px; background: #fff0bf; }
+.legal-case-fact.changed { border-left: 4px solid #75539d; background: #f0e9fa; }
+.legal-case-stamp { display: inline-block; margin: 16px 0 0; padding: 5px 9px; border: 2px solid #78985b; border-radius: 6px; color: var(--green-dark); font-size: 10px !important; font-weight: 800; letter-spacing: 1px; animation: reward-pop 180ms ease-out; }
+.legal-case-prompt { margin: 22px 0 14px; font-size: 19px; line-height: 1.5; overflow-wrap: anywhere; }
+.legal-case-choices { display: grid; gap: 12px; }
+#legal-game[data-mode="change"] .legal-case-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.legal-case-choice { display: flex; justify-content: center; align-items: center; gap: 12px; min-height: 58px; padding: 12px; border: 2px solid #dfe7d2; border-radius: 14px; box-shadow: 0 3px 0 #dfe7d2; background: white; color: #293b20; font-size: 15px; font-weight: 750; cursor: pointer; transition: transform 90ms, background 120ms, border-color 120ms; }
+.legal-case-choice:hover:not(:disabled) { border-color: #9cbe77; background: #f7fbef; }
+.legal-case-choice:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+.legal-case-choice.correct { border-color: #78ae3d; background: #eef8e3; color: var(--green-dark); animation: answer-confirm 220ms ease-out; }
+.legal-case-choice.incorrect { border-color: #d07768; background: #fff0ed; color: #963c2b; }
+.legal-case-choice:disabled { cursor: default; opacity: 1; }
 .noscript { padding: 20px; border: 2px solid #ac4c3a; border-radius: 15px; }
 @keyframes enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes answer-in { from { opacity: .6; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
