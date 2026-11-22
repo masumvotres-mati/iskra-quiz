@@ -363,31 +363,17 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .island2-scene .i2-sprouts, .island2-scene .i2-harvest { display: none; }
 .island2-scene[data-seeds="2"] .i2-sprouts, .island2-scene[data-seeds="3"] .i2-harvest { display: inline; }
 .island2-scene[data-seeds="2"] .i2-seed-first, .island2-scene[data-seeds="3"] .i2-seed-first { display: none; }
+.island2-scene[data-seeds-form="pond"] .i2-sprouts, .island2-scene[data-seeds-form="pond"] .i2-harvest { display: none; }
+.i2-person { pointer-events: none; }
 .island2-scene[data-live="true"] .i2-waves { animation: i2-water 4s ease-in-out infinite; }
 .island2-scene[data-live="true"] .i2-boat-bob { animation: i2-boat 2.8s ease-in-out infinite; }
 .island2-scene[data-live="true"] .i2-flow { animation: i2-flow .8s linear infinite; }
-.island2-scene[data-live="true"]:not([data-wheel="0"]):not([data-wheel="1"]) #i2-disc { animation: i2-spin 3s linear infinite; }
-.island2-scene[data-live="true"]:not([data-wheel="0"]):not([data-wheel="1"]) .i2-pulley { transform-box: fill-box; transform-origin: center; animation: i2-spin 2s linear infinite; }
 .island2-scene[data-live="true"] .i2-running-belt { animation: i2-flow .7s linear infinite; }
 .island2-scene[data-live="true"][data-copper="3"] #i2-sparks { animation: i2-spark .7s steps(2) infinite; }
-.island2-scene[data-live="true"] .walking .i2-person-pose { animation: i2-walk .17s ease-in-out infinite; }
-.island2-scene[data-live="true"] .working .i2-person-pose { transform-origin: 0 0; animation: i2-work .23s ease-in-out infinite; }
-.island2-scene[data-live="true"][data-celebrating="true"] .i2-person-pose { animation: i2-cheer .7s ease-in-out infinite; }
-.island2-scene[data-live="true"][data-celebrating="true"] #i2-person-maker .i2-person-pose { animation-delay: .2s; }
-.island2-scene[data-live="true"] .i2-mill-arm { animation: i2-mill .6s ease-in-out infinite; }
-.island2-scene[data-live="true"][data-lamp="3"] #i2-beam { transform-origin: 439px 134px; animation: i2-beam 3s ease-in-out infinite; }
-.island2-scene[data-live="true"][data-lamp="3"] #i2-lens-rings { transform-box: fill-box; transform-origin: center; animation: i2-optic 3s ease-in-out infinite; }
-@keyframes i2-spin { to { transform: rotate(360deg); } }
 @keyframes i2-water { 50% { transform: translateX(6px); opacity: .6; } }
 @keyframes i2-flow { to { stroke-dashoffset: -40; } }
-@keyframes i2-boat { 50% { transform: translateY(-4px) rotate(1deg); } }
+@keyframes i2-boat { 50% { transform: translateY(-4px); } }
 @keyframes i2-spark { 50% { opacity: .25; } }
-@keyframes i2-walk { 50% { transform: translateY(-3px) rotate(3deg); } }
-@keyframes i2-work { 50% { transform: rotate(7deg); } }
-@keyframes i2-cheer { 50% { transform: translateY(-9px) rotate(-5deg); } }
-@keyframes i2-mill { 50% { transform: translateY(-13px); } }
-@keyframes i2-beam { 0%, 100% { transform: scaleX(1); opacity: .7; } 45% { transform: scaleX(-1); opacity: .2; } 70% { transform: scaleX(.3); opacity: .45; } }
-@keyframes i2-optic { 50% { transform: scaleX(.4); } }
 @media (max-width: 370px) {
   .island2-controls button { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 79px; padding: 5px 2px; font-size: 11px; }
   .island2-heading h1 { font-size: 23px; }
