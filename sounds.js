@@ -17,6 +17,9 @@ const soundPatterns = {
   "island-effort": { notes: [196, 220, 196], duration: .075, spacing: .11, volume: .023 },
   "island-splash": { notes: [1174.66, 783.99, 523.25], duration: .075, spacing: .045, volume: .022 },
   "island-discover": { notes: [659.25, 987.77, 1318.51], duration: .16, spacing: .09, volume: .027 },
+  "island2-level": { notes: [392, 659.25, 1046.5], duration: .3, spacing: .065, volume: .04, wave: "triangle", overtone: .16 },
+  "island2-max": { notes: [523.25, 783.99, 1046.5, 1318.51], duration: .38, spacing: .055, volume: .044, wave: "triangle", overtone: .18 },
+  "island2-touch": { notes: [293.66], duration: .065, spacing: 0, volume: .018 },
 };
 
 function updateSoundControl() {
@@ -61,21 +64,24 @@ function playSound(kind) {
   try {
     pattern.notes.forEach((frequency, index) => {
       const start = soundContext.currentTime + index * pattern.spacing;
-      const oscillator = soundContext.createOscillator();
-      const volume = soundContext.createGain();
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(frequency, start);
-      volume.gain.setValueAtTime(0, start);
-      volume.gain.linearRampToValueAtTime(pattern.volume, start + 0.006);
-      volume.gain.exponentialRampToValueAtTime(0.001, start + pattern.duration);
-      oscillator.connect(volume);
-      volume.connect(soundOutput);
-      oscillator.addEventListener("ended", () => {
-        oscillator.disconnect();
-        volume.disconnect();
-      }, { once: true });
-      oscillator.start(start);
-      oscillator.stop(start + pattern.duration + 0.01);
+      const voices = pattern.overtone ? [1, pattern.overtone] : [1];
+      voices.forEach((strength, voice) => {
+        const oscillator = soundContext.createOscillator();
+        const volume = soundContext.createGain();
+        oscillator.type = voice ? "sine" : pattern.wave || "sine";
+        oscillator.frequency.setValueAtTime(frequency * (voice ? 2 : 1), start);
+        volume.gain.setValueAtTime(0, start);
+        volume.gain.linearRampToValueAtTime(pattern.volume * strength, start + 0.006);
+        volume.gain.exponentialRampToValueAtTime(0.001, start + pattern.duration);
+        oscillator.connect(volume);
+        volume.connect(soundOutput);
+        oscillator.addEventListener("ended", () => {
+          oscillator.disconnect();
+          volume.disconnect();
+        }, { once: true });
+        oscillator.start(start);
+        oscillator.stop(start + pattern.duration + 0.01);
+      });
     });
   } catch (error) {
     notifyCourse("Dźwięk jest niedostępny. Możesz nadal korzystać z quizu bez dźwięku.");

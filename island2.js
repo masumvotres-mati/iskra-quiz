@@ -121,7 +121,7 @@ function island2Move(id, points, duration, offsets, delay = 0, plane) {
   island2Renderer.move(id, points, duration, offsets, { delay, plane });
 }
 
-function island2ClearMotion() {
+function island2ClearMotion(keepUpgrades = false) {
   window.clearTimeout(island2Timer);
   island2Timer = undefined;
   for (const animation of island2Animations) {
@@ -129,7 +129,7 @@ function island2ClearMotion() {
     animation.cancel();
   }
   island2Animations = [];
-  island2Renderer.clear();
+  island2Renderer.clear(keepUpgrades);
   element("i2-held").replaceChildren();
   element("island2-scene").dataset.action = "";
 }
@@ -482,13 +482,18 @@ function island2CommitStep(step) {
   if (step.kind === "grow" || step.kind === "reveal") {
     island2Visual[step.id] = step.level;
     if (step.id === "lamp" && step.level >= 2) island2Story.boatSeen = true;
-    if (island2CanAnimate()) playSound(step.id === "lamp" ? "island-signal" : "island-grow");
   }
   if (step.kind === "unload") island2Story.cargo = "unloaded";
   if (step.kind === "fit-lamp") island2Story.lampRaised = true;
   if (step.kind === "cheer") island2Story.celebrating = true;
-  island2ClearMotion();
+  island2ClearMotion(true);
   renderIsland2();
+  if ((step.kind === "grow" || step.kind === "reveal") && island2CanAnimate()) {
+    const item = island2Items.find((candidate) => candidate.id === step.id);
+    const maxed = step.level === island2Track(item, island2State.branches).stages.length;
+    island2Renderer.upgrade(step.id, step.level, maxed);
+    playSound(maxed ? "island2-max" : "island2-level");
+  }
 }
 
 function island2Pump() {

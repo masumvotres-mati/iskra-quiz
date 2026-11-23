@@ -348,7 +348,6 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 #island2-art > svg { display: block; width: 100%; height: auto; }
 #island2-art [stroke="#3d5847"], #island2-art [stroke="#514f3e"], #island2-art [stroke="#3d5347"], #island2-art [stroke="#63593f"], #island2-art [stroke="#65563e"] { stroke: #2d2c24; }
 #island2-art [stroke-width="4"], #island2-art [stroke-width="3.5"] { stroke-width: 2.5px; }
-#island2-art .i2-eye, #island2-art .i2-eye-far { opacity: 0; }
 .app:has(#island2:not([hidden])) .header { padding: 6px 0 2px; }
 .app:has(#island2:not([hidden])) .brand { font-size: 23px; }
 .app:has(#island2:not([hidden])) .brand-icon { width: 25px; height: 28px; font-size: 25px; border-radius: 6px; }
@@ -371,6 +370,7 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .island2-controls button:disabled { cursor: default; opacity: .6; }
 .island2-controls button.placed { background: #dfdfcf; }
 .island2-controls button.maxed { border-color: #2d2c24; box-shadow: none; background: #fff2a1; }
+.island2-controls button.upgrading { border-color: #d38c0f; box-shadow: 0 0 0 2px #ffe67b; background: #ffe797; opacity: 1; }
 .island2-controls button:focus-visible { outline: 3px solid #b58534; outline-offset: 3px; }
 .island2-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 13px; margin-top: 10px; }
 .island2-tools .button { width: auto; min-height: 44px; margin: 0; padding: 7px 4px; font-size: 12px; }

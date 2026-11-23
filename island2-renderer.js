@@ -25,6 +25,9 @@ const island2Renderer = (() => {
   const acts = new Map();
   const followers = new Map();
   const assemblies = new Map();
+  const upgrades = new Map();
+  let upgradeLayer;
+  let upgradeSequence = 0;
   let frame;
   let context;
   let idleAt = 0;
@@ -105,22 +108,19 @@ const island2Renderer = (() => {
     root.append(svg("ellipse", { class: "i2-person-shadow", cy: 0, rx: 12, ry: 12 * island2Iso.slope, fill: "#486b53", opacity: ".2" }));
     const figure = svg("g", { transform: `scale(${island2ActorScale})` });
     const facing = svg("g", { class: "i2-facing" });
-    const body = svg("g", { class: "i2-body", stroke: "#3d5347", "stroke-width": "2.5", "stroke-linecap": "round", "stroke-linejoin": "round" });
+    const body = svg("g", { class: "i2-body", stroke: "#34372b", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round" });
     const limb = (name, d, back = false) => [
-      svg("path", { class: name, d, stroke: "#3d5347", "stroke-width": "7", fill: "none" }),
-      svg("path", { class: `${name}-core`, d, stroke: back ? "#ecebb0" : "#ffffd1", "stroke-width": "3.5", fill: "none" }),
+      svg("path", { class: name, d, stroke: "#34372b", "stroke-width": "8.5", fill: "none" }),
+      svg("path", { class: `${name}-core`, d, stroke: back ? "#ecee9d" : "#ffffad", "stroke-width": "5.5", fill: "none" }),
     ];
-    body.append(...limb("i2-leg-back", "M-4-18Q-5-9-6-2", true));
+    body.append(...limb("i2-leg-back", "M-4-12Q-5-7-6-2", true));
     body.append(...limb("i2-arm-back", "M-6-32Q-13-25-12-19", true));
-    body.append(svg("path", { d: "M-8-35Q0-39 8-35q7 13 0 18-8 5-16-1-5-7 0-17Z", fill: "#ffffd1" }));
-    body.append(svg("path", { d: "M3-36q6 0 5 4 5 13-1 16l-5 1q7-11 1-21Z", fill: "#e9e9a1", stroke: "none" }));
-    body.append(...limb("i2-leg-front", "M4-18Q5-9 7-2"));
+    body.append(...limb("i2-leg-front", "M4-12Q5-7 7-2"));
     body.append(...limb("i2-arm-front", "M6-32Q12-25 12-18"));
+    body.append(svg("path", { d: "M-9-34Q0-39 9-34q5 9 1 17-2 7-10 7t-10-7q-4-9 1-17Z", fill: "url(#i2-skin-body)" }));
     const head = svg("g", { class: "i2-head" });
-    head.append(svg("circle", { cy: -47, r: 13, fill: "#ffffd1" }));
-    head.append(svg("circle", { class: "i2-eye", cx: 5, cy: -48, r: 1.5, fill: "#3d5347", stroke: "none" }));
-    head.append(svg("circle", { class: "i2-eye-far", cx: -1, cy: -49, r: 1.2, fill: "#3d5347", stroke: "none" }));
-    head.append(svg("path", { class: "i2-mouth", d: "", fill: "#3d5347", stroke: "none" }));
+    head.append(svg("circle", { cy: -45, r: 15, fill: "url(#i2-skin-head)" }));
+    const palm = (side, x, y) => svg("circle", { class: `i2-palm-${side}`, cx: x, cy: y, r: 3.8, fill: "#ffffad" });
     const hand = svg("g", { class: "i2-hand" });
     const tool = svg("g", { class: "i2-task-prop", stroke: "#514f3e", "stroke-width": "2.5", "stroke-linejoin": "round" });
     tool.append(svg("path", { d: role === "gardener" ? "M0 0 8 8m-2-2 4-2 4 5-4 3Z"
@@ -129,7 +129,7 @@ const island2Renderer = (() => {
     hand.append(tool);
     hand.append(svg("path", { class: "i2-dig-tool", d: "M0 0 11 12m-5-3 9-5 5 9-9 5Z",
       fill: "#b9c9a8", stroke: "#514f3e", "stroke-width": "2.5", display: "none" }));
-    body.append(head, hand);
+    body.append(head, palm("back", -12, -19), palm("front", 12, -18), hand);
     facing.append(body);
     figure.append(facing);
     root.append(figure);
@@ -246,17 +246,17 @@ const island2Renderer = (() => {
     const stride = walking ? front * (mode === "heavy" ? 5 : mode === "run" ? 12 : 10) : 0;
     const otherLift = walking ? Math.max(0, back) * 5 : 0;
     const otherStride = walking ? back * (mode === "heavy" ? 5 : mode === "run" ? 12 : 10) : 0;
-    const crouch = working || tending ? (1 - Math.cos(phase)) * 2.5 : 0;
+    const crouch = working || tending ? 3 + (1 - Math.cos(phase)) * 2.25 : 0;
     if (shaping) entity.direction = -1;
     if (tending || carrying) entity.direction = 1;
     if (mode === "repair") entity.direction = entity.point[0] > 350 ? -1 : 1;
     if (chatting) entity.direction = entity.point[0] < island2Layout.wheelRest[0] ? 1 : -1;
     entity.node.querySelector(".i2-facing").setAttribute("transform", `scale(${entity.direction} 1)`);
-    body.setAttribute("transform", `translate(0 ${walking ? -Math.abs(front) * 1.7 : cheering ? -Math.max(0, front) * 8 : crouch})`);
+    body.setAttribute("transform", `translate(0 ${walking ? -Math.abs(front) * 1.7 : cheering ? -Math.max(0, front) * 8 : crouch}) rotate(${working || tending ? 12 + front * 3 : 0} 0 -12)`);
     const heading = entity.heading || [1, island2Iso.slope];
     const stepX = Math.abs(heading[0]);
-    entity.node.querySelector(".i2-leg-front").setAttribute("d", `M4-18Q${4 + stride * stepX * .45} ${-9 - lift - crouch * .4} ${5 + stride * stepX} ${-2 - lift - crouch + stride * heading[1]}`);
-    entity.node.querySelector(".i2-leg-back").setAttribute("d", `M-4-18Q${-4 + otherStride * stepX * .45} ${-9 - otherLift - crouch * .4} ${-5 + otherStride * stepX} ${-2 - otherLift - crouch + otherStride * heading[1]}`);
+    entity.node.querySelector(".i2-leg-front").setAttribute("d", `M4-12Q${4 + stride * stepX * .45} ${-7 - lift - crouch * .4} ${5 + stride * stepX} ${-2 - lift - crouch + stride * heading[1]}`);
+    entity.node.querySelector(".i2-leg-back").setAttribute("d", `M-4-12Q${-4 + otherStride * stepX * .45} ${-7 - otherLift - crouch * .4} ${-5 + otherStride * stepX} ${-2 - otherLift - crouch + otherStride * heading[1]}`);
     const handY = mode === "climb" || cheering ? -43 - front * 9 : shaping ? -50 + front * 3
       : tending ? -23 + front * 3 : chatting ? -31 + front * 2 : carrying || holding ? -26 : working ? -24 - Math.max(0, front) * 18 : -18;
     const handX = shaping ? 19 : working || holding || tending || carrying ? 17 : 12 - stride * .55;
@@ -267,8 +267,8 @@ const island2Renderer = (() => {
     let activeHand = [handX, handY];
     if (mode === "push" || mode === "pull") {
       body.setAttribute("transform", `translate(${front * 1.5} ${2 + Math.abs(front) * 2}) skewX(-12)`);
-      entity.node.querySelector(".i2-leg-front").setAttribute("d", `M4-18Q15-9 ${16 + front * 5} ${-2 - Math.max(0, front) * 3}`);
-      entity.node.querySelector(".i2-leg-back").setAttribute("d", `M-4-18Q-12-10 ${-13 - front * 5} ${-2 - Math.max(0, -front) * 3}`);
+      entity.node.querySelector(".i2-leg-front").setAttribute("d", `M4-12Q15-7 ${16 + front * 5} ${-2 - Math.max(0, front) * 3}`);
+      entity.node.querySelector(".i2-leg-back").setAttribute("d", `M-4-12Q-12-7 ${-13 - front * 5} ${-2 - Math.max(0, -front) * 3}`);
       entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q19-33 24 ${-27 + front * 2}`);
       entity.node.querySelector(".i2-arm-back").setAttribute("d", `M-6-32Q10-36 22 ${-31 + front * 2}`);
       activeHand = [24, -27 + front * 2];
@@ -277,22 +277,20 @@ const island2Renderer = (() => {
       entity.node.querySelector(".i2-arm-front").setAttribute("d", "M6-32Q12-25 0-23");
       entity.node.querySelector(".i2-arm-back").setAttribute("d", "M-6-32Q-12-25 0-23");
     } else if (mode === "kneel" || mode === "dig" || mode === "polish") {
-      body.setAttribute("transform", "translate(0 10)");
-      entity.node.querySelector(".i2-leg-front").setAttribute("d", "M4-18Q20-13 18-12");
-      entity.node.querySelector(".i2-leg-back").setAttribute("d", "M-4-18Q-12-4-16-12");
+      body.setAttribute("transform", "translate(0 7) rotate(14 0 -12)");
       activeHand = [mode === "polish" ? 20 + front * 5 : 20, mode === "dig" ? -25 + front * 9 : -21 + front * 2];
       entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q24-26 ${activeHand.join(" ")}`);
     } else if (mode === "crawl") {
       body.setAttribute("transform", "translate(-18 10) rotate(75 0 -18)");
-      entity.node.querySelector(".i2-leg-front").setAttribute("d", `M4-18Q14 ${-11 + front * 3}-2-11`);
-      entity.node.querySelector(".i2-leg-back").setAttribute("d", `M-4-18Q-12 ${-10 - front * 3}-10-15`);
+      entity.node.querySelector(".i2-leg-front").setAttribute("d", `M4-12Q14 ${-8 + front * 3}-2-8`);
+      entity.node.querySelector(".i2-leg-back").setAttribute("d", `M-4-12Q-12 ${-7 - front * 3}-10-12`);
       entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q19-35 17 ${-43 + front * 3}`);
       entity.node.querySelector(".i2-arm-back").setAttribute("d", `M-6-32Q8-40 11 ${-45 - front * 3}`);
       activeHand = [17, -43 + front * 3];
     } else if (mode === "sit" || mode === "row") {
       body.setAttribute("transform", `translate(0 ${12 + (mode === "row" ? front * 1.5 : 0)})`);
-      entity.node.querySelector(".i2-leg-front").setAttribute("d", "M4-18Q20-18 20-12");
-      entity.node.querySelector(".i2-leg-back").setAttribute("d", "M-4-18Q-13-17-16-12");
+      entity.node.querySelector(".i2-leg-front").setAttribute("d", "M4-12Q17-17 18-12");
+      entity.node.querySelector(".i2-leg-back").setAttribute("d", "M-4-12Q-13-16-15-12");
       activeHand = [22 + (mode === "row" ? front * 7 : 0), -29 + (mode === "row" ? Math.cos(phase) * 5 : 0)];
       entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q20-37 ${activeHand.join(" ")}`);
       entity.node.querySelector(".i2-arm-back").setAttribute("d", `M-6-32Q9-35 ${activeHand[0] - 4} ${activeHand[1] - 2}`);
@@ -302,8 +300,21 @@ const island2Renderer = (() => {
       entity.node.querySelector(".i2-arm-back").setAttribute("d", "M-6-32Q-20-40-18-54");
       activeHand = [18, -54];
     } else if (mode === "look" || mode === "shelter" || mode === "offer" || mode === "umbrella") {
-      activeHand = mode === "look" ? [11, -47] : mode === "shelter" || mode === "umbrella" ? [15, -43] : [25, -27];
+      activeHand = mode === "look" ? [18, -43] : mode === "shelter" || mode === "umbrella" ? [15, -43] : [25, -27];
       entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q20-39 ${activeHand.join(" ")}`);
+    }
+    if (working || tending || ["kneel", "dig", "polish", "push", "pull"].includes(mode)) {
+      const inverse = body.transform.baseVal.consolidate().matrix.inverse();
+      const kneeling = ["kneel", "dig", "polish"].includes(mode);
+      for (const side of [-1, 1]) {
+        const x = mode === "push" || mode === "pull" ? side === 1 ? 16 + front * 5 : -13 - front * 5
+          : kneeling ? side === 1 ? 14 : -11 : side * 8;
+        const raised = mode === "push" || mode === "pull" ? Math.max(0, front * side) * 3 : 0;
+        const foot = new DOMPoint(x, -2 - raised).matrixTransform(inverse);
+        const leg = side === 1 ? "front" : "back";
+        entity.node.querySelector(`.i2-leg-${leg}`).setAttribute("d",
+          `M${side * 4}-12Q${side * (kneeling ? 15 : 8)} -5 ${foot.x} ${foot.y}`);
+      }
     }
     for (const limb of ["i2-leg-front", "i2-leg-back", "i2-arm-front", "i2-arm-back"]) {
       entity.node.querySelector(`.${limb}-core`).setAttribute("d", entity.node.querySelector(`.${limb}`).getAttribute("d"));
@@ -314,10 +325,20 @@ const island2Renderer = (() => {
     entity.node.querySelector(".i2-person-shadow").setAttribute("opacity", ["climb", "crawl", "row", "sit"].includes(mode) ? ".05" : ".2");
     entity.node.querySelector(".i2-task-prop").style.display = tending || mode === "repair" || carrying ? "" : "none";
     entity.node.querySelector(".i2-dig-tool").setAttribute("display", mode === "dig" ? "" : "none");
-    entity.node.querySelector(".i2-mouth").setAttribute("d", mode === "startle" || mode === "look" ? "M4-41a3 4 0 1 0 6 0 3 4 0 1 0-6 0" : "");
-    const away = walking && heading[1] < -.25;
-    entity.node.querySelector(".i2-eye").style.display = away ? "none" : "";
-    entity.node.querySelector(".i2-eye-far").style.display = away || Math.abs(heading[1]) < .2 ? "none" : "";
+    syncPalms(entity);
+  }
+
+  function setPalm(entity, side, point) {
+    const palm = entity.node.querySelector(`.i2-palm-${side}`);
+    palm.setAttribute("cx", point.x);
+    palm.setAttribute("cy", point.y);
+  }
+
+  function syncPalms(entity) {
+    for (const side of ["front", "back"]) {
+      const path = entity.node.querySelector(`.i2-arm-${side}`);
+      setPalm(entity, side, path.getPointAtLength(path.getTotalLength()));
+    }
   }
 
   function move(id, points, duration, offsets, options = {}) {
@@ -431,6 +452,7 @@ const island2Renderer = (() => {
         const d = `M${shoulder}-32Q${(shoulder + contact.x) / 2} ${Math.max(-25, contact.y + 6)} ${contact.x} ${contact.y}`;
         carrier.node.querySelector(`.i2-arm-${side}`).setAttribute("d", d);
         carrier.node.querySelector(`.i2-arm-${side}-core`).setAttribute("d", d);
+        setPalm(carrier, side, contact);
       });
     }
     for (const carrier of entities.values()) {
@@ -445,6 +467,7 @@ const island2Renderer = (() => {
         const d = `M${i ? 6 : -6}-32Q${contact.x * .65} ${contact.y + 10} ${contact.x} ${contact.y}`;
         carrier.node.querySelector(`.i2-arm-${name}`).setAttribute("d", d);
         carrier.node.querySelector(`.i2-arm-${name}-core`).setAttribute("d", d);
+        setPalm(carrier, name, contact);
       });
     }
   }
@@ -600,6 +623,96 @@ const island2Renderer = (() => {
     }
   }
 
+  function removeUpgrade(key) {
+    const effect = upgrades.get(key);
+    if (!effect) return;
+    if (effect.filterBefore === null) effect.target.removeAttribute("filter");
+    else effect.target.setAttribute("filter", effect.filterBefore);
+    effect.filter.remove();
+    effect.root.remove();
+    effect.button.classList.remove("upgrading");
+    upgrades.delete(key);
+  }
+
+  function clearUpgrades() {
+    for (const key of upgrades.keys()) removeUpgrade(key);
+  }
+
+  function upgrade(id, level, maxed) {
+    if (!context?.live || document.hidden) return;
+    const nodeId = id === "timber" ? level >= 4 ? "i2-tower" : "i2-crate"
+      : id === "rope" ? context.levels.timber >= 3 ? "i2-scaffold" : "i2-scaffold-short" : `i2-${id}`;
+    const item = entities.get(nodeId);
+    if (!item) throw new Error(`Brak przedmiotu dla efektu ulepszenia: ${id}`);
+    removeUpgrade(id);
+    const viewport = document.querySelector("#island2-art > svg");
+    const bounds = item.node.getBBox();
+    const matrix = viewport.getCTM().inverse().multiply(item.node.getCTM());
+    const center = new DOMPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2).matrixTransform(matrix);
+    const flat = id === "glass" && context.story.glassPlane === "ground";
+    const foot = id === "water" ? [237, 316] : id === "seeds" ? [157, 333] : id === "rope" ? [420, 375]
+      : id === "timber" && level >= 4 ? [474, 362] : id === "glass" ? [0, flat ? 5 : 15] : [0, 0];
+    const bottom = new DOMPoint(...foot).matrixTransform(matrix);
+    const radius = Math.max(16, Math.min(60, bounds.width * .58 + 4));
+    const filterId = `i2-level-flash-${++upgradeSequence}`;
+    const filter = svg("filter", { id: filterId, x: "-45%", y: "-30%", width: "190%", height: "160%", "color-interpolation-filters": "sRGB" });
+    const flood = svg("feFlood", { "flood-color": "#ffdb45", "flood-opacity": ".9", result: "gold" });
+    filter.append(flood, svg("feComposite", { in: "gold", in2: "SourceAlpha", operator: "in", result: "tint" }),
+      svg("feGaussianBlur", { in: "tint", stdDeviation: "3.5", result: "halo" }));
+    const merge = svg("feMerge");
+    merge.append(svg("feMergeNode", { in: "halo" }), svg("feMergeNode", { in: "SourceGraphic" }), svg("feMergeNode", { in: "tint" }));
+    filter.append(merge);
+    viewport.querySelector("defs").append(filter);
+    const root = svg("g", { "data-upgrade": id, "data-level": level, "data-maxed": String(maxed), "aria-hidden": "true" });
+    const aura = svg("ellipse", { cx: center.x, cy: center.y, rx: radius * (flat ? 1.1 : 1.5),
+      ry: Math.max(flat ? 8 : 32, Math.min(80, bounds.height * (flat ? .8 : .6))), fill: "url(#i2-level-aura)" });
+    const ring = svg("ellipse", { cx: bottom.x, cy: bottom.y, fill: "none", stroke: "#fff3a0", "stroke-width": "4" });
+    const rim = svg("ellipse", { cx: bottom.x, cy: bottom.y, fill: "none", stroke: "#ffbf24", "stroke-width": "2" });
+    root.append(aura, ring, rim);
+    const stars = Array.from({ length: maxed ? 9 : 6 }, (_, index) => {
+      const star = svg("path", { d: "M0-8 2-2 7 0 2 2 0 8-2 2-7 0-2-2Z",
+        fill: index % 2 ? "#fff9c0" : "#ffd33d", stroke: "#fff5a2", "stroke-width": ".8" });
+      root.append(star);
+      return star;
+    });
+    upgradeLayer.append(root);
+    const button = document.getElementById(`island2-pick-${id}`);
+    button.classList.add("upgrading");
+    const filterBefore = item.node.getAttribute("filter");
+    item.node.setAttribute("filter", `url(#${filterId})`);
+    upgrades.set(id, { root, filter, filterBefore, flood, target: item.node, button, aura, ring, rim, stars,
+      center, bottom, radius, maxed, flat, born: performance.now(), duration: maxed ? 1320 : 1050 });
+    updateUpgrades(performance.now());
+    wake();
+  }
+
+  function updateUpgrades(now) {
+    for (const [key, effect] of upgrades) {
+      const t = bounded((now - effect.born) / effect.duration);
+      if (t === 1) { removeUpgrade(key); continue; }
+      const spread = 1 - (1 - t) ** 3;
+      effect.flood.setAttribute("flood-color", t < .08 ? "#fff4b0" : "#ffd12e");
+      effect.flood.setAttribute("flood-opacity", (1 - smooth(t / .58)) * .9);
+      effect.aura.setAttribute("opacity", (1 - t) * .75);
+      const radius = 5 + spread * effect.radius * (effect.flat ? .65 : 1);
+      for (const [ring, inset] of [[effect.ring, 0], [effect.rim, 5]]) {
+        ring.setAttribute("rx", radius + inset);
+        ring.setAttribute("ry", (radius + inset) * island2Iso.slope);
+        ring.setAttribute("opacity", (1 - t) ** 2);
+      }
+      effect.stars.forEach((star, index) => {
+        const angle = index / effect.stars.length * Math.PI * 2 - Math.PI / 2;
+        const x = effect.center.x + Math.cos(angle) * (12 + spread * effect.radius);
+        const y = effect.center.y + Math.sin(angle) * (effect.flat ? 6 + spread * 7 : 14 + spread * Math.min(45, effect.radius))
+          - t * (effect.flat ? 5 : 22);
+        const size = (.45 + Math.sin(Math.min(1, t * 1.25) * Math.PI) * .8) * (1 - t)
+          * (index % 2 ? .7 : effect.maxed ? 1.25 : 1.1);
+        star.setAttribute("transform", `translate(${x} ${y}) rotate(${t * 70 + index * 35}) scale(${size})`);
+        star.setAttribute("opacity", 1 - t);
+      });
+    }
+  }
+
   function tick(now) {
     frame = undefined;
     if (!context?.live) return;
@@ -695,6 +808,7 @@ const island2Renderer = (() => {
     if (context.story.oarMade) document.getElementById("i2-lid-paddle").setAttribute("transform",
       `rotate(${context.story.sailing && !context.story.leafSail ? -15 + Math.sin(clock / 180) * 22 : 0})`);
     mechanisms(now);
+    updateUpgrades(now);
     sort();
     wake();
   }
@@ -787,6 +901,8 @@ const island2Renderer = (() => {
     }
     document.getElementById("i2-person-scout").querySelector(".i2-facing").append(document.getElementById("i2-reaction"));
     document.getElementById("i2-reaction").setAttribute("transform", "translate(0 -77)");
+    upgradeLayer = svg("g", { id: "i2-upgrade-effects", "pointer-events": "none" });
+    root.append(upgradeLayer);
     for (const entity of entities.values()) place(entity, entity.point);
     follow("i2-crate-lid", "i2-crate", [0, 0], { depthBias: 2 });
     sort();
@@ -795,7 +911,7 @@ const island2Renderer = (() => {
   function sync(next) {
     context = next;
     syncAssemblies();
-    if (!next.live) freeze();
+    if (!next.live) { clearUpgrades(); freeze(); }
     else wake();
     if (!next.busy || next.finished) for (const entity of entities.values()) {
       if (entity.id.startsWith("i2-person-") && !journeys.has(entity.id)) pose(entity, settledPose(entity), .9);
@@ -807,6 +923,7 @@ const island2Renderer = (() => {
   }
 
   function reset() {
+    clearUpgrades();
     freeze();
     followers.clear();
     clock = 0;
@@ -851,7 +968,8 @@ const island2Renderer = (() => {
     } else register("i2-parcel", "front", [0, 0], 376);
   }
 
-  function clear() {
+  function clear(keepUpgrades = false) {
+    if (!keepUpgrades) clearUpgrades();
     freeze();
     entities.delete("i2-parcel");
     journeys.delete("i2-parcel");
@@ -884,5 +1002,5 @@ const island2Renderer = (() => {
     back.firstElementChild.setAttribute("transform", island2Iso.face(plane));
   }
   return { mount, position, move, actor, act, perform, follow, release, sync, reset, clear, parcel,
-    glass, lamp, discPlane, buildWheel, buildCabin, stopIdle, nodes, entities, journeys, followers, acts, assemblies };
+    glass, lamp, discPlane, buildWheel, buildCabin, upgrade, stopIdle, nodes, entities, journeys, followers, acts, assemblies, upgrades };
 })();

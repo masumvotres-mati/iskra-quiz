@@ -399,7 +399,7 @@ const island2Cinema = (() => {
       if (step.support === "cabin") island2Renderer.follow(step.prop, "i2-crate",
         step.prop === "i2-lamp" ? [0, 0] : island2Layout.loadOffset, { depthBias: 1 });
       if (step.prop === "i2-lamp" && step.support === "light") story.lampRaised = true;
-      sound("island-grow");
+      sound("island2-touch");
     }
     switch (step.scene) {
       case "wheel-build":
