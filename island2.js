@@ -172,9 +172,12 @@ function renderIsland2() {
     show(id, l[key] > 0);
   }
   show("i2-cave", l.water >= 2 || island2Story.workshopOpen);
+  show("i2-middle-walls", l.water > 0 || island2Story.workshopOpen);
   show("i2-cutaway", island2Story.cutawayOpen);
-  show("i2-cover", l.water < 2 || island2Story.stoneSaved);
+  show("i2-cover", l.water > 0 && l.water < 2 || island2Story.stoneSaved);
   show("i2-stream", l.water >= 2);
+  show("i2-outfall", l.water >= 2);
+  show("i2-cliff-ladder", l.water >= 2);
   show("i2-valve", l.water >= 3);
   show("i2-scaffold", l.rope >= 2 && l.timber >= 3);
   show("i2-scaffold-front", l.rope >= 2 && l.timber >= 3);
@@ -190,9 +193,9 @@ function renderIsland2() {
   show("i2-wheel-flow", l.wheel >= 2 && !pottery);
   show("i2-bypass-flow", l.wheel < 2 || pottery);
   show("i2-table-feet", l.wheel === 1 || pottery);
-  show("i2-tea", l.wheel === 1);
+  show("i2-tea", l.wheel > 0);
   show("i2-waterwheel", l.wheel >= 2 && !pottery);
-  show("i2-tabletop", l.wheel === 1 || pottery);
+  show("i2-tabletop", l.wheel > 0);
   show("i2-pottery", l.wheel >= 2 && pottery);
   show("i2-pond", island2State.branches.seeds === "pond" && l.seeds >= 2);
   show("i2-overflow", l.water >= 2 && (l.seeds === 0 || island2State.branches.seeds === "pond"));
@@ -212,6 +215,7 @@ function renderIsland2() {
   show("i2-cargo", island2Story.cargo !== "hidden");
   show("i2-reaction", island2Story.reaction);
   show("i2-person-maker", l.water >= 2 || island2Story.workshopOpen);
+  show("i2-person-scout", island2State.order.length > 0);
   show("i2-person-gardener", l.seeds >= 2);
   show("i2-splash", false);
   show("i2-boat", island2Story.boatSeen);
@@ -242,12 +246,16 @@ function renderIsland2() {
     [...element("i2-glass-roughness").children].forEach((patch, index) => { patch.style.opacity = index < passes ? "0" : ".8"; });
   }
   const cropAge = l.seeds ? island2State.order.length - island2State.placed.seeds : 0;
+  const meadow = l.seeds >= 3 ? 700 : l.seeds >= 2 ? 80 + Math.min(3, cropAge) * 30 : 0;
+  element("i2-meadow-radius").setAttribute("rx", meadow);
+  element("i2-meadow-radius").setAttribute("ry", meadow * island2Iso.slope);
   const sprouts = element("i2-seeds").querySelector(".i2-sprouts");
   sprouts.setAttribute("transform", `translate(157 336) scale(1 ${.65 + Math.min(1, cropAge / 4) * .6}) translate(-157 -336)`);
   const timberAge = l.timber ? island2State.order.length - island2State.placed.timber : 0;
   element("i2-saw-cuts").style.opacity = String(Math.min(1, timberAge / 4));
-  island2Position("i2-wheel", l.wheel >= 2 ? pottery ? island2Layout.wheelPottery : island2Layout.wheelDrive : island2Layout.wheelRest);
-  island2Position("i2-crate", island2Story.crateBoat ? island2Story.craftPoint : l.timber >= 3 ? island2Story.cabin : island2Layout.crateRest);
+  island2Position("i2-wheel", island2Story.wheelPoint || (l.wheel >= 2 ? pottery ? island2Layout.wheelPottery : island2Layout.wheelDrive : island2Layout.wheelRest));
+  island2Position("i2-tea", island2Story.teaPoint || island2Layout.wheelRest);
+  island2Position("i2-crate", island2Story.crateBoat ? island2Story.craftPoint : island2Story.cratePoint || (l.timber >= 3 ? island2Story.cabin : island2Layout.crateRest));
   island2Position("i2-rope-coil", island2Layout.rope);
   island2Position("i2-copper", island2Layout.copper);
   island2Position("i2-glass", island2Story.glassPoint || (l.glass >= 4 ? island2Layout.glassTop : l.glass >= 3 ? island2Layout.glassReady
@@ -269,7 +277,7 @@ function renderIsland2() {
     const track = island2Track(item, island2State.branches);
     const preparation = island2Preparation(item, l, island2State.placed, island2State.order.length, island2State.branches);
     button.classList.toggle("maxed", level === track.stages.length);
-    button.querySelector("small").textContent = level ? `${island2State.order.indexOf(item.id) + 1} · ${level === track.stages.length ? "MAX" : `${level}/${track.stages.length}`}` : "Dodaj";
+    button.querySelector("small").textContent = level ? level === track.stages.length ? "MAX" : String(level).padStart(2, "0") : "";
     const work = preparation?.total ? ` Przygotowanie: ${preparation.done} z ${preparation.total} etapów.` : "";
     button.setAttribute("aria-label", level ? `${item.name}: ${island2Stage(item.id, level)}.${work} Obejrzyj.` : `Dodaj: ${item.name}`);
   }
@@ -319,8 +327,8 @@ function island2StartStep(step) {
     renderIsland2();
     const nodeId = { timber: "crate", rope: "rope-coil" }[step.id] || step.id;
     const point = [...island2Renderer.entities.get(`i2-${nodeId}`).point];
-    island2Move(`i2-${nodeId}`, [[point[0], point[1] - 70], point], 400);
-    island2Animate(`i2-${nodeId}`, [{ opacity: 0 }, { opacity: 1 }], 400);
+    island2Move(`i2-${nodeId}`, [[point[0], point[1] - 80], [point[0], point[1] + 3],
+      [point[0], point[1] - 8], point], 500, [0, .62, .8, 1]);
     playSound("island-place");
     return;
   }
@@ -412,7 +420,7 @@ function island2StartStep(step) {
     island2Actor("scout", island2Renderer.nodes.balcony.point);
     if (island2CanAnimate()) playSound("island-signal");
   } else if (step.kind === "sail") {
-    island2Move("i2-boat", [island2Story.boat, [580, 370], [580, 420], island2Layout.boatDock], 2400);
+    island2Move("i2-boat", [island2Story.boat, [612, 390], [612, 510], island2Layout.boatDock], 2400);
     island2Story.boat = [...island2Layout.boatDock];
   } else if (step.kind === "unload") {
     island2Story.cargo = "moving";
@@ -571,10 +579,12 @@ function pickIsland2(id) {
       ? ` Przygotowanie: ${preparation.done}/${preparation.total}. Każdy wybór daje czas na dalszą pracę.`
       : preparation && !preparation.ready ? " Dalsza praca wymaga współpracy z innymi przedmiotami." : "";
     element("island2-status").textContent = `${item.name}: ${island2Stage(id, level)}.${clue}`;
+    element("island2-status").dataset.inspected = "true";
     playSound("click");
     return;
   }
   if (island2State.finished) return;
+  element("island2-status").dataset.inspected = "false";
   const previous = { ...island2State.levels };
   island2Renderer.stopIdle();
   island2State.branches = island2BranchOnPlacement(island2State.levels, island2State.branches, id);
@@ -696,6 +706,7 @@ function finishIsland2() {
 
 function startIsland2() {
   island2ClearMotion();
+  element("island2-status").dataset.inspected = "false";
   stopIslandMusic();
   setIslandMusicStage(0);
   island2Queue = [];

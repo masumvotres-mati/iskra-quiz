@@ -31,6 +31,22 @@ const island2Cinema = (() => {
 
   function grow(change, branches) {
     const key = `${change.id}-${change.level}`;
+    if (key === "wheel-2") return [
+      ...supportSteps("i2-tea", "scout", [351, 382], "tea-save", 1, "bench"),
+      scene("wheel-team-ready", "Najpierw dłonie pod blat. Razem będzie łatwiej.", 300,
+        { pottery: branches.wheel === "pottery" }),
+      scene("wheel-build", branches.wheel === "pottery" ? "Dłonie podnoszą ścianki glinianego naczynia."
+        : "Ten sam blat obraca się, nogi składają, a łopatki rozkładają po kolei.", 1700,
+        { pottery: branches.wheel === "pottery" }),
+      scene("wheel-place", "Teraz można ostrożnie przestawić gotowy mechanizm.", 1000),
+      reveal(change, branches.wheel === "pottery" ? "Koło garncarskie jest gotowe." : "Strumień porusza łopatki koła."),
+    ];
+    if (key === "timber-3") return [
+      scene("cabin-ready", "Skrzynia przyda się jeszcze raz.", 400),
+      scene("cabin-move", "Mieszkaniec prowadzi skrzynię pod prowadnice.", 1200),
+      scene("cabin-build", "Wieko unosi się na słupkach, a konstrukcja wyrasta od podstawy.", 1900),
+      reveal(change, "Ta sama skrzynia pracuje teraz jako kabina."),
+    ];
     if (key === "glass-2" || key === "glass-3") {
       const to = key === "glass-2" ? island2Layout.glassRough : island2Layout.glassReady;
       return [...supportSteps("i2-glass", key === "glass-2" ? "scout" : "maker", to, key),
@@ -109,6 +125,7 @@ const island2Cinema = (() => {
       : "Ten sam liść wystarczy na maleńką tratwę.", 1100, { useCrate: crate, useLeaf: leaf }));
     steps.push(scene("craft-ready", "Nie trzeba wszystkiego budować od nowa.", 600),
       scene("craft-launch", "Ostrożnie na wodę!", 1500),
+      scene("craft-descend", "Do łódki prowadzi zejście wzdłuż ściany kostki.", 400),
       scene("craft-board", "Mała wyprawa rusza w drogę.", 1000));
     if (leaf && crate) steps.push(scene("sail-bring", "Żagiel jeszcze przed chwilą był parasolem.", 600),
       scene("sail-fit", "Łodyga staje się masztem. Wieko pozostaje siedziskiem.", 750));
@@ -125,9 +142,10 @@ const island2Cinema = (() => {
     const name = step.scene;
     if (name === "prop-approach" || name === "prop-carry") {
       const location = name === "prop-approach" ? point(step.prop) : step.to;
-      const offset = step.prop === "i2-lamp" ? [-8, 12] : [0, 0];
+      const offset = step.prop === "i2-lamp" ? [-8, 12] : step.prop === "i2-tea" ? [0, 32] : [0, 0];
       const feet = location[1] < 250 ? at(name === "prop-approach" ? "upperLoad" : "lantern")
-        : [location[0] - offset[0] - step.direction * 19, location[1] - offset[1] + 20.52];
+        : [location[0] - offset[0] - step.direction * 25 * island2ActorScale,
+          location[1] - offset[1] + 27 * island2ActorScale];
       walk(step, step.actor, feet, "offer", 150, step.direction, name === "prop-carry" ? "heavy" : "walk");
     } else if (name === "prop-take") {
       island2Renderer.act(step.actor, "offer", step.duration, 0, step.direction);
@@ -136,12 +154,40 @@ const island2Cinema = (() => {
         story.glassPlane = "x";
         island2Renderer.discPlane(step.prop, "x");
       }
-      island2Renderer.follow(step.prop, `i2-person-${step.actor}`, step.prop === "i2-lamp" ? [-8, 12] : [0, 0],
+      island2Renderer.follow(step.prop, `i2-person-${step.actor}`, step.prop === "i2-lamp" ? [-8, 12] : step.prop === "i2-tea" ? [0, 32] : [0, 0],
         { hand: true, blend: 600 });
     } else if (name === "prop-put") {
       island2Renderer.act(step.actor, "offer", step.duration, 0, step.direction);
       island2Renderer.follow(step.prop, `i2-person-${step.actor}`, [0, 0],
         { hand: true, to: step.to, blend: 600 });
+    } else if (name === "wheel-team-ready") {
+      walk(step, "scout", [207, 392], "kneel", 300, 1);
+      walk(step, "maker", [281, 413], step.pottery ? "shape" : "kneel", 300, -1);
+    } else if (name === "wheel-build") {
+      for (const [role, side] of [["scout", -1], ["maker", 1]]) {
+        island2Renderer.act(role, step.pottery && role === "maker" ? "shape" : "offer", step.duration, 0, side === -1 ? 1 : -1);
+        if (!step.pottery) island2Renderer.entities.get(`i2-person-${role}`).workGrip = { prop: "i2-tabletop", side };
+      }
+      island2Renderer.buildWheel(step.duration, 0, step.pottery);
+      sound("island-effort");
+    } else if (name === "wheel-place") {
+      const a = island2Layout.wheelRest;
+      const b = island2Layout.wheelDrive;
+      island2Move("i2-wheel", [a, [244, 409], b], step.duration);
+      for (const [role, start, side] of [["scout", [207, 392], -1], ["maker", [281, 413], 1]]) {
+        island2Renderer.perform(role, [start, [start[0] + b[0] - a[0], start[1] + b[1] - a[1]]],
+          step.duration, "push", 0, side === -1 ? 1 : -1);
+        island2Renderer.entities.get(`i2-person-${role}`).workGrip = { prop: "i2-tabletop", side };
+      }
+    } else if (name === "cabin-ready") {
+      walk(step, "maker", [405, 401], "kneel", 400, 1);
+    } else if (name === "cabin-move") {
+      island2Move("i2-crate", [island2Layout.crateRest, island2Layout.cabinBase], step.duration);
+      island2Renderer.perform("maker", [[405, 401], [389, 383]], step.duration, "push");
+    } else if (name === "cabin-build") {
+      island2Renderer.act("maker", "repair", step.duration, 0, 1);
+      island2Renderer.buildCabin(step.duration);
+      sound("island-effort");
     } else if (name === "prop-lift") {
       story.cabin = [...island2Layout.cabinTop];
       island2Move("i2-crate", [island2Layout.cabinBase, island2Layout.cabinTop], step.duration);
@@ -276,15 +322,19 @@ const island2Cinema = (() => {
       if (story.craftKind === "crate") {
         story.crateBoat = true;
         story.craftPoint = [...island2Layout.craftShore];
-        island2Move("i2-crate", [island2Layout.crateRest, [524, 372], island2Layout.craftShore], 1500, [0, .7, 1], 0, "sea-front");
-        island2Renderer.perform("scout", [[401, 397], [493, 378], at("shore")], 1500, "push");
+        island2Move("i2-crate", [island2Layout.crateRest, [524, 372], [545, 420], island2Layout.craftShore],
+          1500, [0, .6, .8, 1], 0, "sea-front");
+        island2Renderer.perform("scout", [[401, 397], [493, 378], at("shoreTop")], 900, "push");
       } else {
         story.leafFlat = true;
         island2Renderer.release("i2-lily");
-        island2Move("i2-lily", [point("i2-lily"), [557, 345], island2Layout.craftShore], 1400, undefined, 0, "sea-front");
+        island2Move("i2-lily", [point("i2-lily"), [544, 420], [551, 462], island2Layout.craftShore],
+          1400, [0, .28, .66, 1], 0, "sea-front");
         story.leafPoint = [...island2Layout.craftShore];
       }
       sound("island-splash");
+    } else if (name === "craft-descend") {
+      walk(step, "scout", at("shore"), "look", 400, 1);
     } else if (name === "craft-board") {
       const craft = story.craftKind === "crate" ? "i2-crate" : "i2-lily";
       const offset = story.craftKind === "crate" ? [0, -18] : [0, -5];
@@ -302,21 +352,21 @@ const island2Cinema = (() => {
     } else if (name === "trade-sail" || name === "trade-return") {
       const craft = story.craftKind === "crate" ? "i2-crate" : "i2-lily";
       const destination = name === "trade-sail" ? island2Layout.craftSea : island2Layout.craftShore;
-      island2Move(craft, [point(craft), [540, 442], destination], 2200, undefined, 0, "sea-front");
+      island2Move(craft, [point(craft), [565, 556], destination], 2200, undefined, 0, "sea-front");
       if (story.craftKind === "crate") story.craftPoint = [...destination];
       else story.leafPoint = [...destination];
       if (name === "trade-sail") {
         story.boatSeen = true;
         element("i2-boat").style.display = "";
-        island2Move("i2-boat", [story.boat, [587, 352], [587, 395]], 2300);
-        story.boat = [587, 395];
+        island2Move("i2-boat", [story.boat, [612, 390], [612, 510], [589, 551]], 2300);
+        story.boat = [589, 551];
       } else {
-        island2Move("i2-boat", [point("i2-boat"), [591, 352], island2Layout.boatWaiting], 2200);
+        island2Move("i2-boat", [point("i2-boat"), [612, 510], [612, 390], island2Layout.boatWaiting], 2200);
         story.boat = [...island2Layout.boatWaiting];
       }
     } else if (name === "trade-exchange") {
       story.giftSeen = true;
-      island2Position("i2-gift", [566, 387]);
+      island2Position("i2-gift", [568, 543]);
       element("i2-gift").style.display = "";
       island2Renderer.follow("i2-gift", "i2-person-scout", [0, 0], { hand: true, blend: 950 });
       sound("island-discover");
@@ -345,12 +395,26 @@ const island2Cinema = (() => {
         island2Renderer.discPlane(step.prop, story.glassPlane);
       }
       if (step.prop === "i2-lamp") story.lampPoint = [...step.to];
+      if (step.prop === "i2-tea") { story.teaStored = true; story.teaPoint = [...step.to]; }
       if (step.support === "cabin") island2Renderer.follow(step.prop, "i2-crate",
         step.prop === "i2-lamp" ? [0, 0] : island2Layout.loadOffset, { depthBias: 1 });
       if (step.prop === "i2-lamp" && step.support === "light") story.lampRaised = true;
       sound("island-grow");
     }
     switch (step.scene) {
+      case "wheel-build":
+        island2Visual.wheel = 2;
+        story.wheelPoint = [...island2Layout.wheelRest];
+        break;
+      case "wheel-place":
+        story.wheelPoint = [...island2Layout.wheelDrive];
+        break;
+      case "cabin-move": story.cratePoint = [...island2Layout.cabinBase]; break;
+      case "cabin-build":
+        island2Visual.timber = 3;
+        story.cratePoint = undefined;
+        story.cabin = [...island2Layout.cabinBase];
+        break;
       case "source-dig": story.cutawayOpen = true; break;
       case "source-push":
         story.workshopOpen = true;
