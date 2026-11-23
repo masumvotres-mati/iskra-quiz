@@ -20,6 +20,7 @@ const soundPatterns = {
   "island2-level": { notes: [392, 659.25, 1046.5], duration: .3, spacing: .065, volume: .04, wave: "triangle", overtone: .16 },
   "island2-max": { notes: [523.25, 783.99, 1046.5, 1318.51], duration: .38, spacing: .055, volume: .044, wave: "triangle", overtone: .18 },
   "island2-touch": { notes: [293.66], duration: .065, spacing: 0, volume: .018 },
+  "island2-flow": { notes: [392, 523.25, 440, 659.25], duration: .085, spacing: .11, volume: .018 },
 };
 
 function updateSoundControl() {

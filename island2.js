@@ -176,9 +176,10 @@ function renderIsland2() {
   show("i2-middle-walls", l.water > 0 || island2Story.workshopOpen);
   show("i2-cutaway", island2Story.cutawayOpen);
   show("i2-cover", l.water > 0 && l.water < 2 || island2Story.stoneSaved);
-  show("i2-stream", l.water >= 2);
-  show("i2-source-fall", l.water >= 2);
-  show("i2-outfall", l.water >= 2);
+  show("i2-stream", l.water >= 2 || island2Story.channelDug);
+  show("i2-waterfall", l.water >= 2 || island2Story.waterfallStarted);
+  show("i2-fall-impact", l.water >= 2 || island2Story.waterfallLanded);
+  show("i2-outfall", l.water >= 2 || island2Story.waterfallLanded);
   show("i2-cliff-ladder", l.water >= 2);
   show("i2-valve", l.water >= 3);
   show("i2-scaffold", l.rope >= 2 && l.timber >= 3);
@@ -191,8 +192,8 @@ function renderIsland2() {
   show("i2-port-rope", l.rope >= 4);
   show("i2-drive", l.wheel >= 3);
   const pottery = island2State.branches.wheel === "pottery";
-  show("i2-wheel-flow", l.wheel >= 2 && !pottery);
-  show("i2-bypass-flow", l.wheel < 2 || pottery);
+  show("i2-wheel-flow", (l.water >= 2 || island2Story.channelFilled) && l.wheel >= 2 && !pottery);
+  show("i2-bypass-flow", (l.water >= 2 || island2Story.channelFilled) && (l.wheel < 2 || pottery));
   show("i2-table-feet", l.wheel === 1 || pottery);
   show("i2-tea", l.wheel > 0);
   show("i2-waterwheel", l.wheel >= 2 && !pottery);
@@ -324,6 +325,16 @@ function island2StartStep(step) {
   if (step.kind === "place") {
     island2Visual[step.id] = 1;
     renderIsland2();
+    if (step.id === "water") {
+      const travel = Math.ceil(island2Actor("scout", island2Renderer.nodes.spring.point));
+      step.duration = travel + 1950;
+      island2Renderer.act("scout", "dig", 1850, travel, 1);
+      island2Renderer.fillSpring(1600, travel + 250, () => {
+        if (island2CanAnimate()) playSound("island2-flow");
+      });
+      playSound("island-effort");
+      return;
+    }
     const nodeId = { timber: "crate", rope: "rope-coil" }[step.id] || step.id;
     const point = [...island2Renderer.entities.get(`i2-${nodeId}`).point];
     island2Move(`i2-${nodeId}`, [[point[0], point[1] - 80], [point[0], point[1] + 3],
@@ -598,7 +609,7 @@ function pickIsland2(id) {
   const result = advanceIsland2(seeded, island2State.placed, island2State.order.length, island2State.branches);
   island2State.levels = result.levels;
   island2State.busy = true;
-  island2Queue = [{ kind: "place", id, text: `${item.name} trafia na wyspę.`, duration: 500 }];
+  island2Queue = [{ kind: "place", id, text: id === "water" ? "Z ziemi wybija źródełko." : `${item.name} trafia na wyspę.`, duration: 500 }];
   let lampFitted = island2Story.lampRaised;
   const fitLamp = () => {
     island2Queue.push(...island2Cinema.fitLamp(),
@@ -724,6 +735,7 @@ function startIsland2() {
     boat: [...island2Layout.boatWaiting], cabin: [...island2Layout.cabinBase],
     cargo: "hidden", ending: "", celebrating: false, producing: false, reaction: false, lampRaised: false,
     cutawayOpen: false, workshopOpen: false, stoneSaved: false, stoneFlat: false,
+    channelDug: false, channelFilled: false, waterfallStarted: false, waterfallLanded: false,
     stonePoint: [...island2Layout.coverHome], magnetTaken: false, bridgeBuilt: false, tether: "",
     leafGrown: false, lilyMoved: false, leafFlat: false, leafSail: false, leafPoint: [...island2Layout.lily],
     formsReady: false, crateOpen: false, crateBoat: false, craftKind: "", craftPoint: [...island2Layout.crateRest],

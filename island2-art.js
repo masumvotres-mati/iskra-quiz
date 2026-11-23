@@ -96,55 +96,136 @@ const island2Lighting = (() => {
 const island2Water = (() => {
   const unit = island2Iso.unit;
   const spring = island2Iso.unproject(island2Layout.spring);
-  const bowl = [spring[0] + 10.5 / unit, spring[1] + 10.5 / unit, 26 / unit];
-  const outlet = [bowl[0] + 3 / unit, bowl[1], bowl[2]];
-  const inlet = [outlet[0], outlet[1], 0];
+  const inlet = [spring[0], spring[1] + 26 / unit, 0];
   const wheel = island2Iso.unproject(island2Layout.wheelDrive);
   const farm = island2Iso.unproject(island2Layout.farm);
-  const edge = [124 / unit + (283 - 318) / unit, 124 / unit, 0];
-  const route = [inlet, [inlet[0], wheel[1], 0], wheel, [edge[0], wheel[1], 0], edge];
+  const edge = [124 / unit, wheel[1], 0];
+  const route = [inlet, [inlet[0], wheel[1], 0], wheel, edge];
   const irrigation = [[inlet[0], farm[1], 0], farm];
+  const width = 22, surface = -6;
   const level = (point, z) => [point[0], point[1], z / unit];
-  const flow = route.map((point) => level(point, -1));
+  const flow = route.map((point) => level(point, surface));
+  const sourceFlow = [level(spring, surface), flow[0]];
   const fall = [flow.at(-1), level(edge, -island2View.depth)];
   const pool = [edge[0] + .33, edge[1] + .33, -island2View.depth / unit];
   const xy = (point) => island2Iso.project(point).map((value) => +value.toFixed(3));
   const path = (points, close = false) => `M${points.map((point) => xy(point).join(" ")).join("L")}${close ? "Z" : ""}`;
-  function strip(a, b, width, z) {
+  const around = (point, half, z) => [[-half, -half], [-half, half], [half, half], [half, -half]]
+    .map(([u, v]) => [point[0] + u / unit, point[1] + v / unit, z / unit]);
+  function strip(a, b, span, z) {
     const dx = b[0] - a[0], dy = b[1] - a[1], length = Math.hypot(dx, dy);
-    const normal = [-dy / length * width / unit / 2, dx / length * width / unit / 2];
+    const normal = [-dy / length * span / unit / 2, dx / length * span / unit / 2];
     return path([[a[0] + normal[0], a[1] + normal[1], z / unit],
       [b[0] + normal[0], b[1] + normal[1], z / unit],
       [b[0] - normal[0], b[1] - normal[1], z / unit],
       [a[0] - normal[0], a[1] - normal[1], z / unit]], true);
   }
-  function channel(points) {
-    const segments = points.slice(1).map((point, index) => [points[index], point]);
-    const join = (point, width, z) => {
-      const half = width / unit / 2;
-      return path([[-half, -half], [half, -half], [half, half], [-half, half]]
-        .map(([u, v]) => [point[0] + u, point[1] + v, z / unit]), true);
-    };
-    return segments.map(([a, b]) => `<path d="${strip(a, b, 9, 0)}" fill="#9b875e"/>`).join("")
-      + points.slice(1, -1).map((p) => `<path d="${join(p, 9, 0)}" fill="#9b875e"/>`).join("")
-      + segments.map(([a, b]) => `<path d="${strip(a, b, 5.5, -1)}" fill="#63cde8"/>`).join("")
-      + points.slice(1, -1).map((p) => `<path d="${join(p, 5.5, -1)}" fill="#63cde8"/>`).join("")
-      + `<path class="i2-flow" d="${path(points.map((point) => level(point, -1)))}" fill="none" stroke="#d4faff" opacity=".75" stroke-width="1.05" stroke-dasharray="2 15"/>`;
+  function hollow(id, opening, water, contents = "") {
+    return `<defs><clipPath id="${id}"><path d="${opening}"/></clipPath></defs>
+      <path class="i2-water-bank" d="${opening}" fill="#169e60"/>
+      <g clip-path="url(#${id})"><g id="${id}-water"><path class="i2-water-surface" d="${water}" fill="url(#i2-water-texture)"/>${contents}</g></g>`;
   }
-  const [wx, wy] = xy(level(wheel, -1));
+  function footprint(routes, z) {
+    return routes.flatMap((points) => points.slice(1).map((point, index) => strip(points[index], point, width, z))).join("")
+      + routes.flatMap((points) => points.slice(1, -1)).map((p) => path(around(p, width / 2, z), true)).join("")
+      + path(around(spring, 24, z), true);
+  }
+  function channel(id, routes, lip = "") {
+    const segments = routes.flatMap((points) => points.slice(1).map((point, index) => [points[index], point]));
+    const currents = segments.filter(([a, b]) => Math.hypot(a[0] - b[0], a[1] - b[1]) * unit > 36)
+      .map(([a, b], index) => {
+        const from = a.map((n, i) => n + (b[i] - n) * .2);
+        const to = a.map((n, i) => n + (b[i] - n) * .34);
+        const start = xy(from), end = xy(b);
+        return `<path class="i2-current" d="${strip(from, to, 4, surface)}" fill="#a3cff6"
+          style="--dx:${(end[0] - start[0]) * .6}px;--dy:${(end[1] - start[1]) * .6}px;animation-delay:${-index * .8}s"/>`;
+      }).join("");
+    return hollow(id, footprint(routes, 0) + lip, footprint(routes, surface), currents);
+  }
+  const springShape = around(spring, 24, 0);
+  const springPoint = xy(level(spring, surface));
+  const ripples = `<g transform="matrix(1 ${island2Iso.slope} -1 ${island2Iso.slope} ${springPoint.join(" ")})">
+    <path class="i2-source-shimmer" d="M-14-6q3-2 6 0m7 13q3-2 6 0m3-18q3-2 6 0"
+      fill="none" stroke="#4a99d8" stroke-width="1" opacity=".45"/>
+    </g>`;
+  const springMesh = springFrame(1);
+  const source = `<defs><clipPath id="i2-spring-cut"><path d="${path(springShape, true)}"/></clipPath></defs>
+    <path class="i2-water-bank" d="${path(springShape, true)}" fill="#169e60"/>
+    <g clip-path="url(#i2-spring-cut)">
+      <path id="i2-spring-floor" d="${springMesh.floor}" fill="#b8996f"/>
+      <path id="i2-spring-left-wall" d="${springMesh.left}" fill="#715333"/>
+      <path id="i2-spring-right-wall" d="${springMesh.right}" fill="#967044"/>
+      <path id="i2-spring-left-lip" class="i2-water-bank" d="${springMesh.leftLip}" fill="#169e60"/>
+      <path id="i2-spring-right-lip" class="i2-water-bank" d="${springMesh.rightLip}" fill="#169e60"/>
+      <g id="i2-spring-cut-water"><path class="i2-water-surface" d="${springMesh.water}" fill="url(#i2-water-texture)"/>${ripples}</g>
+    </g>`;
+  const gatePoint = (u, z = 0) => [spring[0] + u / unit, spring[1] + 26 / unit, z / unit];
+  const gate = [-14, 14].map((v) => {
+    const [x, y] = xy(gatePoint(v));
+    return island2Iso.box(x, y, 3, 3, 14, ["#e6c286", "#bb945d", "#927044"]);
+  }).join("") + `<path d="${path([gatePoint(-12, 8), gatePoint(12, 8), gatePoint(12, 2), gatePoint(-12, 2)], true)}" fill="#d2a668"/>
+    <path d="${path([gatePoint(0, 8), gatePoint(0, 17)])}" fill="none" stroke="#8a744d" stroke-width="1.3"/>`;
+  const [wx, wy] = xy(level(wheel, surface));
   const [fx, fy] = xy(fall[1]);
   const [px, py] = xy(pool);
-  const source = `<path d="${path([bowl, outlet, level(inlet, -1)])}" fill="none" stroke="#2e91ac" stroke-width="5.5"/>
-    <path class="i2-flow" d="${path([bowl, outlet, level(inlet, -1)])}" fill="none" stroke="#a9f5ff" stroke-width="3.2" stroke-dasharray="7 6"/>`;
-  const channels = channel(route) + channel(irrigation)
-    + `<path d="${path(fall)}" fill="none" stroke="#339db5" stroke-width="5.5"/>
-      <path class="i2-flow" d="${path(fall)}" fill="none" stroke="#baf8ff" stroke-width="2.2" stroke-dasharray="8 10"/>
-      <g id="i2-wheel-flow" fill="none" stroke="#d2faff" stroke-width="1.4"><path d="M${wx - 10} ${wy + 1}q10 6 20 0m-16-2 2-4m9 3 3-4"/></g>
-      <g id="i2-bypass-flow" fill="none" stroke="#b6f3ff" stroke-width="1.2"><path d="M${wx - 5} ${wy + 1}l10 4.516"/></g>
-      <path d="M${fx - 7} ${fy + 2}q7 5 14 0m-9-2-2-5m6 5 3-4" fill="none" stroke="#e1ffff" stroke-width="1.5"/>`;
+  const fallPoint = (offset, z) => [edge[0], edge[1] + offset / unit, z / unit];
+  const fallFrame = (t) => {
+    const bottom = surface + (-island2View.depth - surface) * t * t;
+    return path([fallPoint(width / 2, surface), fallPoint(-width / 2, surface),
+      fallPoint(-width / 2, bottom), fallPoint(width / 2, bottom)], true);
+  };
+  const lipShape = path([fallPoint(-width / 2, 0), fallPoint(width / 2, 0),
+    fallPoint(width / 2, surface), fallPoint(-width / 2, surface)], true);
+  const mainRoute = [spring, ...route];
+  const channels = `<defs><clipPath id="i2-channel-top"><path d="M70 350 318 238 566 350 318 462Z"/><path d="${lipShape}"/></clipPath>
+      <clipPath id="i2-channel-cut-reveal"><path/></clipPath><clipPath id="i2-channel-wet-reveal"><path/></clipPath></defs>
+    <g clip-path="url(#i2-channel-top)"><g id="i2-channel-ground">${channel("i2-main-cut", [mainRoute, irrigation], lipShape)}</g></g>
+    <path id="i2-waterfall" d="${fallFrame(1)}" fill="#348fe8"/>
+    <g id="i2-wheel-flow" fill="none" stroke="#abd5f7" stroke-width="1.1"><path d="M${wx - 9} ${wy + 1}q9 4 18 0m-14-1 1-3m8 2 2-3"/></g>
+    <g id="i2-bypass-flow" fill="none" stroke="#9bc8f1" stroke-width=".7"><path d="M${wx - 5} ${wy + 1}l10 4.516"/></g>
+    <g id="i2-fall-impact" transform="translate(${fx} ${fy})" fill="none" stroke="#badff9" stroke-width="1">
+      <path class="i2-fall-splash" d="M-9 0q9 6 18 0m-14-1-2-5m8 5 3-4"/>
+    </g><g id="i2-dig-crumbs" fill="#99724c" stroke="none" style="display:none">
+      <path d="m-2-2 3-1 1 3-3 1Z"/><path d="m-2-2 3-1 1 3-3 1Z"/><path d="m-2-2 3-1 1 3-3 1Z"/>
+    </g>`;
   const basin = `<ellipse cx="${px}" cy="${py}" rx="26" ry="${26 * island2Iso.slope}" fill="#7ce7ef" stroke="#4aa5bb" stroke-width="1"/>
     <path d="M${px - 14} ${py + 1}q14 9 28-1m-21-5q7 6 14 0" fill="none" stroke="#d3ffff" stroke-width="1.5"/>`;
-  return { route, irrigation, flow, fall, pool, source, channels, basin };
+  const pondShape = [[-22, -18], [9, -18], [9, -24], [25, -24], [25, 13], [15, 13], [15, 22], [-22, 22]]
+    .map(([u, v]) => [farm[0] + u / unit, farm[1] + v / unit, 0]);
+  const pond = hollow("i2-pond-cut", path(pondShape, true),
+    path(pondShape.map((point) => level(point, surface)), true));
+  const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]) * unit;
+  const routeLength = mainRoute.slice(1).reduce((sum, point, i) => sum + distance(mainRoute[i], point), 0);
+  function portion(points, remaining) {
+    const result = [points[0]];
+    for (let i = 1; i < points.length && remaining > 1e-8; i++) {
+      const length = distance(points[i - 1], points[i]), amount = Math.min(1, remaining / length);
+      result.push(points[i - 1].map((n, axis) => n + (points[i][axis] - n) * amount));
+      remaining -= length;
+    }
+    return result;
+  }
+  function development(t) {
+    const routesAt = (progress) => [portion(mainRoute, routeLength * progress),
+      portion(irrigation, Math.max(0, routeLength * progress - distance(spring, irrigation[0])))];
+    const ground = routesAt(t), wet = Math.max(0, (t - .12) / .88);
+    return { cut: footprint(ground, 0) + (t === 1 ? lipShape : ""),
+      water: footprint(routesAt(wet), surface) + (wet === 1 ? lipShape : ""), head: xy(ground[0].at(-1)) };
+  }
+  const bankPath = [[spring[0], spring[1] + 44 / unit, 0], route[1], wheel, [edge[0] - 20 / unit, edge[1], 0]]
+    .map(([u, v]) => xy([u + 16 / unit, v - 16 / unit, 0]));
+  function springFrame(t) {
+    const dig = Math.min(1, t / .35), depth = 24 * dig * dig * (3 - 2 * dig);
+    const wet = Math.max(0, (t - .35) / .65), waterZ = -24 + (24 + surface) * wet;
+    const wall = (a, b, top, bottom) => path([level(springShape[a], top), level(springShape[b], top),
+      level(springShape[b], bottom), level(springShape[a], bottom)], true);
+    return { floor: path(springShape.map((point) => level(point, -depth)), true),
+      left: wall(0, 1, -Math.min(2, depth), -depth), right: wall(3, 0, -Math.min(2, depth), -depth),
+      leftLip: wall(0, 1, 0, -Math.min(2, depth)), rightLip: wall(3, 0, 0, -Math.min(2, depth)),
+      water: path(springShape.map((point) => level(point, waterZ)), true), opacity: Math.min(1, wet * 6) };
+  }
+  return { route, irrigation, flow, sourceFlow, fall, pool, source, gate, channels, basin, pond, width, surface,
+    development, bankPath, springFrame, fallFrame };
 })();
 
 const island2Stone = (() => {
@@ -217,6 +298,14 @@ const island2SceneArtwork = `
  ${island2Iso.tilePattern("i2-tiles-top", 248 / 12)}
  ${island2Iso.tilePattern("i2-tiles-left", island2View.depth / 12)}
  ${island2Iso.tilePattern("i2-tiles-right", island2View.depth / 12, true)}
+ <pattern id="i2-water-texture" width="${248 / 6}" height="${248 / 6}" patternUnits="userSpaceOnUse"
+   patternTransform="matrix(1 ${island2Iso.slope} -1 ${island2Iso.slope} 318 ${350 - island2Water.surface})">
+  <rect width="${248 / 6}" height="${248 / 6}" fill="#78baf6"/>
+  <path d="M3 5q2-1 4 0m9-2 3 1m11 5q2-1 4 0M8 18l3-1m11 1q2-1 4 0m9 7 3 1M3 31q2-1 4 0m11 5 3-1m8 2q2-1 4 0M34 3l3 1M28 29l3-1M12 27q2-1 4 0M18 10l3 1M3 22l3 1M35 35l3-1M24 39l3 1"
+    fill="none" stroke="#398fd8" stroke-width="1" opacity=".65" stroke-linecap="round"/>
+  <path d="M9 10l4 1m13-8 3-1M17 23l4 1m11-7 4 1M6 38l4-1M23 31l4 1M1 14l3-1M36 10l3 1"
+    fill="none" stroke="#a3d2fb" stroke-width="1" opacity=".65" stroke-linecap="round"/>
+ </pattern>
  <clipPath id="i2-cave-mask"><path d="M325 383v-39a15 15 0 0 1 30 0v39Z"/></clipPath>
  <clipPath id="i2-under-mask"><path d="m210 425 80 36v45l-80-36Z"/></clipPath>
  <clipPath id="i2-meadow-mask"><ellipse id="i2-meadow-radius" cx="157" cy="333" rx="0" ry="0"/></clipPath>
@@ -254,8 +343,8 @@ const island2SceneArtwork = `
  <g class="i2-waves" stroke="#c3f6ff" stroke-width="2" stroke-linecap="round" fill="none" opacity=".55"><path d="M26 ${375 + island2View.depth}h18m8 88h28m448-80h22m32-55h23M548 327h29M24 337h19"/></g>
 </g>
 <g id="i2-base-terrain" stroke="#654c30" stroke-width="1.5" stroke-linejoin="round">
- ${island2Iso.box(318, 350 + island2View.depth, 248, 248, island2View.depth, ["#bc9463", "#a58050", "#795d3a"])}
- <path d="M70 350 318 238 566 350 318 462Z" fill="#93dc52" stroke="none" clip-path="url(#i2-meadow-mask)"/>
+ ${island2Iso.box(318, 350 + island2View.depth, 248, 248, island2View.depth, ["#b18860", "#9a774f", "#816343"])}
+ <path d="M70 350 318 238 566 350 318 462Z" fill="#25e98b" stroke="none" clip-path="url(#i2-meadow-mask)"/>
  ${island2Iso.cubeGrid()}
 </g>
 <g id="i2-cutaway" stroke="#55735a" stroke-width="3" stroke-linejoin="round"><path d="m208 422 84 38v49l-84-38Z" fill="#78926e"/><path d="m212 428 76 34v40l-76-34Z" fill="#354d43"/><path d="m213 462 73 33" stroke="#b09a68" stroke-width="4"/><path d="m216 434 7 3m55 47 6 3" stroke="#67795d" stroke-width="2.5"/></g>
@@ -280,18 +369,13 @@ const island2SceneArtwork = `
  <path id="i2-rock-outline" fill="none" stroke="#66725b" stroke-width="1.3"/>
  <g id="i2-rock-cracks" fill="none" stroke="#718064" stroke-width="1.1" opacity=".75"><path/><path/></g>
 </g>
-<g id="i2-water" stroke="#2b3030" stroke-width="2" stroke-linejoin="round">
- <ellipse cx="237" cy="316" rx="35" ry="15" fill="#435132" opacity=".28" stroke="none"/>
- <path d="M207 312q-3-47 31-50 30 5 31 50l-30 15Z" fill="#d8cd9d"/><path d="M238 262q30 6 31 50l-30 15Z" fill="#b6a879"/>
- <path d="M216 290q21-13 43 0v10q-21 13-43 0Z" fill="#a29168" stroke-width="2"/>
- <ellipse cx="237" cy="290" rx="21" ry="9.48" fill="#23b5f1" stroke-width="2"/>
- <path d="M236 276q-10 12 0 15 11-3 0-15Z" fill="#77e9ff" stroke-width="1.5"/>
- <g id="i2-valve" stroke-width="3"><path d="m222 315 28 1v12l-28-1Z" fill="#e7b874"/><path d="M236 318v-15m-7 0h14" fill="none"/></g>
- <g id="i2-source-fall" stroke-linejoin="round">${island2Water.source}</g>
+<g id="i2-water" stroke="none">
+ ${island2Water.source}
+ <g id="i2-valve">${island2Water.gate}</g>
 </g>
 <g id="i2-stream" stroke-linecap="round" stroke-linejoin="round">${island2Water.channels}</g>
 <g id="i2-outfall">${island2Water.basin}</g>
-<g id="i2-overflow"><path d="M109 327q10-8 28-8 15-14 32-3 23 0 35 14 9 11-16 17-22 14-41 5-29-1-38-13-7-7 0-12Z" fill="#86cacf" stroke="#58969b" stroke-width="3"/><path d="m128 333 29-13 28 13" fill="none" stroke="#c7eddf" stroke-width="3"/></g>
+<g id="i2-overflow">${island2Water.pond}</g>
 <g id="i2-seeds" stroke="#3d5847" stroke-width="3" stroke-linejoin="round">
  <g class="i2-field-bed">
  <path d="m105 333 52-23 52 23-52 23Z" fill="#b58c5b"/><path d="m116 333 41-18 40 18-40 18Z" fill="#cda16b" stroke="none"/>
@@ -300,7 +384,7 @@ const island2SceneArtwork = `
  <g class="i2-seed-first" fill="#f7d793" stroke="none"><ellipse cx="139" cy="331" rx="4" ry="2.5"/><ellipse cx="157" cy="326" rx="4" ry="2.5"/><ellipse cx="173" cy="338" rx="4" ry="2.5"/></g>
  <g class="i2-sprouts" fill="#7ab46b"><path d="M139 332v-17m0 8q-13-2-9-10 11 0 9 10m0-5q10-10 13-1-2 8-13 6M174 338v-19m0 10q-13-2-10-11 12 0 10 11m0-5q10-12 14-3-3 8-14 8"/></g>
  <g class="i2-harvest"><use href="#i2-ear" x="135" y="332"/><use href="#i2-ear" x="157" y="324"/><use href="#i2-ear" x="178" y="339"/><path d="m111 344 19 8-4 13-19-8Z" fill="#edc58b"/><path d="m111 348 16 7" fill="none" stroke-width="2.5"/></g>
- <g id="i2-pond"><path d="M109 327q10-8 28-8 15-14 32-3 23 0 35 14 9 11-16 17-22 14-41 5-29-1-38-13-7-7 0-12Z" fill="#83cbd2"/><path d="M116 331q14-9 26-5m24 19 24-9" fill="none" stroke="#bce9dd" stroke-width="3"/><path d="M134 329q-13-7-19 0-5 9 11 13 16 1 16-9l-8-4 3 9" fill="#91bd71"/></g>
+ <g id="i2-pond"><path d="M134 329q-13-7-19 0-5 9 11 13 16 1 16-9l-8-4 3 9" fill="#91bd71" stroke="none"/></g>
 </g>
 <g id="i2-lily" stroke="#47754e" stroke-width="3"><g id="i2-lily-body"><path d="M-6 0q-11-12 5-14 20-2 23 8 4 13-17 15L-6 0 7-3Z" fill="#a0ce79"/><path d="m4-2 11-5M4-2l9 5" fill="none" stroke="#d5e9a1" stroke-width="2.5"/><path id="i2-lily-stem" d="M4 3v23" fill="none" stroke="#6b9455" stroke-width="4"/></g></g>
 <g id="i2-fish" fill="#efac63" stroke="#696849" stroke-width="2.5"><path d="M-10 0Q0-12 11 0 0 11-10 0Zm-1 0-7-6v12Z"/><circle cx="4" cy="-1" r="1.5" fill="#354d43" stroke="none"/></g>
@@ -341,7 +425,7 @@ const island2SceneArtwork = `
 <g id="i2-gallery-rail" fill="none" stroke="#8a754f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
  <path d="M434 242v-8l34 15.35 42-18.97v8m-42 10.97v8"/>
 </g>
-<g id="i2-drive" fill="none" stroke-linecap="round"><path d="m252 384 62 35" stroke="#696849" stroke-width="7"/><path class="i2-running-belt" d="m252 384 62 35" stroke="#d3b778" stroke-width="3" stroke-dasharray="7 12"/></g>
+<g id="i2-drive" fill="none" stroke-linecap="round"><path d="M252 384 308 416" stroke="#696849" stroke-width="7"/><path class="i2-running-belt" d="M252 384 308 416" stroke="#d3b778" stroke-width="3" stroke-dasharray="7 12"/></g>
 <path id="i2-wire" d="M348 420 377 407V346l30-13 39 17V243l25-11" fill="none" stroke="#ba8c58" stroke-width="3"/>
 <g id="i2-dock" stroke="#65563e" stroke-width="3.5" stroke-linejoin="round">
  <path d="m460 397 38-17 36 16-38 17Z" fill="#e6bc7e"/><path d="m470 393 35 16m-24-21 35 16m-24-21 35 16M466 400v36m62-36v36" fill="none" stroke-width="2.5"/><path d="M487 391v-15m22 7v-15" fill="none" stroke-width="4"/>
@@ -373,7 +457,15 @@ const island2SceneArtwork = `
 <g id="i2-rope-coil" stroke="#8a744d" stroke-width="3.5" fill="none"><ellipse cy="-4" rx="14" ry="6"/><ellipse cy="-9" rx="14" ry="6"/><path d="M14-9q16 0 9 14" stroke-linecap="round"/></g>
 <g id="i2-copper" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
  <g id="i2-loose-coil" fill="none" stroke="#cc8d68" stroke-width="5"><path d="M-20-2h6v-17q0-12 8-9t8 11V-1q0 9 7 7t7-10v-15q0-9 7-7t7 10v13"/></g>
- <g id="i2-generator"><path d="m-25-12 25-11 26 11v12L0 11-25 0Z" fill="#c6d0b4"/><path d="M0-1v12L26 0v-12Z" fill="#96a78e"/><use href="#i2-magnet-solid"/><path d="m-8-15 14-6 10 6-14 6Z" fill="#e8b47e"/><path d="m-4-18 9 6m-3-9 9 6" stroke="#a57750" stroke-width="2.5"/></g>
+ <g id="i2-generator">
+  <path d="m-25-12 25-11 26 11v12L0 11-25 0Z" fill="#c6d0b4"/><path d="M0-1v12L26 0v-12Z" fill="#96a78e"/>
+  <path d="M-20-9-1-17.58" fill="none" stroke="#66756b" stroke-width="2"/>
+  <g transform="translate(-20 -9)" stroke-width="1.2">${island2Iso.disc(6, 3, "x", "#d0b882", "#8b764f",
+    '<g id="i2-generator-pulley"><path d="M-4 0H4M0-4V4" stroke="#80683f" stroke-width="1.1"/></g>')}</g>
+  <use href="#i2-magnet-solid"/>
+  <g transform="translate(-1 -17.58)" stroke-width="1.2">${island2Iso.disc(5.5, 2, "x", "#e8b47e", "#a57750",
+    '<g id="i2-generator-rotor"><path d="M-3-4H3V4H-3Zm2 0V-4m2 8V-4" fill="none" stroke="#905c35" stroke-width="1"/></g>')}</g>
+ </g>
  <g id="i2-sparks" fill="none" stroke="#d7a640" stroke-width="3"><path d="m23-28 5-7m0 18 8-2"/></g>
 </g>
 <g id="i2-lamp" stroke="#63593f" stroke-width="3" stroke-linejoin="round">

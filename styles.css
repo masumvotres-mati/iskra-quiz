@@ -386,13 +386,20 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .island2-scene[data-seeds-form="pond"] .i2-sprouts, .island2-scene[data-seeds-form="pond"] .i2-harvest { display: none; }
 .island2-scene[data-seeds-form="pond"] .i2-field-bed { display: none; }
 .i2-person { pointer-events: none; }
+.island2-scene[data-seeds="0"] .i2-water-bank, .island2-scene[data-seeds="1"] .i2-water-bank { fill: #8d744c; }
 .island2-scene[data-live="true"] .i2-waves { animation: i2-water 4s ease-in-out infinite; }
 .island2-scene[data-live="true"] .i2-boat-bob { animation: i2-boat 2.8s ease-in-out infinite; }
-.island2-scene[data-live="true"] .i2-flow { animation: i2-flow .8s linear infinite; }
-.island2-scene[data-live="true"] .i2-running-belt { animation: i2-flow .7s linear infinite; }
+.i2-current { opacity: 0; }
+.island2-scene[data-live="true"] .i2-current { animation: i2-current 3.2s linear infinite; }
+.island2-scene[data-live="true"] .i2-source-shimmer { animation: i2-shimmer 2.8s ease-in-out infinite; }
+.island2-scene[data-live="true"] .i2-fall-splash { animation: i2-splash .75s ease-in-out infinite; }
+.island2-scene[data-live="true"] .i2-running-belt { animation: i2-flow .7s linear infinite reverse; }
 .island2-scene[data-live="true"][data-copper="3"] #i2-sparks { animation: i2-spark .7s steps(2) infinite; }
 @keyframes i2-water { 50% { transform: translateX(6px); opacity: .6; } }
 @keyframes i2-flow { to { stroke-dashoffset: -40; } }
+@keyframes i2-current { 15%, 75% { opacity: .3; } to { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+@keyframes i2-shimmer { 50% { opacity: .15; } }
+@keyframes i2-splash { 50% { transform: translateY(-2px); opacity: .45; } }
 @keyframes i2-boat { 50% { transform: translateY(-4px); } }
 @keyframes i2-spark { 50% { opacity: .25; } }
 @media (max-width: 370px) {

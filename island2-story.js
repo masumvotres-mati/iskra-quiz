@@ -67,6 +67,9 @@ const island2Cinema = (() => {
       scene("source-push", "Ten kamień ani drgnie. Przyda się pomoc!", 850),
       scene("source-team-ready", "Z drugiej strony ktoś już pomaga!", 500),
       scene("source-team", "Razem! Kamienna płyta przyda się jeszcze do czegoś.", 1350),
+      scene("source-channel-ready", "Teraz można wyprowadzić wodę ze źródła.", 400),
+      scene("source-channel", "Łopatka otwiera kanał, a woda podąża za mieszkańcem.", 2800),
+      scene("source-fall", "Woda dociera do krawędzi i spada do zatoki!", 800),
       reveal(change, "Otwarta pracownia i przejście pod ziemią!"),
     ];
     if (key === "copper-2") return [
@@ -161,8 +164,8 @@ const island2Cinema = (() => {
       island2Renderer.follow(step.prop, `i2-person-${step.actor}`, [0, 0],
         { hand: true, to: step.to, blend: 600 });
     } else if (name === "wheel-team-ready") {
-      walk(step, "scout", [207, 392], "kneel", 300, 1);
-      walk(step, "maker", [281, 413], step.pottery ? "shape" : "kneel", 300, -1);
+      walk(step, "scout", [213, 392], "kneel", 300, 1);
+      walk(step, "maker", [275, 399], step.pottery ? "shape" : "kneel", 300, -1);
     } else if (name === "wheel-build") {
       for (const [role, side] of [["scout", -1], ["maker", 1]]) {
         island2Renderer.act(role, step.pottery && role === "maker" ? "shape" : "offer", step.duration, 0, side === -1 ? 1 : -1);
@@ -174,7 +177,7 @@ const island2Cinema = (() => {
       const a = island2Layout.wheelRest;
       const b = island2Layout.wheelDrive;
       island2Move("i2-wheel", [a, [244, 409], b], step.duration);
-      for (const [role, start, side] of [["scout", [207, 392], -1], ["maker", [281, 413], 1]]) {
+      for (const [role, start, side] of [["scout", [213, 392], -1], ["maker", [275, 399], 1]]) {
         island2Renderer.perform(role, [start, [start[0] + b[0] - a[0], start[1] + b[1] - a[1]]],
           step.duration, "push", 0, side === -1 ? 1 : -1);
         island2Renderer.entities.get(`i2-person-${role}`).workGrip = { prop: "i2-tabletop", side };
@@ -194,7 +197,7 @@ const island2Cinema = (() => {
       sound("island-effort");
     } else if (name === "glass-polish-contact") {
       const rough = step.rough;
-      walk(step, step.actor, [step.to[0] + (rough ? 35 : 18), step.to[1] + (rough ? 25 : 17)], "polish", 1000, -1);
+      walk(step, step.actor, [step.to[0] + (rough ? 22 : 12), step.to[1] + (rough ? 17 : 10)], "polish", 1000, -1);
     } else if (name === "source-notice") {
       walk(step, "scout", at("spring"), "look", 650, 1);
       sound("island-notice");
@@ -202,19 +205,32 @@ const island2Cinema = (() => {
       walk(step, "scout", at("mill"), "dig", 900, -1);
       sound("island-effort");
     } else if (name === "source-ready") {
-      walk(step, "scout", at("workshop"), "look", 400, -1);
+      walk(step, "scout", [368, 383], "look", 400, -1);
     } else if (name === "source-push") {
-      island2Renderer.perform("scout", [at("workshop"), [359, 404]], 850, "push", 0, -1);
+      island2Renderer.perform("scout", [[368, 383], [349, 389]], 850, "push", 0, -1);
       island2Move("i2-cover", [island2Layout.coverHome, [322, 386]], 850);
       sound("island-effort");
     } else if (name === "source-team-ready") {
-      walk(step, "scout", [358, 389], "look", 500, -1);
-      walk(step, "maker", [347, 416], "look", 500, -1);
+      walk(step, "scout", [348, 389], "look", 500, -1);
+      walk(step, "maker", [345, 409], "look", 500, -1);
     } else if (name === "source-team") {
-      island2Renderer.perform("scout", [[358, 389], [320, 404]], 1300, "push", 0, -1);
-      island2Renderer.perform("maker", [[347, 416], [309, 428]], 1300, "push", 0, -1);
+      island2Renderer.perform("scout", [[348, 389], [318, 409]], 1300, "push", 0, -1);
+      island2Renderer.perform("maker", [[345, 409], [315, 429]], 1300, "push", 0, -1);
       island2Move("i2-cover", [[322, 386], island2Layout.coverBench], 1300);
       island2Renderer.turnStone(true, false, 450, 850);
+    } else if (name === "source-channel-ready") {
+      walk(step, "scout", island2Water.bankPath[0], "dig", 400, -1);
+    } else if (name === "source-channel") {
+      story.channelDug = true;
+      renderIsland2();
+      island2Renderer.perform("scout", island2Water.bankPath, step.duration, "channel");
+      island2Renderer.digChannel(step.duration);
+      sound("island2-flow");
+    } else if (name === "source-fall") {
+      story.waterfallStarted = true;
+      renderIsland2();
+      island2Renderer.fillFall(step.duration);
+      island2Renderer.act("scout", "look", step.duration, 0, -1);
     } else if (name === "magnet-peer") {
       walk(step, "scout", at("inside"), "kneel", 600, -1);
       sound("island-notice");
@@ -264,7 +280,7 @@ const island2Cinema = (() => {
       island2Renderer.act("scout", "startle", 850);
       sound("island-splash");
     } else if (name === "glass-polish") {
-      walk(step, island2Visual.water >= 2 ? "maker" : "scout", [326, 411], "polish", 550, -1);
+      walk(step, island2Visual.water >= 2 ? "maker" : "scout", [313, 402], "polish", 550, -1);
     } else if (name === "leaf-grow") {
       walk(step, "gardener", at("pondEdge"), "look", 1200, 1);
       island2Animate("i2-lily-body", [{ transform: "scale(1)" }, { transform: "scale(1.45)" }], 1000);
@@ -395,6 +411,7 @@ const island2Cinema = (() => {
         story.glassPoint = [...step.to];
         story.glassPlane = step.support ? "x" : "ground";
         island2Renderer.discPlane(step.prop, story.glassPlane);
+        if (step.support === "optic") island2Visual.glass = 4;
       }
       if (step.prop === "i2-lamp") story.lampPoint = [...step.to];
       if (step.prop === "i2-tea") { story.teaStored = true; story.teaPoint = [...step.to]; }
@@ -427,7 +444,15 @@ const island2Cinema = (() => {
         story.stoneFlat = true;
         story.stonePoint = [...island2Layout.coverBench];
         break;
+      case "source-channel":
+        story.channelFilled = true;
+        break;
+      case "source-fall":
+        story.waterfallLanded = true;
+        sound("island-splash");
+        break;
       case "magnet-take": story.magnetTaken = true; break;
+      case "magnet-connect": island2Visual.copper = 2; break;
       case "bridge-haul":
         story.bridgeBuilt = true;
         story.tether = "";
