@@ -36,9 +36,37 @@ const island2Iso = (() => {
       lines.push(`M${p(-124, n, 160)}L${p(124, n, 160)}L${p(124, n, 0)}`);
     }
     for (let i = 1; i < 8; i++) lines.push(`M${p(-124, 124, i * 20)}L${p(124, 124, i * 20)}L${p(124, -124, i * 20)}`);
-    return `<path d="${lines.join("")}" fill="none" stroke="#755536" stroke-width=".8" opacity=".3"/>`;
+    return `<path d="${lines.join("")}" fill="none" stroke="#755536" stroke-width=".8" opacity=".22"/>`;
   };
   return { slope, unit, project, unproject, face, box, disc, cubeGrid };
+})();
+
+const island2Lighting = (() => {
+  const direction = new DOMPoint(-.65, -.76, 0, 0);
+  function local(matrix, width = 1, height = 1) {
+    const point = direction.matrixTransform(matrix.inverse());
+    const x = point.x / width;
+    const y = point.y / height;
+    const length = Math.hypot(x, y);
+    return { x: x / length, y: y / length };
+  }
+  function paint(gradient, matrix, width, height) {
+    const light = local(matrix, width, height);
+    if (gradient.tagName === "radialGradient") {
+      gradient.setAttribute("cx", .5 + light.x * .28);
+      gradient.setAttribute("cy", .5 + light.y * .28);
+    } else {
+      gradient.setAttribute("x1", .5 + light.x * .55);
+      gradient.setAttribute("y1", .5 + light.y * .55);
+      gradient.setAttribute("x2", .5 - light.x * .55);
+      gradient.setAttribute("y2", .5 - light.y * .55);
+    }
+  }
+  function reflection(node, matrix) {
+    const light = local(matrix);
+    node.setAttribute("transform", `rotate(${Math.atan2(light.y, light.x) * 180 / Math.PI + 120})`);
+  }
+  return { local, paint, reflection };
 })();
 
 const island2SceneArtwork = `
@@ -56,6 +84,7 @@ const island2SceneArtwork = `
  <radialGradient id="i2-stone-cap" cx="34%" cy="22%" r="90%"><stop stop-color="#fff0ca"/><stop offset=".6" stop-color="#e6d3a4"/><stop offset="1" stop-color="#bba16c"/></radialGradient>
  <linearGradient id="i2-stone-wall" x2="100%" y2="0%"><stop stop-color="#e7d4a2"/><stop offset=".58" stop-color="#d7be8b"/><stop offset="1" stop-color="#ac8e5e"/></linearGradient>
  <radialGradient id="i2-glass-round" cx="28%" cy="22%" r="90%"><stop stop-color="#d4ffff" stop-opacity=".85"/><stop offset=".5" stop-color="#7ee4ed" stop-opacity=".75"/><stop offset="1" stop-color="#3fb0c2" stop-opacity=".95"/></radialGradient>
+ <radialGradient id="i2-pot-round" cx="35%" cy="25%" r="90%"><stop stop-color="#ffd49c"/><stop offset=".55" stop-color="#dda16d"/><stop offset="1" stop-color="#b67448"/></radialGradient>
  <linearGradient id="i2-magnet-red" x1="15%" y1="5%" x2="85%" y2="95%"><stop stop-color="#ffab61"/><stop offset=".42" stop-color="#ed6a3d"/><stop offset="1" stop-color="#b63526"/></linearGradient>
  <g id="i2-magnet-solid" stroke="#34372b" stroke-width="1.8" stroke-linejoin="round">
   <path d="M-16-6V-25Q-16-39 0-39 16-39 16-25V-6H6V-25Q6-30 0-30-6-30-6-25V-6Z" fill="#8d3529" transform="translate(4 -1.8)"/>
@@ -150,35 +179,35 @@ const island2SceneArtwork = `
  <circle cx="416" cy="321" r="9" fill="#edc98a"/><path d="M416 330v26m-4 0q4 9 8 0" fill="none" stroke="#8a774f"/>
 </g>
 <g id="i2-scaffold" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
- ${island2Iso.box(394, 363, 6, 6, 230)}
- ${island2Iso.box(420, 146, 58, 6, 8)}
+ ${island2Iso.box(431, 158, 36, 6, 6)}
+ <circle cx="442" cy="163" r="2" fill="#946d3c" stroke-width="1"/>
  <path id="i2-lift-rope" d="M416 163v149" fill="none" stroke="#8a774f" stroke-width="2.5"/>
  <g transform="translate(416 153)">${island2Iso.disc(10, 4, "x", "#edc780", "#ad8955",
    '<g id="i2-pulley-rotor"><path d="M-6 0H6M0-6V6" fill="none" stroke-width="2.5"/></g>')}</g>
 </g>
 <g id="i2-scaffold-front" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
- ${island2Iso.box(446, 363 + 52 * island2Iso.slope, 6, 6, 230)}
+ <path d="M441 373V217m0 12h6m-6 54h6m-6 78h6" fill="none" stroke="#969980" stroke-width="2"/>
 </g>
 <g id="i2-tower" stroke="#3d5847" stroke-width="4" stroke-linejoin="round">
  <ellipse cx="474" cy="362" rx="35" ry="15" fill="#a1bc80" stroke="none"/>
- <path d="M447 360V219l26-12 27 12v141l-26 14Z" fill="#fff5d8"/><path d="M474 219 500 207v153l-26 14Z" fill="#ddd5b1"/>
- <path d="m448 288 26 12 25-12v16l-25 12-26-12Z" fill="#d98f71" stroke="none"/>
- <path d="M461 367v-31q12-15 23 0v31l-11 6Z" fill="#728f7c" stroke-width="3"/>
- <path d="m435 216 38-17 36 17-36 17Z" fill="#f1d49e"/>
- <ellipse cx="471" cy="215" rx="30" ry="10" fill="#ead1a0" stroke-width="3"/>
+ ${island2Iso.box(470, 360, 30, 30, 145, ["#fffbe8", "#fff5d8", "#ddd5b1"])}
+ <path d="m440 285 30 13.55v15L440 300Z" fill="#e7aa85" stroke="none"/>
+ <path d="m470 298.55 30-13.55v15l-30 13.55Z" fill="#be805f" stroke="none"/>
+ <g transform="translate(455 366.77)"><path d="M-13 0v-28q13-17 26 0V0Z" transform="${island2Iso.face("x")}" fill="#728f7c" stroke-width="2"/></g>
+ <ellipse cx="471" cy="215" rx="23" ry="10.39" fill="#ead1a0" stroke-width="2"/>
  <path d="M442 145v70m58-70v70m-29-77v68" fill="none" stroke="#687e6c" stroke-width="4"/>
  <ellipse cx="471" cy="145" rx="30" ry="7" fill="none" stroke="#687e6c" stroke-width="3"/>
  <path d="M454 209v4h34v-4" fill="none" stroke="#a99059" stroke-width="3"/>
- <path d="M449 284v-41q10-9 19 0v41l-9 4Z" fill="#728f7c" stroke-width="3"/>
- ${island2Iso.box(470, 246, 40, 46, 6, ["#f4cb81", "#d4a465", "#b27a42"])}
- <path d="m435 246 12 20m60-20-13 20" fill="none" stroke="#a98c5d" stroke-width="3"/>
- <path d="m405 289 34-15 24 10-35 16Z" fill="#e4b979" stroke-width="3"/><path d="m415 285 23 11m-10-17 23 11M407 285v-13l31-14v13m-28 22v10m43-17v10" fill="none" stroke="#8a754f" stroke-width="2.5"/>
+ ${island2Iso.box(472, 246, 34, 42, 6, ["#f4cb81", "#d4a465", "#b27a42"])}
+ <path d="m442 246 5 13m58-13-11 13" fill="none" stroke="#a98c5d" stroke-width="3"/>
+ ${island2Iso.box(445, 291, 32, 22, 6, ["#e4b979", "#c89c64", "#aa7d4d"])}
+ <path d="m426 291 14 14m22-14-6 14" fill="none" stroke="#8a754f" stroke-width="2"/>
  <g stroke="#8a754f" stroke-width="2.5" fill="none"><path d="M426 282v-58m12 63.42v-58"/>
  <path d="m426 233 12 5.42m-12 5 12 5.42m-12 5 12 5.42m-12 5 12 5.42m-12 5 12 5.42"/></g>
  <g id="i2-roof" transform="translate(0 -24)"><path d="m433 169 39-27 43 27q-42 9-82 0Z" fill="#f0773b"/><path d="m472 142 43 27q-22 5-42 5Z" fill="#c7542e"/><path d="M472 142v-12l18 5-17 6" fill="#ffdc35" stroke-width="3"/></g>
 </g>
 <g id="i2-gallery-rail" fill="none" stroke="#8a754f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
- <path d="M427 240v-9l40 18 46-21v9m-46 12v9"/>
+ <path d="M434 242v-8l34 15.35 42-18.97v8m-42 10.97v8"/>
 </g>
 <g id="i2-drive" fill="none" stroke-linecap="round"><path d="m252 384 62 35" stroke="#696849" stroke-width="7"/><path class="i2-running-belt" d="m252 384 62 35" stroke="#d3b778" stroke-width="3" stroke-dasharray="7 12"/></g>
 <path id="i2-wire" d="M348 420 377 407V346l30-13 39 17V243l25-11" fill="none" stroke="#ba8c58" stroke-width="3"/>
@@ -195,12 +224,12 @@ const island2SceneArtwork = `
  <g id="i2-table-feet"><path d="m-17-20-4 19m38-19 4 19" fill="none" stroke-width="5"/></g>
  <g id="i2-waterwheel"><path d="M-23-10v-31m46 52v-31" fill="none" stroke="#876b3c" stroke-width="5"/></g>
  <g id="i2-tabletop" transform="translate(0 -26)">${island2Iso.disc(30, 5, "ground", "url(#i2-wood-round)", "#936435",
-   `<g id="i2-wheel-rotor"><g id="i2-table-rotor"><path d="M-23-8Q-15-25 9-24" fill="none" stroke="#fff1c1" stroke-width="3.5" stroke-linecap="round"/><path d="M-21 8Q0 15 21 7" fill="none" stroke="#a97840" stroke-width="1" opacity=".55"/></g>
+   `<g id="i2-wheel-rotor"><g id="i2-table-rotor"><path d="M-21 8Q0 15 21 7" fill="none" stroke="#a97840" stroke-width="1" opacity=".55"/></g>
     <g id="i2-paddles" fill="#f3cb82">${Array.from({ length: 8 }, (_, i) =>
       `<g class="i2-paddle" transform="rotate(${i * 45})"><path d="M-6-36H6v14H-6Z"/><path d="M6-36l4-2v14l-4 2Z" fill="#b17c42"/></g>`).join("")}</g>
-    <circle r="4" fill="#72512e"/></g>`)}</g>
+    <circle r="4" fill="#72512e"/></g><g id="i2-wood-highlight"><path d="M-23-8Q-15-25 9-24" fill="none" stroke="#fff1c1" stroke-width="3.5" stroke-linecap="round"/></g>`)}</g>
  <g id="i2-tea" stroke-width="2.5"><path d="M-7-39v10q7 6 14 0v-10m0 2q10-3 6 5H7" fill="#fff9e2"/><ellipse cy="-39" rx="7" ry="3.16" fill="#d8c39c"/><path d="M-4-38q4 2 8 0M0-44q-3-4 0-7" fill="none" stroke="#fff9e2"/></g>
- <g id="i2-pottery"><path d="M-7-48v6q-12 3-12 10 1 7 19 7t19-7q0-7-12-10v-6Z" fill="#dc9d6c"/><ellipse cy="-48" rx="7" ry="3.5" fill="#76533f"/><path d="M-17-33q17 7 34 0" fill="none" stroke="#f1c99b" stroke-width="2.5"/><path id="i2-pot-tie" d="M-11-40q11 11 22 0M0-35v10m-3-7 6-5" fill="none" stroke="#7d7047" stroke-width="3"/></g>
+ <g id="i2-pottery"><path d="M-7-48v6q-12 3-12 10 1 7 19 7t19-7q0-7-12-10v-6Z" fill="url(#i2-pot-round)"/><ellipse cy="-48" rx="7" ry="3.5" fill="#76533f"/><path id="i2-pot-tie" d="M-11-40q11 11 22 0M0-35v10m-3-7 6-5" fill="none" stroke="#7d7047" stroke-width="3"/></g>
 </g>
 <g id="i2-crate" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round">
  <g id="i2-crate-ripple" fill="none" stroke="#e6faf1" stroke-width="2.5" stroke-linecap="round"><path d="M-32 1q-7 6 2 10m60-10q7 6-2 10m-44 0 14 4 14-4"/></g>

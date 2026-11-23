@@ -30,8 +30,6 @@ const island2Renderer = (() => {
   let upgradeSequence = 0;
   let frame;
   let context;
-  let idleAt = 0;
-  let idleRole = 0;
   let previous = 0;
   let clock = 0;
   let wheelAngle = 0;
@@ -57,7 +55,7 @@ const island2Renderer = (() => {
     spring: { point: [204, 336], plane: "terrace" },
     behind: { point: [237, 283], plane: "ground-back" },
     summit: { point: [439, 286], plane: "peak" },
-    balcony: { point: [427, 294], plane: "peak" },
+    balcony: { point: [435, 288], plane: "peak" },
     lantern: { point: [501, 240], plane: "gallery" },
     upperLoad: { point: [455, 241], plane: "gallery" },
     tunnel: { point: [238, 470], plane: "underground" },
@@ -108,6 +106,11 @@ const island2Renderer = (() => {
     root.append(svg("ellipse", { class: "i2-person-shadow", cy: 0, rx: 12, ry: 12 * island2Iso.slope, fill: "#486b53", opacity: ".2" }));
     const figure = svg("g", { transform: `scale(${island2ActorScale})` });
     const facing = svg("g", { class: "i2-facing" });
+    for (const material of ["head", "body"]) {
+      const gradient = document.getElementById(`i2-skin-${material}`).cloneNode(true);
+      gradient.id = `i2-skin-${material}-${role}`;
+      document.querySelector("#island2-art svg defs").append(gradient);
+    }
     const body = svg("g", { class: "i2-body", stroke: "#34372b", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round" });
     const limb = (name, d, back = false) => [
       svg("path", { class: name, d, stroke: "#34372b", "stroke-width": "8.5", fill: "none" }),
@@ -117,9 +120,9 @@ const island2Renderer = (() => {
     body.append(...limb("i2-arm-back", "M-6-32Q-13-25-12-19", true));
     body.append(...limb("i2-leg-front", "M4-12Q5-7 7-2"));
     body.append(...limb("i2-arm-front", "M6-32Q12-25 12-18"));
-    body.append(svg("path", { d: "M-9-34Q0-39 9-34q5 9 1 17-2 7-10 7t-10-7q-4-9 1-17Z", fill: "url(#i2-skin-body)" }));
+    body.append(svg("path", { d: "M-9-34Q0-39 9-34q5 9 1 17-2 7-10 7t-10-7q-4-9 1-17Z", fill: `url(#i2-skin-body-${role})` }));
     const head = svg("g", { class: "i2-head" });
-    head.append(svg("circle", { cy: -45, r: 15, fill: "url(#i2-skin-head)" }));
+    head.append(svg("circle", { cy: -45, r: 15, fill: `url(#i2-skin-head-${role})` }));
     const palm = (side, x, y) => svg("circle", { class: `i2-palm-${side}`, cx: x, cy: y, r: 3.8, fill: "#ffffad" });
     const hand = svg("g", { class: "i2-hand" });
     const tool = svg("g", { class: "i2-task-prop", stroke: "#514f3e", "stroke-width": "2.5", "stroke-linejoin": "round" });
@@ -141,6 +144,11 @@ const island2Renderer = (() => {
     if (!node) throw new Error(`Brak elementu sceny: ${id}`);
     const entity = { id, node, plane, point: [...point], depth, direction: 1, pose: "idle",
       height: 0, heading: [1, island2Iso.slope], initial: { plane, point: [...point], depth } };
+    if (id.startsWith("i2-person-")) {
+      const role = id.slice("i2-person-".length);
+      entity.lighting = { head: document.getElementById(`i2-skin-head-${role}`),
+        body: document.getElementById(`i2-skin-body-${role}`) };
+    }
     entities.set(id, entity);
     node.dataset.plane = plane;
     layers.get(plane).append(node);
@@ -326,6 +334,22 @@ const island2Renderer = (() => {
     entity.node.querySelector(".i2-task-prop").style.display = tending || mode === "repair" || carrying ? "" : "none";
     entity.node.querySelector(".i2-dig-tool").setAttribute("display", mode === "dig" ? "" : "none");
     syncPalms(entity);
+    lightPerson(entity, body);
+  }
+
+  function lightPerson(entity, body) {
+    const matrix = new DOMMatrix().scaleSelf(entity.direction, 1)
+      .multiplySelf(body.transform.baseVal.consolidate().matrix);
+    const parcel = entity.node.querySelector("#i2-parcel");
+    if (parcel) {
+      const inverse = matrix.inverse();
+      parcel.setAttribute("transform", `translate(2 2) matrix(${inverse.a * .65} ${inverse.b * .65} ${inverse.c * .65} ${inverse.d * .65} 0 0)`);
+    }
+    const signature = [matrix.a, matrix.b, matrix.c, matrix.d].join(",");
+    if (entity.lightPose === signature) return;
+    entity.lightPose = signature;
+    island2Lighting.paint(entity.lighting.head, matrix, 30, 30);
+    island2Lighting.paint(entity.lighting.body, matrix, 22, 28);
   }
 
   function setPalm(entity, side, point) {
@@ -486,6 +510,9 @@ const island2Renderer = (() => {
     solid.querySelector("[data-iso-face]").setAttribute("transform", transform);
     solid.firstElementChild.setAttribute("transform", `translate(${5 * amount} ${5 - (5 + 5 * island2Iso.slope) * amount})`);
     solid.firstElementChild.firstElementChild.setAttribute("transform", transform);
+    const faceMatrix = solid.querySelector("[data-iso-face]").transform.baseVal.consolidate().matrix;
+    island2Lighting.paint(document.getElementById("i2-wood-round"), faceMatrix, 60, 60);
+    island2Lighting.reflection(document.getElementById("i2-wood-highlight"), faceMatrix);
     document.getElementById("i2-table-feet").setAttribute("transform", `translate(0 -23) scale(1 ${Math.max(.02, 1 - amount)}) translate(0 23)`);
     document.getElementById("i2-waterwheel").setAttribute("transform", `scale(1 ${Math.max(.01, amount)})`);
     document.querySelectorAll("#i2-paddles .i2-paddle").forEach((paddle, index) => {
@@ -494,7 +521,10 @@ const island2Renderer = (() => {
     });
     solid.dataset.isoPlane = amount > .5 ? "x" : "ground";
     document.getElementById("i2-paddles").style.display = amount > .55 ? "" : "none";
-    if (pottery) document.getElementById("i2-pottery").setAttribute("transform", "translate(0 -26) scale(1 1) translate(0 26)");
+    if (pottery) {
+      document.getElementById("i2-pottery").setAttribute("transform", "translate(0 -26) scale(1 1) translate(0 26)");
+      island2Lighting.paint(document.getElementById("i2-pot-round"), new DOMMatrix(), 38, 23);
+    }
   }
 
   function assembly(name, duration, delay, update) {
@@ -511,6 +541,8 @@ const island2Renderer = (() => {
         const height = .12 + .88 * smooth(t);
         document.getElementById("i2-pottery").style.display = "";
         document.getElementById("i2-pottery").setAttribute("transform", `translate(0 -26) scale(1 ${height}) translate(0 26)`);
+        island2Lighting.paint(document.getElementById("i2-pot-round"),
+          document.getElementById("i2-pottery").transform.baseVal.consolidate().matrix, 38, 23);
         tableAngle = -t * 270;
         document.getElementById("i2-table-rotor").setAttribute("transform", `rotate(${tableAngle})`);
       } else {
@@ -577,14 +609,6 @@ const island2Renderer = (() => {
 
   function settledPose(entity) {
     if (entity.id === "i2-person-scout" && context.story.sailing) return context.story.leafSail || context.story.craftKind === "leaf" ? "sit" : "row";
-    if (context.story.ending === "workshop" && context.levels.wheel === 1 && entity.id !== "i2-person-gardener") return "chat";
-    if (entity.id === "i2-person-maker") {
-      if (context.branches.wheel === "pottery" && context.levels.wheel >= 2) return "shape";
-      if (context.levels.timber >= 2) return "repair";
-    }
-    if (entity.id === "i2-person-gardener" && context.story.giftReturned) return "offer";
-    if (entity.id === "i2-person-gardener" && context.levels.seeds >= 2) return "tend";
-    if (entity.id === "i2-person-scout" && context.story.ending === "beacon") return "cargo";
     return "idle";
   }
 
@@ -650,8 +674,9 @@ const island2Renderer = (() => {
     const matrix = viewport.getCTM().inverse().multiply(item.node.getCTM());
     const center = new DOMPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2).matrixTransform(matrix);
     const flat = id === "glass" && context.story.glassPlane === "ground";
-    const foot = id === "water" ? [237, 316] : id === "seeds" ? [157, 333] : id === "rope" ? [420, 375]
-      : id === "timber" && level >= 4 ? [474, 362] : id === "glass" ? [0, flat ? 5 : 15] : [0, 0];
+    const foot = id === "water" ? [237, 316] : id === "seeds" ? [157, 333]
+      : id === "rope" ? context.levels.timber >= 3 ? [431, 158] : [420, 375]
+      : id === "timber" && level >= 4 ? [470, 360] : id === "glass" ? [0, flat ? 5 : 15] : [0, 0];
     const bottom = new DOMPoint(...foot).matrixTransform(matrix);
     const radius = Math.max(16, Math.min(60, bounds.width * .58 + 4));
     const filterId = `i2-level-flash-${++upgradeSequence}`;
@@ -719,6 +744,7 @@ const island2Renderer = (() => {
     const elapsedTime = previous ? Math.min(50, now - previous) : 0;
     clock += elapsedTime;
     previous = now;
+    for (const [id, action] of acts) if (now >= action.start + action.duration) acts.delete(id);
     for (const [name, animation] of assemblies) {
       if (now < animation.start) continue;
       const t = bounded((now - animation.start) / animation.duration);
@@ -794,17 +820,6 @@ const island2Renderer = (() => {
       rotate("i2-table-rotor", tableAngle);
     }
     if (context.levels.lamp >= 3) document.getElementById("i2-beam-pivot").setAttribute("transform", `scale(${Math.cos(clock / 1000)} 1)`);
-    if (!context.busy && !context.finished && now > idleAt) {
-      const roles = ["scout", "maker", "gardener"];
-      const role = roles[idleRole++ % roles.length];
-      const entity = entities.get(`i2-person-${role}`);
-      if (entity.node.style.display !== "none" && !journeys.has(entity.id)) {
-        const visits = role === "scout" ? ["behind", "terrace", "spring"] : role === "maker" ? ["cave", "landing", "wheel"] : ["farm", "cave"];
-        const destination = visits[Math.floor(idleRole / 3) % visits.length];
-        actor(role, nodes[destination].point, true);
-      }
-      idleAt = now + 2600;
-    }
     if (context.story.oarMade) document.getElementById("i2-lid-paddle").setAttribute("transform",
       `rotate(${context.story.sailing && !context.story.leafSail ? -15 + Math.sin(clock / 180) * 22 : 0})`);
     mechanisms(now);
@@ -850,7 +865,6 @@ const island2Renderer = (() => {
       entity.pose = "idle";
       journeys.delete(id);
     }
-    idleAt = performance.now() + 2500;
   }
 
   function mount() {
@@ -870,13 +884,13 @@ const island2Renderer = (() => {
       ["i2-middle-walls", "walls", [0, 0], 382], ["i2-cave", "walls", [0, 0], 1], ["i2-cover", "front", island2Layout.coverHome],
       ["i2-water", "walls", [0, 0], 316],
       ["i2-tower", "peak", [0, 0], 374], ["i2-lamp", "front", island2Layout.lampRest], ["i2-glass", "front", island2Layout.glassRest],
-      ["i2-gallery-rail", "front", [0, 0], 410],
+      ["i2-gallery-rail", "front", [0, 0], 430],
       ["i2-tea", "front", island2Layout.wheelRest, 401],
       ["i2-beam", "optics", [0, 0], 189], ["i2-seeds", "front", [0, 0], 356], ["i2-stream", "floor", [0, 0], 339],
       ["i2-overflow", "floor", [0, 0], 355],
       ["i2-outfall", "floor", [0, 0], 615], ["i2-cliff-ladder", "front", [0, 0], 413],
       ["i2-cliff-steps", "front", [0, 0], 368], ["i2-scaffold", "front", [0, 0], 363],
-      ["i2-scaffold-front", "front", [0, 0], 363 + 52 * island2Iso.slope], ["i2-scaffold-short", "front", [0, 0], 372],
+      ["i2-scaffold-front", "front", [0, 0], 375], ["i2-scaffold-short", "front", [0, 0], 372],
       ["i2-crate", "front", island2Layout.crateRest, 374], ["i2-wheel", "front", island2Layout.wheelRest, 420],
       ["i2-crate-lid", "front", island2Layout.crateRest, 376],
       ["i2-lily", "front", island2Layout.lily, 355], ["i2-fish", "front", island2Layout.fish, 356],
@@ -903,6 +917,10 @@ const island2Renderer = (() => {
     document.getElementById("i2-reaction").setAttribute("transform", "translate(0 -77)");
     upgradeLayer = svg("g", { id: "i2-upgrade-effects", "pointer-events": "none" });
     root.append(upgradeLayer);
+    for (const [id, width, height] of [["i2-stone-cap", 80, 36], ["i2-stone-wall", 80, 86],
+      ["i2-magnet-red", 36, 35], ["i2-pot-round", 38, 23]]) {
+      island2Lighting.paint(document.getElementById(id), new DOMMatrix(), width, height);
+    }
     for (const entity of entities.values()) place(entity, entity.point);
     follow("i2-crate-lid", "i2-crate", [0, 0], { depthBias: 2 });
     sort();
@@ -929,8 +947,6 @@ const island2Renderer = (() => {
     clock = 0;
     wheelAngle = 0;
     tableAngle = 0;
-    idleAt = performance.now() + 1600;
-    idleRole = 0;
     for (const entity of entities.values()) {
       setPlane(entity, entity.initial.plane);
       place(entity, entity.initial.point);
@@ -963,8 +979,10 @@ const island2Renderer = (() => {
   function parcel(node, carrier) {
     entities.delete("i2-parcel");
     if (carrier) {
-      document.getElementById(`i2-person-${carrier}`).querySelector(".i2-hand").append(node);
+      const owner = entities.get(`i2-person-${carrier}`);
+      owner.node.querySelector(".i2-hand").append(node);
       node.setAttribute("transform", "translate(2 2) scale(.65)");
+      lightPerson(owner, owner.node.querySelector(".i2-body"));
     } else register("i2-parcel", "front", [0, 0], 376);
   }
 
@@ -1000,6 +1018,9 @@ const island2Renderer = (() => {
     const back = solid.firstElementChild;
     back.setAttribute("transform", plane === "ground" ? "translate(0 5)" : `translate(5 ${-5 * island2Iso.slope})`);
     back.firstElementChild.setAttribute("transform", island2Iso.face(plane));
+    const matrix = solid.querySelector("[data-iso-face]").transform.baseVal.consolidate().matrix;
+    island2Lighting.paint(document.getElementById("i2-glass-round"), matrix, 28, 28);
+    island2Lighting.reflection(document.getElementById("i2-lens-rings"), matrix);
   }
   return { mount, position, move, actor, act, perform, follow, release, sync, reset, clear, parcel,
     glass, lamp, discPlane, buildWheel, buildCabin, upgrade, stopIdle, nodes, entities, journeys, followers, acts, assemblies, upgrades };

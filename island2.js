@@ -282,7 +282,7 @@ function renderIsland2() {
     button.setAttribute("aria-label", level ? `${item.name}: ${island2Stage(item.id, level)}.${work} Obejrzyj.` : `Dodaj: ${item.name}`);
   }
   element("island2-skip").hidden = !island2State.busy;
-  element("island2-look").disabled = island2State.busy;
+  element("island2-look").disabled = island2State.busy || island2State.order.length === 0 || !island2CanAnimate();
   element("island2-motion").setAttribute("aria-pressed", String(island2Paused));
   element("island2-motion").textContent = island2Paused ? "Wznów animacje" : "Pauza animacji";
   island2Renderer.sync({ live: island2CanAnimate() && !element("island2").hidden, levels: l,
@@ -765,10 +765,8 @@ element("island2-motion").addEventListener("click", () => {
 });
 element("island2-look").addEventListener("click", () => {
   island2ClearMotion();
-  island2Story.reaction = !island2Story.reaction;
   renderIsland2();
-  island2Renderer.stopIdle();
-  island2Actor("scout", island2Renderer.nodes.behind.point);
+  island2Renderer.act("scout", "cheer", 1000);
 });
 document.addEventListener("iskra-screen-change", (event) => {
   if (!island2State || event.detail === "island2") return;
