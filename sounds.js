@@ -17,6 +17,9 @@ const soundPatterns = {
   "island-effort": { notes: [196, 220, 196], duration: .075, spacing: .11, volume: .023 },
   "island-splash": { notes: [1174.66, 783.99, 523.25], duration: .075, spacing: .045, volume: .022 },
   "island-discover": { notes: [659.25, 987.77, 1318.51], duration: .16, spacing: .09, volume: .027 },
+  "island-contact": { notes: [293.66, 392], duration: .055, spacing: .035, volume: .024 },
+  "island-land": { notes: [196, 293.66, 392], duration: .09, spacing: .035, volume: .028 },
+  "island-assemble": { notes: [523.25, 783.99, 1046.5], duration: .12, spacing: .055, volume: .027 },
 };
 
 function updateSoundControl() {
