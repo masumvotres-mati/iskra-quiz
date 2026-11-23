@@ -1,498 +1,217 @@
 "use strict";
 
-const island2Blueprint = (() => {
-  const ground = (u, v, height = 0) => {
-    const across = (u - 318) / 22.627417;
-    const away = (v - 350) / 10.182338;
-    return [(across + away) / 2, height, (away - across) / 2];
+const island2Iso = (() => {
+  const slope = 112 / 248;
+  const unit = 24;
+  const project = ([x, y, z = 0]) => [318 + (x - y) * unit, 350 + (x + y) * unit * slope - z * unit];
+  const unproject = ([x, y], height = 0) => {
+    const across = (x - 318) / unit;
+    const away = (y + height - 350) / (unit * slope);
+    return [(away + across) / 2, (away - across) / 2, height / unit];
   };
-  const point = (u, v, height = 0) => ground(u, v, height);
-  const cabin = point(416, 373);
-  const tower = point(473, 367);
-  return {
-    ground, sea: -1.72,
-    positions: {
-      water: point(237, 315), seeds: point(157, 333), wheel: point(244, 400),
-      crate: point(432, 391), copper: point(328, 425),       glass: point(188, 374, .38),
-      rope: point(396, 289, .16), lamp: point(497, 358, .35),
-      cover: point(340, 382, .87), magnet: [2.7, -1.03, 5.13],
-      cabin, tower, boat: point(574, 304, -1.53), lily: point(177, 323, .1),
-      fish: point(157, 340, .1), gift: point(567, 438, -1),
-    },
-    nodes: {
-      farm: point(135, 367), spring: point(204, 336), terrace: point(282, 327),
-      rear: point(340, 331), cave: point(340, 389), inside: point(333, 378),
-      workshop: point(379, 398), potter: point(269, 415), wheel: point(195, 396),
-      landing: point(377, 421), generator: point(367, 422), lift: point(383, 382),
-      mill: point(287, 432), bridge: [0, .24, 3.2], pondEdge: point(155, 359),
-      shore: [5.1, 0, 1.1], dock: point(507, 400), teaLeft: point(204, 402),
-      teaRight: point(283, 408), hatch: [1.4, -1.51, 1.1], stairs: [2.4, -1.51, 3.4],
-      tunnel: [2.2, -1.51, 5.15],
-      shoreLow: [6.05, -1.35, 1.1],
-      upper: [tower[0] - .67, 5.13, tower[2] + .77],
-      gallery: [tower[0] - .67, 3.12, tower[2] + .77],
-      loadingExit: [cabin[0] + .707107, .14, cabin[2] + .707107],
-      loadingOutside: [cabin[0] + 1.59099, 0, cabin[2] - .176777],
-      ladderBase: [tower[0] - .55, 0, tower[2] + 1],
-    },
-    edges: [
-      ["farm", "cave"], ["farm", "spring"], ["spring", "terrace"], ["terrace", "cave"],
-      ["rear", "cave"], ["cave", "inside"], ["cave", "workshop"], ["cave", "potter"],
-      ["cave", "wheel"], ["wheel", "teaLeft"], ["wheel", "mill"], ["mill", "teaRight"],
-      ["mill", "generator"], ["generator", "landing"], ["landing", "lift"],
-      ["lift", "shore"], ["shore", "dock"], ["farm", "pondEdge"],
-      ["inside", "hatch", "descend"], ["hatch", "stairs", "crawl"], ["stairs", "tunnel", "crawl"],
-      ["lift", "loadingExit"], ["loadingExit", "loadingOutside"], ["loadingOutside", "ladderBase"],
-      ["ladderBase", "gallery", "climb"], ["gallery", "upper", "climb"],
-      ["shore", "shoreLow", "steps"],
-      ["wheel", "bridge", "bridge"], ["bridge", "generator", "bridge"],
-    ],
+  const face = (plane) => plane === "ground" ? `matrix(.707107 ${slope * .707107} -.707107 ${slope * .707107} 0 0)`
+    : `matrix(.9 ${slope * .9 * (plane === "y" ? -1 : 1)} 0 1 0 0)`;
+  const path = (points) => `M${points.map((point) => point.map((n) => +n.toFixed(3)).join(" ")).join("L")}Z`;
+  const box = (x, y, width, depth, height, colors = ["#f3ce8c", "#e1ae6b", "#bd8b52"]) => {
+    const p = (a, b, z) => [x + a - b, y + (a + b) * slope - z];
+    return `<path d="${path([p(-width / 2, -depth / 2, height), p(width / 2, -depth / 2, height),
+      p(width / 2, depth / 2, height), p(-width / 2, depth / 2, height)])}" fill="${colors[0]}"/>
+      <path d="${path([p(-width / 2, depth / 2, height), p(width / 2, depth / 2, height),
+        p(width / 2, depth / 2, 0), p(-width / 2, depth / 2, 0)])}" fill="${colors[1]}"/>
+      <path d="${path([p(width / 2, -depth / 2, height), p(width / 2, depth / 2, height),
+        p(width / 2, depth / 2, 0), p(width / 2, -depth / 2, 0)])}" fill="${colors[2]}"/>`;
   };
+  const disc = (radius, thickness, plane, front, edge, contents = "") => {
+    const offset = plane === "ground" ? [0, thickness] : [thickness, -thickness * slope];
+    return `<g data-iso-solid="disc" data-iso-plane="${plane}">
+      <g transform="translate(${offset.join(" ")})"><g transform="${face(plane)}"><circle r="${radius}" fill="${edge}"/></g></g>
+      <g data-iso-face="${plane}" transform="${face(plane)}"><circle r="${radius}" fill="${front}"/>${contents}</g></g>`;
+  };
+  return { slope, unit, project, unproject, face, box, disc };
 })();
 
-function createIsland2Models() {
-  const T = THREE;
-  const colors = {
-    ink: 0x354a3c, grass: 0xb7d877, earth: 0x9bbd72, stone: 0xbac8aa,
-    wood: 0xe7b97a, darkWood: 0xb98b53, ivory: 0xfff6df, teal: 0x79b6a8,
-    water: 0x79c6d1, clay: 0xda9a6a, coral: 0xd78e72, metal: 0x7d9583,
-  };
-  const materials = new Map();
-  const geometries = new Map();
-  const gradient = new T.DataTexture(new Uint8Array([105, 178, 232, 255]), 4, 1, T.RedFormat);
-  gradient.minFilter = T.NearestFilter;
-  gradient.magFilter = T.NearestFilter;
-  gradient.needsUpdate = true;
-  const material = (color) => {
-    if (!materials.has(color)) materials.set(color, new T.MeshToonMaterial({ color, gradientMap: gradient }));
-    return materials.get(color);
-  };
-  const geometry = (key, make) => {
-    if (!geometries.has(key)) geometries.set(key, make());
-    return geometries.get(key);
-  };
-  const group = (name = "") => {
-    const root = new T.Group();
-    root.name = name;
-    return root;
-  };
-  const mesh = (shape, color, parent, position = [0, 0, 0]) => {
-    const node = new T.Mesh(shape, typeof color === "number" ? material(color) : color);
-    node.position.fromArray(position);
-    node.castShadow = true;
-    node.receiveShadow = true;
-    parent?.add(node);
-    return node;
-  };
-  const box = (parent, size, position, color = colors.wood) => {
-    const node = mesh(geometry("box", () => new T.BoxGeometry()), color, parent, position);
-    node.scale.fromArray(size);
-    return node;
-  };
-  const ball = (parent, radius, position, color = colors.ivory, stretch = [1, 1, 1]) => {
-    const node = mesh(geometry("sphere", () => new T.SphereGeometry(1, 16, 12)), color, parent, position);
-    node.scale.set(radius * stretch[0], radius * stretch[1], radius * stretch[2]);
-    return node;
-  };
-  const cylinder = (parent, top, bottom, height, position, color, segments = 16) =>
-    mesh(new T.CylinderGeometry(top, bottom, height, segments), color, parent, position);
-  const tube = (parent, points, radius, color, closed = false) => {
-    const curve = new T.CatmullRomCurve3(points.map((p) => new T.Vector3(...p)), closed);
-    return mesh(new T.TubeGeometry(curve, Math.max(12, points.length * 6), radius, 6, closed), color, parent);
-  };
-  const ring = (parent, radius, thickness, position, color, arc = Math.PI * 2) =>
-    mesh(new T.TorusGeometry(radius, thickness, 6, 24, arc), color, parent, position);
-  const socket = (parent, name, position, rotation = [0, 0, 0]) => {
-    const node = group(name);
-    node.position.fromArray(position);
-    node.rotation.set(...rotation);
-    parent.add(node);
-    return node;
-  };
-  const entity = (name, root, grips = [[-.25, 0, 0], [.25, 0, 0]]) => ({
-    name, root, grips: grips.map((p) => new T.Vector3(...p)), parts: {}, sockets: {}, home: null,
-  });
-
-  function terrain() {
-    const root = group("island");
-    const cap = new T.Shape();
-    cap.moveTo(-5.5, -5.5); cap.lineTo(5.5, -5.5); cap.lineTo(5.5, 5.5); cap.lineTo(-5.5, 5.5);
-    const hatch = new T.Path();
-    hatch.moveTo(.9, .7); hatch.lineTo(.9, 1.9); hatch.lineTo(1.9, 1.9); hatch.lineTo(1.9, .7);
-    cap.holes.push(hatch);
-    const surface = mesh(new T.ExtrudeGeometry(cap, { depth: .2, bevelEnabled: true, bevelSize: .08, bevelThickness: .06, bevelSegments: 2, steps: 1 }), colors.grass, root);
-    surface.rotation.x = Math.PI / 2;
-    surface.position.y = -.06;
-    box(root, [11, 1.45, .2], [0, -.92, -5.45], colors.earth);
-    box(root, [.2, 1.45, 11], [-5.45, -.92, 0], colors.earth);
-    box(root, [.2, 1.45, 11], [5.45, -.92, 0], 0x79a46e);
-    box(root, [6.2, 1.45, .2], [-2.4, -.92, 5.45], colors.earth);
-    box(root, [1.1, 1.45, .2], [4.95, -.92, 5.45], colors.earth);
-    box(root, [3.7, .22, .2], [2.55, -.3, 5.45], colors.earth);
-    box(root, [11, .13, 11], [0, -1.65, 0], colors.earth);
-    box(root, [3.7, .06, 3.9], [2.55, -1.55, 3.5], 0x746e50);
-    box(root, [.1, 1.2, 3.6], [.72, -.95, 3.6], 0x6d805f);
-    box(root, [.1, 1.2, 3.6], [4.35, -.95, 3.6], 0x6d805f);
-    const plug = box(root, [3.7, 1.23, .24], [2.55, -.94, 5.45], colors.earth);
-    const rim = group("cutaway-rim");
-    box(rim, [3.85, .09, .3], [2.55, -.4, 5.5], 0xb7c18e);
-    box(rim, [.12, 1.23, .3], [.72, -.97, 5.5], 0xb7c18e);
-    box(rim, [.12, 1.23, .3], [4.38, -.97, 5.5], 0xb7c18e);
-    root.add(rim);
-    return { root, plug, rim };
-  }
-
-  function workshop() {
-    const root = group("workshop");
-    const wall = mesh(new T.CylinderGeometry(1.16, 1.23, 1.92, 24, 1, true, .4, Math.PI * 2 - .8), colors.stone, root, [0, .96, 0]);
-    wall.rotation.y = Math.PI / 4;
-    const roof = ball(root, 1.28, [0, 2.03, 0], 0xd7dfba, [1, .34, 1]);
-    const front = socket(root, "door", [.82, 0, .82], [0, Math.PI / 4, 0]);
-    const arch = ring(front, .46, .06, [0, 1.4, 0], colors.metal, Math.PI);
-    arch.rotation.z = 0;
-    cylinder(front, .06, .06, 1.4, [-.46, .7, 0], colors.metal);
-    cylinder(front, .06, .06, 1.4, [.46, .7, 0], colors.metal);
-    box(root, [.7, .09, .38], [.16, .8, -.23], colors.wood);
-    box(root, [.08, .75, .08], [-.12, .38, -.23], colors.darkWood);
-    box(root, [.08, .75, .08], [.44, .38, -.23], colors.darkWood);
-    cylinder(root, .1, .13, .22, [.38, .95, -.24], colors.metal);
-    socket(root, "bench", [.1, .91, -.2], [Math.PI / 2, 0, 0]);
-    return { root, roof, wall, sockets: { door: front, bench: root.getObjectByName("bench") } };
-  }
-
-  function water() {
-    const root = group("water");
-    ball(root, .9, [0, .55, 0], colors.stone, [1, .85, .8]);
-    cylinder(root, .5, .61, .22, [0, 1.02, 0], colors.metal);
-    cylinder(root, .44, .44, .04, [0, 1.15, 0], colors.water);
-    const drops = ball(root, .13, [0, 1.52, 0], colors.water, [1, 1.4, 1]);
-    const valve = group("valve");
-    box(valve, [.75, .3, .11], [0, .35, .63]);
-    cylinder(valve, .035, .035, .38, [0, .68, .68], colors.darkWood);
-    const wheel = ring(valve, .15, .035, [0, .88, .68], colors.darkWood);
-    root.add(valve);
-    return entity("water", root, [[-.5, .45, .5], [.5, .45, .5]]);
-  }
-
-  function crops() {
-    const root = group("seeds");
-    box(root, [2.1, .12, 1.3], [0, .01, 0], 0xbb925b);
-    const earth = box(root, [1.95, .04, 1.15], [0, .1, 0], 0xcea16a);
-    const plants = group("plants");
-    const ears = group("ears");
-    for (const [x, z] of [[-.6, -.25], [0, .18], [.6, -.22]]) {
-      cylinder(plants, .025, .04, .6, [x, .4, z], 0x6b9b56, 8);
-      ball(plants, .2, [x - .1, .35, z], 0x83b96c, [1, .4, .45]).rotation.z = -.45;
-      ball(plants, .2, [x + .1, .48, z], 0x83b96c, [1, .4, .45]).rotation.z = .45;
-      cylinder(ears, .025, .04, .9, [x, .55, z], 0xad9d53, 8);
-      for (let i = 0; i < 3; i++) ball(ears, .1, [x + (i % 2 ? -.06 : .06), .9 + i * .12, z], 0xf0cd69, [.7, 1.4, .65]);
-    }
-    const pond = cylinder(root, .98, 1.05, .07, [0, .13, 0], colors.water, 24);
-    pond.scale.z = .65;
-    root.add(plants, ears);
-    const result = entity("seeds", root);
-    result.parts = { earth, plants, ears, pond };
-    return result;
-  }
-
-  function wheelModel() {
-    const root = group("wheel");
-    const table = group("table");
-    const legs = group("legs");
-    for (const x of [-.54, .54]) for (const z of [-.4, .4]) cylinder(legs, .06, .075, .77, [x, .38, z], colors.darkWood, 8);
-    table.add(legs);
-    const cup = group("cup");
-    cylinder(cup, .12, .1, .22, [0, .11, 0], colors.ivory, 12);
-    ring(cup, .08, .025, [.13, .13, 0], colors.ivory).rotation.y = Math.PI / 2;
-    cup.position.set(.08, .86, .04);
-    table.add(cup);
-    const drive = group("waterwheel");
-    const axle = group("axle");
-    axle.position.y = 1.42;
-    axle.rotation.y = Math.PI / 4;
-    const disc = cylinder(axle, .96, .96, .14, [0, 0, 0], colors.wood, 24);
-    disc.rotation.x = Math.PI / 2;
-    const rotor = group("rotor");
-    for (let i = 0; i < 8; i++) {
-      const paddle = group();
-      paddle.rotation.z = i * Math.PI / 4;
-      box(paddle, [.36, .44, .62], [0, 1.12, 0], colors.wood);
-      box(paddle, [.1, 1.0, .15], [0, .54, .17], 0xf0cd8b);
-      rotor.add(paddle);
-    }
-    ball(axle, .16, [0, 0, .21], colors.metal);
-    axle.add(rotor);
-    rotor.add(disc);
-    box(drive, [.14, 1.42, .18], [-.7, .71, .15], colors.darkWood);
-    box(drive, [.14, 1.42, .18], [.7, .71, .15], colors.darkWood);
-    const pot = group("pot");
-    const profile = [[.1, 0], [.43, .06], [.52, .3], [.43, .5], [.21, .64], [.21, .78]]
-      .map(([x, y]) => new T.Vector2(x, y));
-    mesh(new T.LatheGeometry(profile, 20), colors.clay, pot);
-    cylinder(pot, .18, .18, .015, [0, .77, 0], 0x74533d, 16);
-    pot.position.y = .87;
-    const tie = ring(pot, .44, .027, [0, .3, 0], 0x8c784f);
-    tie.rotation.x = Math.PI / 2;
-    table.add(pot);
-    root.add(table, drive, axle);
-    const result = entity("wheel", root, [[-.35, .8, .72], [.35, .8, .72]]);
-    result.parts = { table, drive, rotor, cup, pot, tie, legs, disc, axle };
-    return result;
-  }
-
-  function crate() {
-    const root = group("crate");
-    const boxRoot = group("box");
-    box(boxRoot, [1.3, .12, 1.0], [0, .08, 0]);
-    box(boxRoot, [1.3, .65, .08], [0, .39, -.48]);
-    box(boxRoot, [.08, .65, 1.0], [-.61, .39, 0], colors.darkWood);
-    const frontPanel = group("front-panel");
-    frontPanel.position.set(0, .14, .48);
-    box(frontPanel, [1.3, .58, .08], [0, .29, 0]);
-    const sidePanel = group("side-panel");
-    sidePanel.position.set(.61, .14, 0);
-    box(sidePanel, [.08, .58, 1], [0, .29, 0], colors.darkWood);
-    boxRoot.add(frontPanel, sidePanel);
-    for (const x of [-.44, .44]) {
-      box(boxRoot, [.08, .67, .06], [x, .4, -.54], 0xf1cd8d);
-      box(frontPanel, [.08, .6, .06], [x, .29, .055], 0xf1cd8d);
-    }
-    const cabin = group("cabin");
-    for (const x of [-.6, .6]) for (const z of [-.45, .45]) box(cabin, [.09, 1.55, .09], [x, .85, z], colors.darkWood);
-    box(cabin, [1.32, .1, .1], [0, 1.62, -.47], colors.wood);
-    box(cabin, [1.32, .1, .1], [0, 1.62, .47], colors.wood);
-    box(cabin, [.88, .07, .3], [0, .4, 0], colors.darkWood);
-    for (const x of [-.39, .39]) box(cabin, [.07, .14, .2], [x, .82, 0], colors.darkWood);
-    const load = socket(root, "load", [0, .82, 0]);
-    const rider = socket(root, "rider", [0, .65, .04]);
-    const sail = socket(root, "sail", [-.28, .65, -.37], [0, .15, 0]);
-    const lid = socket(root, "lid", [0, .79, 0]);
-    root.add(boxRoot, cabin);
-    const result = entity("crate", root, [[-.43, .4, .55], [.43, .4, .55]]);
-    const boatSeat = box(boxRoot, [.85, .09, .3], [0, .3, 0], colors.wood);
-    cylinder(boxRoot, .11, .13, .21, [-.28, .24, -.37], colors.darkWood, 12);
-    result.parts = { box: boxRoot, cabin, boatSeat, frontPanel, sidePanel };
-    result.sockets = { load, rider, sail, lid };
-    return result;
-  }
-
-  function lid() {
-    const root = group("lid");
-    const board = box(root, [1.3, .09, 1.04], [0, 0, 0]);
-    const paddle = group("paddle");
-    cylinder(paddle, .045, .045, 1.25, [0, -.2, 0], colors.wood, 8);
-    box(paddle, [.37, .45, .09], [0, -.95, 0], colors.wood);
-    root.add(paddle);
-    const result = entity("lid", root, [[.3, 0, .45], [-.3, 0, .45]]);
-    result.parts = { board, paddle };
-    return result;
-  }
-
-  function stone() {
-    const root = group("cover");
-    const slab = box(root, [1.05, 1.73, .2], [0, 0, 0], colors.stone);
-    tube(root, [[-.24, .55, .12], [-.03, .18, .12], [-.18, -.18, .12]], .024, 0x7d977b);
-    tube(root, [[-.03, .18, .12], [.32, -.1, .12]], .024, 0x7d977b);
-    const result = entity("cover", root, [[-.49, -.15, .1], [.49, -.15, .1]]);
-    result.parts = { slab };
-    return result;
-  }
-
-  function magnet() {
-    const root = group("magnet");
-    const curve = ring(root, .25, .085, [0, .13, 0], colors.coral, Math.PI);
-    for (const x of [-.25, .25]) {
-      cylinder(root, .085, .085, .43, [x, -.08, 0], colors.coral, 10);
-      cylinder(root, .086, .086, .12, [x, -.32, 0], colors.ivory, 10);
-    }
-    const result = entity("magnet", root, [[0, .25, 0], [0, .25, 0]]);
-    result.oneHand = true;
-    return result;
-  }
-
-  function generator() {
-    const root = group("copper");
-    const loose = tube(root, [[-.6, .1, 0], [-.4, .6, 0], [-.2, .15, 0], [0, .6, 0], [.2, .15, 0], [.4, .6, 0], [.6, .15, 0]], .055, colors.coral);
-    const built = group("generator");
-    box(built, [1.5, .26, .9], [0, .18, 0], colors.metal);
-    const core = cylinder(built, .11, .11, .85, [0, .62, 0], 0x9aaf97);
-    core.rotation.z = Math.PI / 2;
-    const coils = [];
-    for (let i = 0; i < 6; i++) {
-      const turn = ring(built, .2, .038, [-.3 + i * .12, .62, 0], colors.coral);
-      turn.rotation.y = Math.PI / 2;
-      coils.push(turn);
-    }
-    const mount = socket(root, "magnet", [0, .65, -.17]);
-    root.add(built);
-    const result = entity("copper", root);
-    result.parts = { loose, built, coils, core };
-    result.sockets = { magnet: mount };
-    return result;
-  }
-
-  function glass() {
-    const root = group("glass");
-    const glassMaterial = new T.MeshPhongMaterial({ color: 0x93d8e2, transparent: true, opacity: .58, shininess: 110, depthWrite: false });
-    const lens = mesh(new T.CylinderGeometry(.38, .38, .075, 24), glassMaterial, root);
-    lens.rotation.x = Math.PI / 2;
-    ring(root, .39, .037, [0, 0, 0], 0x648f88);
-    const rough = mesh(new T.SphereGeometry(.37, 16, 10), new T.MeshPhongMaterial({ color: 0xd1dfcd, transparent: true, opacity: .58, shininess: 3, depthWrite: false }), root);
-    rough.scale.z = .13;
-    lens.castShadow = false;
-    rough.castShadow = false;
-    const result = entity("glass", root, [[-.49, 0, 0], [.49, 0, 0]]);
-    result.parts = { lens, rough };
-    return result;
-  }
-
-  function lamp() {
-    const root = group("lamp");
-    cylinder(root, .24, .28, .11, [0, -.28, 0], colors.darkWood, 16);
-    for (const x of [-.19, .19]) box(root, [.04, .58, .04], [x, .01, 0], colors.wood);
-    cylinder(root, .23, .26, .09, [0, .3, 0], colors.wood, 16);
-    ring(root, .14, .025, [0, .44, 0], colors.darkWood, Math.PI);
-    const bulb = ball(root, .13, [0, -.02, 0], 0xffde7b, [1, 1.3, 1]);
-    const glow = new T.PointLight(0xffd982, 0, 4, 2);
-    root.add(glow);
-    const result = entity("lamp", root, [[0, .43, 0], [0, .43, 0]]);
-    result.oneHand = true;
-    result.parts = { bulb, glow };
-    return result;
-  }
-
-  function leaf() {
-    const root = group("lily");
-    const canopy = group("canopy");
-    const shape = new T.Shape();
-    shape.moveTo(0, -.08);
-    shape.bezierCurveTo(-.95, -.65, -.9, .55, -.15, .65);
-    shape.bezierCurveTo(.8, .9, 1.05, -.4, .3, -.55);
-    shape.lineTo(0, -.08);
-    const blade = mesh(new T.ExtrudeGeometry(shape, { depth: .045, bevelEnabled: true, bevelThickness: .02, bevelSize: .02, bevelSegments: 1, steps: 1, curveSegments: 14 }), 0x91c66e, canopy);
-    blade.rotation.x = -Math.PI / 2;
-    tube(canopy, [[0, .07, 0], [.32, .08, -.3], [.62, .05, -.32]], .022, 0xc6dc91);
-    tube(canopy, [[0, .07, 0], [-.31, .09, -.12], [-.57, .05, -.1]], .022, 0xc6dc91);
-    root.add(canopy);
-    const stem = cylinder(root, .045, .06, .9, [0, -.45, 0], 0x739951, 10);
-    const result = entity("lily", root, [[.2, 0, .5], [-.2, 0, .5]]);
-    result.parts = { blade, stem, canopy };
-    result.sockets = { rider: socket(root, "rider", [0, -.21, 0]) };
-    return result;
-  }
-
-  function rope() {
-    const root = group("rope");
-    const coil = group("coil");
-    for (let i = 0; i < 3; i++) ring(coil, .34, .045, [0, .08 + i * .07, 0], 0x9b8150).rotation.x = Math.PI / 2;
-    root.add(coil);
-    const frame = group("frame");
-    for (const x of [-.73, .73]) box(frame, [.16, 6.85, .18], [x, 3.42, -.62], colors.wood);
-    box(frame, [1.8, .2, .24], [0, 6.8, -.62], colors.darkWood);
-    box(frame, [.14, .14, .8], [0, 6.62, -.26], colors.darkWood);
-    const pulley = cylinder(frame, .26, .26, .12, [0, 6.5, .1], colors.wood, 16);
-    pulley.rotation.x = Math.PI / 2;
-    const short = group("short-frame");
-    for (const x of [-.7, .7]) box(short, [.16, 1.8, .2], [x, .9, 0], colors.wood);
-    box(short, [1.7, .2, .24], [0, 1.8, 0], colors.darkWood);
-    const drum = cylinder(root, .23, .23, .38, [0, .88, .15], colors.darkWood, 16);
-    drum.rotation.x = Math.PI / 2;
-    ring(root, .18, .04, [0, .88, .39], colors.wood);
-    root.add(frame, short);
-    const result = entity("rope", root);
-    result.parts = { coil, frame, short, pulley, drum };
-    return result;
-  }
-
-  function towerModel() {
-    const root = group("tower");
-    box(root, [1.18, 5.4, 1.18], [0, 2.7, 0], colors.ivory);
-    box(root, [1.2, .4, 1.2], [0, 2.4, 0], colors.coral);
-    box(root, [1.5, .16, 1.5], [0, 5.4, 0], colors.wood);
-    for (const x of [-.62, .62]) for (const z of [-.62, .62]) cylinder(root, .045, .045, 1.0, [x, 5.98, z], colors.metal, 8);
-    const roof = mesh(new T.ConeGeometry(1.08, .83, 4), colors.coral, root, [0, 6.96, 0]);
-    roof.rotation.y = Math.PI / 4;
-    const upper = box(root, [2.0, .12, 1.85], [-.4, 4.64, .35], colors.wood);
-    const lower = box(root, [1.8, .12, 1.85], [-.5, 3.06, .35], colors.wood);
-    const optics = socket(root, "optics", [0, 6, 0]);
-    cylinder(root, .23, .23, .3, [0, 5.58, 0], colors.metal, 16);
-    box(optics, [.9, .07, .16], [0, -.4, .68], colors.darkWood);
-    box(optics, [.13, .12, .75], [0, -.4, .3], colors.darkWood);
-    for (const x of [-.42, .42]) box(optics, [.07, .2, .14], [x, 0, .68], colors.metal);
-    box(optics, [.3, .16, .3], [0, -.51, .5], colors.metal);
-    const beam = socket(optics, "beam", [0, 0, .68]);
-    const ray = mesh(new T.ConeGeometry(1.2, 6.5, 24, 1, true), new T.MeshBasicMaterial({ color: 0xffe6a1, transparent: true, opacity: .12, side: T.DoubleSide, depthWrite: false }), beam, [0, 0, 3.25]);
-    ray.rotation.x = -Math.PI / 2;
-    return { root, roof, upper, lower, optics, beam };
-  }
-
-  function ship() {
-    const root = group("boat");
-    const hull = ball(root, 1, [0, .05, 0], colors.teal, [1.2, .35, .55]);
-    box(root, [2.2, .1, .75], [0, .25, 0], colors.wood);
-    cylinder(root, .035, .045, 2.8, [0, 1.65, 0], colors.darkWood, 8);
-    const sailShape = new T.Shape();
-    sailShape.moveTo(-.06, 0); sailShape.lineTo(-.06, 2.3); sailShape.lineTo(-1.04, .2); sailShape.closePath();
-    const sail = mesh(new T.ExtrudeGeometry(sailShape, { depth: .045, bevelEnabled: false }), colors.ivory, root, [0, .45, 0]);
-    root.rotation.y = -.15;
-    const result = entity("boat", root);
-    result.parts = { hull, sail };
-    result.sockets = { cargo: socket(root, "cargo", [.55, .475, 0]) };
-    return result;
-  }
-
-  function fish() {
-    const root = group("fish");
-    ball(root, .3, [0, 0, 0], 0xeeb15f, [1.4, .5, .55]);
-    const tail = mesh(new T.ConeGeometry(.2, .35, 3), 0xeeb15f, root, [-.46, 0, 0]);
-    tail.rotation.z = Math.PI / 2;
-    ball(root, .035, [.19, .09, .13], colors.ink);
-    return entity("fish", root);
-  }
-
-  function packet(name, color = colors.wood) {
-    const root = group(name);
-    box(root, [.45, .35, .3], [0, 0, 0], color);
-    box(root, [.055, .37, .32], [0, 0, 0], 0xf1d495);
-    return entity(name, root, [[-.2, 0, 0], [.2, 0, 0]]);
-  }
-
-  function person(role) {
-    const root = group(`person-${role}`);
-    const pelvis = group("pelvis");
-    pelvis.position.y = .53;
-    root.add(pelvis);
-    const body = ball(pelvis, .24, [0, .3, 0], colors.ivory, [.76, 1.25, .65]);
-    const head = group("head");
-    head.position.set(0, .88, 0);
-    const skull = ball(head, .29, [0, 0, 0], colors.ivory);
-    const outlineMaterial = new T.MeshBasicMaterial({ color: 0x425448, side: T.BackSide });
-    const outline = new T.Mesh(skull.geometry, outlineMaterial);
-    outline.scale.setScalar(.31);
-    head.add(outline);
-    const torsoOutline = new T.Mesh(body.geometry, outlineMaterial);
-    torsoOutline.position.copy(body.position);
-    torsoOutline.scale.copy(body.scale).multiplyScalar(1.09);
-    pelvis.add(torsoOutline);
-    for (const x of [-.095, .095]) ball(head, .025, [x, .045, .264], colors.ink);
-    pelvis.add(head);
-    const belt = cylinder(pelvis, .18, .18, .065, [0, .2, 0], { scout: 0xc7ab69, maker: colors.coral, gardener: 0x87a86a, merchant: colors.teal }[role], 12);
-    const limbs = {};
-    for (const side of [-1, 1]) {
-      for (const part of ["upperArm", "forearm", "thigh", "shin"]) limbs[`${part}${side}`] =
-        cylinder(root, part.includes("Arm") || part === "forearm" ? .065 : .075, .075, 1, [0, 0, 0], colors.ivory, 8);
-      limbs[`hand${side}`] = ball(root, .075, [0, 0, 0], colors.ivory);
-      limbs[`foot${side}`] = ball(root, .08, [0, 0, 0], colors.ivory, [1, .65, 1.5]);
-    }
-    const carry = socket(root, "carry", [0, .98, .5]);
-    const tool = group("tool");
-    box(tool, [.055, .55, .055], [0, -.12, 0], colors.darkWood);
-    box(tool, [.25, .14, .1], [0, .15, 0], colors.metal);
-    root.add(tool);
-    return { root, pelvis, body, torsoOutline, head, belt, limbs, carry, tool, role };
-  }
-
-  return { colors, material, group, mesh, box, ball, cylinder, tube, socket, entity,
-    terrain, workshop, water, crops, wheelModel, crate, lid, stone, magnet,
-    generator, glass, lamp, leaf, rope, towerModel, ship, fish, packet, person };
-}
+const island2SceneArtwork = `
+<svg viewBox="0 0 640 580" role="img" aria-labelledby="i2-art-title i2-art-description" xmlns="http://www.w3.org/2000/svg">
+<title id="i2-art-title">Wyspa małych spraw</title>
+<desc id="i2-art-description">Mały świat, w którym mieszkańcy odkrywają przejścia, przerabiają przedmioty i pomagają sobie w nieoczekiwanych zadaniach.</desc>
+<defs>
+ <clipPath id="i2-cave-mask"><path d="M325 383v-39a15 15 0 0 1 30 0v39Z"/></clipPath>
+ <clipPath id="i2-under-mask"><path d="m210 425 80 36v35l-80-36Z"/></clipPath>
+ <g id="i2-magnet-token" fill="none" stroke="#cf836d" stroke-width="6"><path d="M-7 0v-12q7-12 14 0V0"/><path d="M-7-3v5m14-5v5" stroke="#fff1d2" stroke-width="5"/></g>
+ <radialGradient id="i2-glow"><stop stop-color="#ffe486" stop-opacity=".65"/><stop offset="1" stop-color="#ffe486" stop-opacity="0"/></radialGradient>
+ <g id="i2-box" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round">
+  <path d="m-21-26 21-10 22 10v17L0 1-21-9Z" fill="#e1ae6b"/>
+  <path d="m-21-26 21 9 22-9-22-10Z" fill="#f3ce8c"/><path d="M0-17V1l22-10v-17Z" fill="#c68e54"/>
+  <path d="m-13-26 14 6 13-6M-14-14l7 3m14 0 8-3" fill="none" stroke-width="2.5"/>
+ </g>
+ <g id="i2-ear" fill="#efc663" stroke="#695e3d" stroke-width="2.5" stroke-linecap="round">
+  <path d="M0 0v-31m0 16-7-8m7 1 7-8" fill="none"/><ellipse cx="-5" cy="-23" rx="3.5" ry="6" transform="rotate(-35 -5 -23)"/><ellipse cx="5" cy="-29" rx="3.5" ry="6" transform="rotate(35 5 -29)"/><ellipse cy="-36" rx="3.5" ry="6"/>
+ </g>
+</defs>
+<g id="i2-background">
+ <rect width="640" height="580" fill="#fffbed"/>
+ <path d="M0 258q170-10 320 0t320-2v324H0Z" fill="#cfeae7"/>
+ <g fill="#fff" opacity=".8"><path d="M79 222q-8-14 7-20 1-16 17-17 16-1 20 12 20-2 22 15 11 1 11 10Z"/><path d="M507 111q-4-10 7-14 2-15 17-13 13-4 18 9 16-2 18 11 10 0 12 7Z"/></g>
+ <path d="m66 400 247 112q5 3 10 0l247-112 8 8-254 115q-6 3-13 0L59 408Z" fill="#a8d1c7" opacity=".45"/>
+ <path d="m71 400 241 110q6 3 12 0l242-110" fill="none" stroke="#f4fff1" stroke-width="4" stroke-linecap="round"/>
+ <g class="i2-waves" stroke="#fff" stroke-width="3.5" stroke-linecap="round" fill="none" opacity=".8"><path d="M38 401h23m-6 69h28m36 60h31m287-8h35m112-23h22M548 327h29M24 337h19"/></g>
+</g>
+<g id="i2-base-terrain" stroke="#3d5847" stroke-width="4" stroke-linejoin="round">
+ <path d="m70 350 248-112 248 112v48L318 510 70 398Z" fill="#91b96b"/>
+ <path d="M70 350 318 462v48L207 460l-6-9-15-1L70 398Z" fill="#9fc472"/>
+ <path d="M318 462 566 350v48l-126 57-9-3-7 10-106 48Z" fill="#6da568"/>
+ <path d="M79 346 310 242q8-4 16 0l231 104q9 4 0 8L326 458q-8 4-16 0L79 354q-9-4 0-8Z" fill="#b9da7c"/>
+ <path d="m88 353 221 100q9 4 18 0l221-100" fill="none" stroke="#dcebb0" stroke-width="3"/>
+</g>
+<g id="i2-cutaway" stroke="#55735a" stroke-width="3" stroke-linejoin="round"><path d="m208 422 84 38v39l-84-38Z" fill="#78926e"/><path d="m212 428 76 34v30l-76-34Z" fill="#354d43"/><path d="m213 452 73 33" stroke="#b09a68" stroke-width="4"/><path d="m216 434 7 3m55 37 6 3" stroke="#67795d" stroke-width="2.5"/></g>
+<g id="i2-magnet"><use href="#i2-magnet-token"/></g>
+<g id="i2-middle-walls" stroke="#3d5847" stroke-width="4" stroke-linejoin="round">
+ <ellipse cx="335" cy="374" rx="43" ry="17" fill="#9abb79" stroke="none"/>
+ <path d="M296 366v-44q0-25 38-26 40 0 40 26v44l-34 16Z" fill="#b9c9ae"/>
+ <path d="M351 307q23 2 23 15v44l-23 11Z" fill="#98b69e"/>
+ <path d="M294 316q-2-29 40-30 41 1 42 30l-9 5q-32-14-65 0Z" fill="#d5ddbc"/>
+ <path d="m303 329 13-5m44-3 8 3m-13 36 11-5" fill="none" stroke="#9bad93" stroke-width="2.5"/>
+</g>
+<g id="i2-cave" stroke="#3d5847" stroke-width="3.5">
+ <path d="M325 381v-37a15 15 0 0 1 30 0v37l-15 7Z" fill="#354d43"/>
+ <path d="m327 375 13-6 13 6v8l-13 5-13-5Z" fill="#c5a06f" stroke-width="2.5"/>
+ <path d="m339 355 12 5v8l-12-5m2 1v10m9-7v9" fill="#e1b779" stroke-width="2.5"/>
+</g>
+<path id="i2-cave-lip" d="M323 381v-37a17 17 0 0 1 34 0v37" fill="none" stroke="#7f9b83" stroke-width="4"/>
+<g id="i2-cover" stroke="#3d5847" stroke-width="3.5" stroke-linejoin="round">
+ <g id="i2-cover-panel"><path d="M-17 0v-35q0-18 17-18t17 18v34L0 6Z" fill="#bdcbae"/><path d="m-10-44 7 11-5 13m5-13 13 9" fill="none" stroke="#829b7d" stroke-width="2.5"/></g>
+ <g id="i2-stone-bridge-face"><path d="M-23.5-15.675 11.5 .075Q29.5 8.175 29.5 13.275 29.5 18.375 11.5 10.275L-22.5-5.025-29.5-13.275Z" fill="#bdcbae" stroke-width="3"/><path d="M20.5 6.225 9.5 3.375-3.5-3.975M9.5 3.375 .5 3.225" fill="none" stroke="#829b7d" stroke-width="2.5"/></g>
+</g>
+<g id="i2-water" stroke="#3d5847" stroke-width="4" stroke-linejoin="round">
+ <ellipse cx="237" cy="316" rx="35" ry="15" fill="#a2c777" stroke="none"/>
+ <path d="M207 312q-3-47 31-50 30 5 31 50l-30 15Z" fill="#b9c9a8"/><path d="M238 262q30 6 31 50l-30 15Z" fill="#98b58e"/>
+ <path d="M216 290q21-13 43 0v10q-21 13-43 0Z" fill="#9db3a0" stroke-width="3"/>
+ <ellipse cx="237" cy="290" rx="21" ry="9" fill="#83d1d6" stroke-width="3"/>
+ <path d="M236 276q-10 12 0 15 11-3 0-15Z" fill="#8bd9df" stroke-width="2.5"/>
+ <g id="i2-valve" stroke-width="3"><path d="m222 315 28 1v12l-28-1Z" fill="#e7b874"/><path d="M236 318v-15m-7 0h14" fill="none"/></g>
+</g>
+<g id="i2-stream" fill="none" stroke-linecap="round">
+ <path d="m218 306-40 27" stroke="#699b94" stroke-width="8"/>
+ <path class="i2-flow" d="m218 306-40 27" stroke="#addfd4" stroke-width="4" stroke-dasharray="9 12"/>
+ <g id="i2-wheel-flow">
+ <path d="M237 299q15 8 15 28v16q-1 8-8 12" stroke="#4f929a" stroke-width="14"/>
+ <path class="i2-flow" d="M237 299q15 8 15 28v16q-1 8-8 12" stroke="#9ee4e5" stroke-width="8" stroke-dasharray="12 10"/>
+ <path d="M245 418q10 13 25 14 13 1 13 16v52" stroke="#78b8b8" stroke-width="8"/>
+ <path class="i2-flow" d="M245 418q10 13 25 14 13 1 13 16v52" stroke="#c1ebdf" stroke-width="3" stroke-dasharray="10 12"/>
+ </g>
+ <g id="i2-bypass-flow"><path d="M237 299q25 12 30 44l27 26v61l-11 17v53" stroke="#78b8b8" stroke-width="6"/><path class="i2-flow" d="M237 299q25 12 30 44l27 26v61l-11 17v53" stroke="#c1ebdf" stroke-width="3" stroke-dasharray="10 12"/></g>
+</g>
+<g id="i2-overflow"><path d="M109 327q10-8 28-8 15-14 32-3 23 0 35 14 9 11-16 17-22 14-41 5-29-1-38-13-7-7 0-12Z" fill="#86cacf" stroke="#58969b" stroke-width="3"/><path d="m128 333 29-13 28 13" fill="none" stroke="#c7eddf" stroke-width="3"/></g>
+<g id="i2-seeds" stroke="#3d5847" stroke-width="3" stroke-linejoin="round">
+ <g class="i2-field-bed">
+ <path d="m105 333 52-23 52 23-52 23Z" fill="#b58c5b"/><path d="m116 333 41-18 40 18-40 18Z" fill="#cda16b" stroke="none"/>
+ <path d="m133 332 25-11m-11 20 25-11" stroke="#e5c38b" stroke-width="2.5"/>
+ </g>
+ <g class="i2-seed-first" fill="#f7d793" stroke="none"><ellipse cx="139" cy="331" rx="4" ry="2.5"/><ellipse cx="157" cy="326" rx="4" ry="2.5"/><ellipse cx="173" cy="338" rx="4" ry="2.5"/></g>
+ <g class="i2-sprouts" fill="#7ab46b"><path d="M139 332v-17m0 8q-13-2-9-10 11 0 9 10m0-5q10-10 13-1-2 8-13 6M174 338v-19m0 10q-13-2-10-11 12 0 10 11m0-5q10-12 14-3-3 8-14 8"/></g>
+ <g class="i2-harvest"><use href="#i2-ear" x="135" y="332"/><use href="#i2-ear" x="157" y="324"/><use href="#i2-ear" x="178" y="339"/><path d="m111 344 19 8-4 13-19-8Z" fill="#edc58b"/><path d="m111 348 16 7" fill="none" stroke-width="2.5"/></g>
+ <g id="i2-pond"><path d="M109 327q10-8 28-8 15-14 32-3 23 0 35 14 9 11-16 17-22 14-41 5-29-1-38-13-7-7 0-12Z" fill="#83cbd2"/><path d="M116 331q14-9 26-5m24 19 24-9" fill="none" stroke="#bce9dd" stroke-width="3"/><path d="M134 329q-13-7-19 0-5 9 11 13 16 1 16-9l-8-4 3 9" fill="#91bd71"/></g>
+</g>
+<g id="i2-lily" stroke="#47754e" stroke-width="3"><g id="i2-lily-body"><path d="M-6 0q-11-12 5-14 20-2 23 8 4 13-17 15L-6 0 7-3Z" fill="#a0ce79"/><path d="m4-2 11-5M4-2l9 5" fill="none" stroke="#d5e9a1" stroke-width="2.5"/><path id="i2-lily-stem" d="M4 3v23" fill="none" stroke="#6b9455" stroke-width="4"/></g></g>
+<g id="i2-fish" fill="#efac63" stroke="#696849" stroke-width="2.5"><path d="M-10 0Q0-12 11 0 0 11-10 0Zm-1 0-7-6v12Z"/><circle cx="4" cy="-1" r="1.5" fill="#354d43" stroke="none"/></g>
+<path id="i2-cliff-steps" d="m286 368 14-6m-20-4 14-6m-19-4 14-6" fill="none" stroke="#a9c783" stroke-width="3" stroke-linecap="round"/>
+<g id="i2-scaffold-short" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
+ ${island2Iso.box(394, 363, 6, 6, 69)}
+ ${island2Iso.box(446, 363 + 52 * island2Iso.slope, 6, 6, 69)}
+ ${island2Iso.box(420, 307, 58, 6, 8)}
+ <circle cx="416" cy="321" r="9" fill="#edc98a"/><path d="M416 330v26m-4 0q4 9 8 0" fill="none" stroke="#8a774f"/>
+</g>
+<g id="i2-scaffold" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
+ ${island2Iso.box(394, 363, 6, 6, 230)}
+ ${island2Iso.box(420, 146, 58, 6, 8)}
+ <path id="i2-lift-rope" d="M416 163v149" fill="none" stroke="#8a774f" stroke-width="2.5"/>
+ <g transform="translate(416 153)">${island2Iso.disc(10, 4, "x", "#edc780", "#ad8955",
+   '<g id="i2-pulley-rotor"><path d="M-6 0H6M0-6V6" fill="none" stroke-width="2.5"/></g>')}</g>
+</g>
+<g id="i2-scaffold-front" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
+ ${island2Iso.box(446, 363 + 52 * island2Iso.slope, 6, 6, 230)}
+</g>
+<g id="i2-tower" stroke="#3d5847" stroke-width="4" stroke-linejoin="round">
+ <ellipse cx="474" cy="362" rx="35" ry="15" fill="#a1bc80" stroke="none"/>
+ <path d="M447 360V219l26-12 27 12v141l-26 14Z" fill="#fff5d8"/><path d="M474 219 500 207v153l-26 14Z" fill="#ddd5b1"/>
+ <path d="m448 288 26 12 25-12v16l-25 12-26-12Z" fill="#d98f71" stroke="none"/>
+ <path d="M461 367v-31q12-15 23 0v31l-11 6Z" fill="#728f7c" stroke-width="3"/>
+ <path d="m435 216 38-17 36 17-36 17Z" fill="#f1d49e"/>
+ <ellipse cx="471" cy="215" rx="30" ry="10" fill="#ead1a0" stroke-width="3"/>
+ <path d="M442 169v46m58-46v46m-29-53v44" fill="none" stroke="#687e6c" stroke-width="4"/>
+ <ellipse cx="471" cy="169" rx="30" ry="7" fill="none" stroke="#687e6c" stroke-width="3"/>
+ <path d="M454 209v4h34v-4" fill="none" stroke="#a99059" stroke-width="3"/>
+ <path d="M449 284v-41q10-9 19 0v41l-9 4Z" fill="#728f7c" stroke-width="3"/>
+ ${island2Iso.box(470, 232, 40, 36, 6, ["#f1d49e", "#d4ab72", "#bd905d"])}
+ <path d="m440 236 7 15m55-15-8 15" fill="none" stroke="#a98c5d" stroke-width="3"/>
+ <path d="m405 289 34-15 24 10-35 16Z" fill="#e4b979" stroke-width="3"/><path d="m415 285 23 11m-10-17 23 11M407 285v-13l31-14v13m-28 22v10m43-17v10" fill="none" stroke="#8a754f" stroke-width="2.5"/>
+ <g stroke="#8a754f" stroke-width="2.5" fill="none"><path d="M426 282v-58m12 63.42v-58"/>
+ <path d="m426 233 12 5.42m-12 5 12 5.42m-12 5 12 5.42m-12 5 12 5.42m-12 5 12 5.42"/></g>
+ <g id="i2-roof"><path d="m433 169 39-27 43 27q-42 9-82 0Z" fill="#d98f71"/><path d="m472 142 43 27q-22 5-42 5Z" fill="#bc765d"/><path d="M472 142v-12l18 5-17 6" fill="#edc780" stroke-width="3"/></g>
+</g>
+<g id="i2-gallery-rail" fill="none" stroke="#8a754f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M432 225v-8l40 18 36-16v8m-36 8v8"/>
+</g>
+<g id="i2-drive" fill="none" stroke-linecap="round"><path d="m252 384 62 35" stroke="#696849" stroke-width="7"/><path class="i2-running-belt" d="m252 384 62 35" stroke="#d3b778" stroke-width="3" stroke-dasharray="7 12"/></g>
+<path id="i2-wire" d="M348 420 377 407V346l30-13 39 17V243l25-11" fill="none" stroke="#ba8c58" stroke-width="3"/>
+<g id="i2-dock" stroke="#65563e" stroke-width="3.5" stroke-linejoin="round">
+ <path d="m460 397 38-17 36 16-38 17Z" fill="#e6bc7e"/><path d="m470 393 35 16m-24-21 35 16m-24-21 35 16M466 400v17m62-17v17" fill="none" stroke-width="2.5"/><path d="M487 391v-15m22 7v-15" fill="none" stroke-width="4"/>
+</g>
+<g id="i2-port-rope" stroke-linecap="round" stroke-linejoin="round" fill="none"><path id="i2-crane-boom" d="M448 325 537 365" stroke="#514f3e" stroke-width="10"/><path id="i2-crane-boom-core" d="M448 325 537 365" stroke="#e0b574" stroke-width="6"/><circle cx="448" cy="325" r="7" fill="#edc98a" stroke="#514f3e" stroke-width="3"/><path id="i2-crane-line" d="M537 365v54" stroke="#8a774f" stroke-width="2.5"/><path id="i2-crane-hook" d="M-4 0v5q4 8 8 0" transform="translate(537 419)" stroke="#514f3e" stroke-width="3"/></g>
+<g id="i2-wheel" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round">
+ <g id="i2-table-feet"><path d="m-17-20-4 19m38-19 4 19" fill="none" stroke-width="5"/></g>
+ <g id="i2-waterwheel"><path d="M-23-10v-31m46 52v-31" fill="none" stroke="#7f805c" stroke-width="5"/><g transform="translate(0 -38)">
+ ${island2Iso.disc(34, 7, "x", "#cb9b60", "#a97a49",
+   '<g id="i2-wheel-rotor"><g id="i2-paddles" fill="#edc98d"><path d="M-8-41H8v15H-8Zm0 67H8v15H-8ZM-41-8h15V8h-15Zm67 0h15V8H26ZM-34-25l10-10 11 15-10 10Zm47 45 10-10 11 15-10 10Zm11-55 10 10-15 11-10-10Zm-48 45 10 10-11 15-10-10Z"/><circle r="24" fill="#d3a368"/><path d="M0-24v48m-21-36 42 24m-42 0 42-24" stroke="#f1cc91" stroke-width="5"/></g></g><circle r="5" fill="#6d6246"/>')}
+ </g></g>
+ <g id="i2-tabletop" transform="translate(0 -26)">${island2Iso.disc(28, 4, "ground", "#f0cd8b", "#b98a53",
+   '<g id="i2-table-rotor"><path d="M-24-11 24 11m-48 0 48-22" fill="none" stroke="#d8ae6d" stroke-width="2.5"/></g>')}</g>
+ <g id="i2-tea" stroke-width="2.5"><path d="M-7-39v10q7 6 14 0v-10m0 2q10-3 6 5H7" fill="#fff9e2"/><ellipse cy="-39" rx="7" ry="3.16" fill="#d8c39c"/><path d="M-4-38q4 2 8 0M0-44q-3-4 0-7" fill="none" stroke="#fff9e2"/></g>
+ <g id="i2-pottery"><path d="M-7-48v6q-12 3-12 10 1 7 19 7t19-7q0-7-12-10v-6Z" fill="#dc9d6c"/><ellipse cy="-48" rx="7" ry="3.5" fill="#76533f"/><path d="M-17-33q17 7 34 0" fill="none" stroke="#f1c99b" stroke-width="2.5"/><path id="i2-pot-tie" d="M-11-40q11 11 22 0M0-35v10m-3-7 6-5" fill="none" stroke="#7d7047" stroke-width="3"/></g>
+</g>
+<g id="i2-crate" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round">
+ <g id="i2-crate-ripple" fill="none" stroke="#e6faf1" stroke-width="2.5" stroke-linecap="round"><path d="M-32 1q-7 6 2 10m60-10q7 6-2 10m-44 0 14 4 14-4"/></g>
+ <g id="i2-crate-box"><path d="M-21-26 0-17l22-9v17L0 1-21-9Z" fill="#dfac69"/><path d="M0-17V1l22-10v-17Z" fill="#bd8b52"/><path d="m-14-14 7 3m14 0 8-3" fill="none" stroke-width="2.5"/><g id="i2-saw-cuts" fill="none" stroke="#926e45" stroke-width="2.5"><path d="m-15-18 3 4m5 1 3 4m11-4 3-4"/></g></g>
+ <g id="i2-crate-open"><path d="m-21-26 21-10 22 10-22 9Z" fill="#5b725c"/><path d="m-20-26 20 9 21-9" fill="none"/><path d="m5-24 10-4 8 6-10 4Z" fill="#d99d6d" stroke-width="2.5"/></g>
+ <g id="i2-cabin-detail"><path d="m-21-48 21-10 22 10v38L0 0-21-10Z" fill="#d3a365"/><path d="M0-38 22-48v38L0 0Z" fill="#b88954"/><path d="m-17-43 14 6v22l-14-6Zm22 6 12-6v22L5-15Z" fill="#6e7660"/><path d="m-23-8 23 10 24-11" fill="none"/></g>
+</g>
+<g id="i2-crate-lid" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round"><g id="i2-lid-board"><path d="m-21-26 21-10 22 10-22 9Z" fill="#f3ce8c"/><path d="m-13-26 14 6 13-6" fill="none" stroke-width="2.5"/></g><g id="i2-lid-paddle"><path d="M0-18v39m0-5-7 6 1 13q6 7 12 0l1-13Z" fill="#edc98a" stroke-linecap="round"/></g></g>
+<g id="i2-rope-coil" stroke="#8a744d" stroke-width="3.5" fill="none"><ellipse cy="-4" rx="14" ry="6"/><ellipse cy="-9" rx="14" ry="6"/><path d="M14-9q16 0 9 14" stroke-linecap="round"/></g>
+<g id="i2-copper" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
+ <g id="i2-loose-coil" fill="none" stroke="#cc8d68" stroke-width="5"><path d="M-20-2h6v-17q0-12 8-9t8 11V-1q0 9 7 7t7-10v-15q0-9 7-7t7 10v13"/></g>
+ <g id="i2-generator"><path d="m-25-12 25-11 26 11v12L0 11-25 0Z" fill="#b3c2a5"/><path d="M0-1v12L26 0v-12Z" fill="#90aa91"/><path d="M-13-13v-13q0-10 13-7t13 14v14" fill="none" stroke="#c97f68" stroke-width="8"/><path d="M-13-13v5m26-1v5" stroke="#fff4d5" stroke-width="8"/><path d="m-8-15 14-6 10 6-14 6Z" fill="#e8b47e"/><path d="m-4-18 9 6m-3-9 9 6" stroke="#a57750" stroke-width="2.5"/></g>
+ <g id="i2-sparks" fill="none" stroke="#d7a640" stroke-width="3"><path d="m23-28 5-7m0 18 8-2"/></g>
+</g>
+<g id="i2-lamp" stroke="#63593f" stroke-width="3" stroke-linejoin="round">
+ <circle id="i2-light-halo" cy="-13" r="37" fill="url(#i2-glow)" stroke="none"/>
+ <path d="M-5-26v-5q5-7 10 0v5" fill="none"/>
+ ${island2Iso.box(0, 0, 12, 9, 24, ["#f5d795", "#eac076", "#ba9255"])}
+ <path d="m-8-20 8 3v15l-8-3Zm11 3 6-3v15L3-2Z" fill="#788c76" stroke-width="2.5"/>
+ <path id="i2-bulb" d="M-3-6v-5q-5-9 0-11 6 3 0 11" fill="#ffe38b"/>
+</g>
+<g id="i2-glass" stroke="#3d7375" stroke-width="3">
+ ${island2Iso.disc(14, 5, "x", "#a6e0df", "#70b2b5",
+   '<g id="i2-glass-roughness" fill="#d3e2d0" stroke="none"><path d="M-9-9q10-8 17 0l-2 4H-6Z"/><path d="M-10-2H8v6H-9Z"/><path d="M-8 7H7q-7 10-15 0Z"/></g><g id="i2-lens-rings"><path d="m-5-3 8-6" fill="none" stroke="#f1ffed" stroke-width="3" stroke-linecap="round"/></g>')}
+ </g>
+<g id="i2-beam" pointer-events="none" stroke="none"><g transform="translate(471 190)"><g id="i2-beam-pivot"><path d="M0 0 147-25v58Z" fill="#ffe6a0" opacity=".35"/></g></g></g>
+<g id="i2-boat" stroke="#3d5847" stroke-width="3.5" stroke-linejoin="round"><g class="i2-boat-bob">
+ <ellipse cy="19" rx="44" ry="12" fill="#a0ccc4" stroke="none"/>
+ <path d="m-45-21 61 28 23 0-14 16-57-25Z" fill="#78a9a0"/>
+ <path d="m16 7 23 0-14 16-9-3Z" fill="#5b8d85"/>
+ <path d="m-23-30-22 9 61 28 23 0-1-10Z" fill="#e1b779"/>
+ <path d="m-24-25-10 4 51 23 14-1Z" fill="#f0cf96" stroke-width="2.5"/>
+ <g transform="translate(0 -10)"><g transform="${island2Iso.face("x")}">
+ <path d="M-3 0v-83l-29 65h29m6-59 29 53H3" fill="#fff6d8"/><path d="m-1-84 18 6-18 7" fill="#d98f71"/>
+ <circle cx="-14" cy="15" r="3" fill="#f4d395"/><circle cx="7" cy="15" r="3" fill="#f4d395"/>
+ </g></g>
+</g></g>
+<g id="i2-cargo"><use href="#i2-box" transform="scale(.55)"/></g>
+<g id="i2-gift" stroke="#5b6848" stroke-width="2.5" stroke-linejoin="round"><path d="M-8-12H8V8H-8Z" fill="#fff0b7"/><path d="M0 3v-10m0 5q-9-1-6-7 8 0 6 7m0-3q7-7 10-1-3 6-10 5" fill="#93b96c"/></g>
+<g id="i2-splash" fill="none" stroke="#91dadd" stroke-width="4" stroke-linecap="round"><path d="M-16 2q-2-14-11-16M-6-2v-20m15 22q6-19 17-20M18 7l13-3"/></g>
+<g id="i2-production" stroke="#514f3e" stroke-width="2.5" stroke-linejoin="round"><g id="i2-mill-arm"><path d="M347 361v-13h-6" fill="none" stroke="#c4a06a" stroke-width="3"/><path d="m339 346 8 3v6l-8-3Z" fill="#edc98a"/></g></g>
+<g id="i2-people"><g id="i2-person-scout"></g><g id="i2-person-maker"></g><g id="i2-person-gardener"></g></g>
+<g id="i2-held" pointer-events="none"></g>
+<path id="i2-tether" d="" fill="none" stroke="#9b7b4f" stroke-width="3" stroke-linecap="round"/>
+<path id="i2-reflection" d="" fill="none" stroke="#f4d36d" stroke-width="3" stroke-dasharray="7 9" opacity=".8"/>
+<g id="i2-reaction"></g>
+</svg>`;
