@@ -172,10 +172,12 @@ function renderIsland2() {
     show(id, l[key] > 0);
   }
   show("i2-cave", l.water >= 2 || island2Story.workshopOpen);
+  show("i2-cave-lip", l.water >= 2 || island2Story.workshopOpen);
   show("i2-middle-walls", l.water > 0 || island2Story.workshopOpen);
   show("i2-cutaway", island2Story.cutawayOpen);
   show("i2-cover", l.water > 0 && l.water < 2 || island2Story.stoneSaved);
   show("i2-stream", l.water >= 2);
+  show("i2-source-fall", l.water >= 2);
   show("i2-outfall", l.water >= 2);
   show("i2-cliff-ladder", l.water >= 2);
   show("i2-valve", l.water >= 3);
@@ -187,7 +189,6 @@ function renderIsland2() {
   show("i2-roof", l.timber >= 4);
   show("i2-dock", l.timber >= 4 && l.rope >= 4);
   show("i2-port-rope", l.rope >= 4);
-  show("i2-cliff-steps", l.water >= 2);
   show("i2-drive", l.wheel >= 3);
   const pottery = island2State.branches.wheel === "pottery";
   show("i2-wheel-flow", l.wheel >= 2 && !pottery);
@@ -228,12 +229,10 @@ function renderIsland2() {
   show("i2-lid-paddle", island2Story.oarMade);
   show("i2-gift", island2Story.giftSeen);
   show("i2-crate-ripple", island2Story.crateBoat);
-  show("i2-stone-bridge-face", island2Story.bridgeBuilt);
-  show("i2-cover-panel", !island2Story.bridgeBuilt);
   show("i2-reflection", false);
   show("i2-pot-tie", pottery && l.wheel >= 3);
   island2Position("i2-cover", island2Story.stonePoint);
-  element("i2-cover-panel").setAttribute("transform", island2Story.stoneFlat ? "scale(1 .25)" : "");
+  island2Renderer.rockPose(island2Story.stoneFlat, island2Story.bridgeBuilt);
   const leafTransform = island2Story.leafSail && island2Renderer.followers.get("i2-lily")?.target === "i2-crate"
     ? "rotate(-35) scale(1.45 2.1)" : island2Story.leafGrown ? "scale(1.45)" : "";
   element("i2-lily-body").setAttribute("transform", leafTransform);
@@ -420,7 +419,7 @@ function island2StartStep(step) {
     island2Actor("scout", island2Renderer.nodes.balcony.point);
     if (island2CanAnimate()) playSound("island-signal");
   } else if (step.kind === "sail") {
-    island2Move("i2-boat", [island2Story.boat, [612, 390], [612, 510], island2Layout.boatDock], 2400);
+    island2Move("i2-boat", [island2Story.boat, island2Sea([612, 390]), island2Sea([612, 510]), island2Layout.boatDock], 2400);
     island2Story.boat = [...island2Layout.boatDock];
   } else if (step.kind === "unload") {
     island2Story.cargo = "moving";
@@ -444,15 +443,15 @@ function island2StartStep(step) {
     renderIsland2();
     if (!document.hidden) playSound("complete");
   } else if (step.kind === "miss") {
-    island2Move("i2-boat", [island2Story.boat, [585, 352], island2Layout.boatWaiting], 1800);
+    island2Move("i2-boat", [island2Story.boat, island2Sea([585, 352]), island2Layout.boatWaiting], 1800);
     island2Story.boat = [...island2Layout.boatWaiting];
     island2Actor("scout", island2Renderer.nodes.lift.point);
     island2Actor("maker", island2Renderer.nodes.inside.point);
     island2Actor("gardener", island2Renderer.nodes.farm.point);
     island2Story.reaction = true;
   } else if (step.kind === "wait") {
-    island2Move("i2-boat", [island2Story.boat, [580, 367], [581, 399]], 1800);
-    island2Story.boat = [581, 399];
+    island2Move("i2-boat", [island2Story.boat, island2Sea([580, 367]), island2Sea([581, 399])], 1800);
+    island2Story.boat = island2Sea([581, 399]);
     island2Actor("maker", island2Renderer.nodes.inside.point);
     island2Actor("gardener", island2Renderer.nodes.farm.point);
     island2Story.reaction = true;

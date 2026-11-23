@@ -1,17 +1,7 @@
 "use strict";
 
 const island2ActorScale = 1.04;
-
-const island2Layout = {
-  wheelRest: [244, 400], wheelDrive: [237, 418], wheelPottery: [237, 418],
-  crateRest: [432, 391], cabinBase: [416, 373], cabinTop: [416, 225], cabinLanding: [416, 284],
-  rope: [396, 289], copper: [328, 425],
-  glassRest: [188, 374], glassRough: [291, 386], glassReady: [378, 400], glassTop: [471, 190],
-  lamp: [471, 205], lampRest: [497, 358], cargoLanding: [445, 285], cargoBoat: [567, 550],
-  boatWaiting: [574, 304], boatDock: [574, 558], loadOffset: [0, -29],
-  coverHome: [341, 380], coverBench: [284, 401], coverBridge: [283, 446],
-  lily: [177, 323], fish: [157, 340], craftShore: [566, 540], craftSea: [510, 566],
-};
+const island2ActorScaleY = island2ActorScale / island2View.scaleY;
 
 function island2LoadPoint(point) {
   return point.map((value, index) => value + island2Layout.loadOffset[index]);
@@ -34,6 +24,8 @@ const island2Renderer = (() => {
   let clock = 0;
   let wheelAngle = 0;
   let tableAngle = 0;
+  let stonePose = { tilt: 0, yaw: 0 };
+  let stoneFrame;
   const nodes = {
     farm: { point: [135, 367], plane: "front" },
     rear: { point: [340, 331], plane: "ground-back" },
@@ -48,7 +40,7 @@ const island2Renderer = (() => {
     landing: { point: [377, 421], plane: "front" },
     generator: { point: [367, 422], plane: "front" },
     lift: { point: [383, 382], plane: "front" },
-    dock: { point: [507, 541], plane: "dock" },
+    dock: { point: island2Sea([507, 541]), plane: "dock" },
     dockTop: { point: [507, 400], plane: "front" },
     stairs: { point: [383, 370], plane: "front" },
     terrace: { point: [282, 327], plane: "terrace" },
@@ -58,10 +50,10 @@ const island2Renderer = (() => {
     balcony: { point: [435, 288], plane: "peak" },
     lantern: { point: [501, 240], plane: "gallery" },
     upperLoad: { point: [455, 241], plane: "gallery" },
-    tunnel: { point: [238, 470], plane: "underground" },
-    bridge: { point: [283, 438], plane: "front" },
+    tunnel: { point: [238, 480], plane: "underground" },
+    bridge: { point: [283, 424], plane: "front", height: island2Stone.thickness },
     pondEdge: { point: [155, 359], plane: "front" },
-    shore: { point: [524, 503], plane: "dock" },
+    shore: { point: island2Sea([524, 503]), plane: "dock" },
     shoreTop: { point: [524, 362], plane: "front" },
   };
   const edges = [
@@ -87,12 +79,12 @@ const island2Renderer = (() => {
     ["summit", "balcony", []],
     ["balcony", "upperLoad", [[427, 263], [435, 239]], "climb"],
     ["upperLoad", "lantern", [[463, 226]]],
-    ["inside", "tunnel", [[317, 410], [289, 447], [254, 463]], "crawl", "cutaway"],
+    ["inside", "tunnel", [[317, 410], [289, 457], [254, 473]], "crawl", "cutaway"],
     ["wheel", "bridge", [[236, 414]], "walk", "bridge"],
     ["bridge", "generator", [], "walk", "bridge"],
     ["farm", "pondEdge", []], ["lift", "shoreTop", [[481, 375]]],
-    ["shoreTop", "shore", [[507, 400], [507, 483]], "climb"],
-    ["dock", "shore", [[524, 520]]],
+    ["shoreTop", "shore", [[507, 400], island2Sea([507, 483])], "climb"],
+    ["dock", "shore", [island2Sea([524, 520])]],
   ];
 
   function svg(tag, attributes = {}) {
@@ -101,10 +93,20 @@ const island2Renderer = (() => {
     return node;
   }
 
+  function worldPoint(node, point = new DOMPoint()) {
+    const root = document.querySelector("#island2-art > svg");
+    let matrix = new DOMMatrix();
+    for (let current = node; current !== root; current = current.parentElement) {
+      const transform = current.transform.baseVal.consolidate()?.matrix;
+      if (transform) matrix = new DOMMatrix([transform.a, transform.b, transform.c, transform.d, transform.e, transform.f]).multiply(matrix);
+    }
+    return point.matrixTransform(matrix);
+  }
+
   function person(role) {
     const root = svg("g", { id: `i2-person-${role}`, class: "i2-person", stroke: "none" });
     root.append(svg("ellipse", { class: "i2-person-shadow", cy: 0, rx: 12, ry: 12 * island2Iso.slope, fill: "#486b53", opacity: ".2" }));
-    const figure = svg("g", { transform: `scale(${island2ActorScale})` });
+    const figure = svg("g", { transform: `scale(${island2ActorScale} ${island2ActorScaleY})` });
     const facing = svg("g", { class: "i2-facing" });
     for (const material of ["head", "body"]) {
       const gradient = document.getElementById(`i2-skin-${material}`).cloneNode(true);
@@ -157,7 +159,7 @@ const island2Renderer = (() => {
 
   function setPlane(entity, plane) {
     if (entity.id.startsWith("i2-person-")) entity.height = plane === "gallery" ? 175
-      : plane === "peak" ? 88 : plane === "underground" ? -60 : plane === "dock" ? -141 : 0;
+      : plane === "peak" ? 88 : plane === "underground" ? -70 : plane === "dock" ? 19 - island2View.depth : 0;
     if (plane === entity.plane) return;
     entity.plane = plane;
     entity.node.dataset.plane = plane;
@@ -174,7 +176,7 @@ const island2Renderer = (() => {
   }
 
   function boatPlane(point) {
-    const [x, y] = island2Iso.unproject(point, -160);
+    const [x, y] = island2Iso.unproject(point, -island2View.depth);
     return x > 124 / island2Iso.unit || y > 124 / island2Iso.unit ? "sea-front" : "sea-back";
   }
 
@@ -191,7 +193,7 @@ const island2Renderer = (() => {
   }
 
   function nearest(point) {
-    return Object.keys(nodes).reduce((best, key) =>
+    return Object.keys(nodes).filter((key) => key !== "bridge" || context?.story.bridgeBuilt).reduce((best, key) =>
       Math.hypot(...nodes[key].point.map((value, index) => value - point[index])) <
       Math.hypot(...nodes[best].point.map((value, index) => value - point[index])) ? key : best, "farm");
   }
@@ -215,7 +217,8 @@ const island2Renderer = (() => {
         }
       }
     }
-    const result = [{ point: origin, plane: nodes[start].plane, mode: "walk" }];
+    const result = [{ point: origin, plane: nodes[start].plane, mode: "walk",
+      height: Math.hypot(origin[0] - nodes[start].point[0], origin[1] - nodes[start].point[1]) < 2 ? nodes[start].height : undefined }];
     if (Math.hypot(origin[0] - nodes[start].point[0], origin[1] - nodes[start].point[1]) > 4) {
       result.push({ ...nodes[start], mode: "walk" });
     }
@@ -274,12 +277,13 @@ const island2Renderer = (() => {
       : `M-6-32Q${-12 - otherStride * .4} ${mode === "climb" || cheering ? -47 + front * 8 : -25} ${-12 - otherStride * .55} ${mode === "climb" || cheering ? -44 + front * 8 : -19}`);
     let activeHand = [handX, handY];
     if (mode === "push" || mode === "pull") {
-      body.setAttribute("transform", `translate(${front * 1.5} ${2 + Math.abs(front) * 2}) skewX(-12)`);
+      body.setAttribute("transform", mode === "pull" ? `translate(0 4) rotate(${-10 + front * 2} 0 -12)`
+        : `translate(${front * 1.5} ${2 + Math.abs(front) * 2}) skewX(-12)`);
       entity.node.querySelector(".i2-leg-front").setAttribute("d", `M4-12Q15-7 ${16 + front * 5} ${-2 - Math.max(0, front) * 3}`);
       entity.node.querySelector(".i2-leg-back").setAttribute("d", `M-4-12Q-12-7 ${-13 - front * 5} ${-2 - Math.max(0, -front) * 3}`);
-      entity.node.querySelector(".i2-arm-front").setAttribute("d", `M6-32Q19-33 24 ${-27 + front * 2}`);
-      entity.node.querySelector(".i2-arm-back").setAttribute("d", `M-6-32Q10-36 22 ${-31 + front * 2}`);
-      activeHand = [24, -27 + front * 2];
+      entity.node.querySelector(".i2-arm-front").setAttribute("d", mode === "pull" ? "M6-32Q16-33 13-26" : `M6-32Q19-33 24 ${-27 + front * 2}`);
+      entity.node.querySelector(".i2-arm-back").setAttribute("d", mode === "pull" ? "M-6-32Q4-37 11-29" : `M-6-32Q10-36 22 ${-31 + front * 2}`);
+      activeHand = mode === "pull" ? [13, -26] : [24, -27 + front * 2];
     } else if (balancing) {
       activeHand = [0, -23];
       entity.node.querySelector(".i2-arm-front").setAttribute("d", "M6-32Q12-25 0-23");
@@ -338,7 +342,7 @@ const island2Renderer = (() => {
   }
 
   function lightPerson(entity, body) {
-    const matrix = new DOMMatrix().scaleSelf(entity.direction, 1)
+    const matrix = new DOMMatrix().scaleSelf(1, 1 / island2View.scaleY).scaleSelf(entity.direction, 1)
       .multiplySelf(body.transform.baseVal.consolidate().matrix);
     const parcel = entity.node.querySelector("#i2-parcel");
     if (parcel) {
@@ -373,6 +377,7 @@ const island2Renderer = (() => {
       place(entity, points.at(-1));
       if (options.path) {
         setPlane(entity, options.path.at(-1).plane);
+        if (options.path.at(-1).height !== undefined) entity.height = options.path.at(-1).height;
         entity.pose = options.idle ? "idle" : "work";
       }
       if (options.plane) setPlane(entity, options.plane);
@@ -434,7 +439,6 @@ const island2Renderer = (() => {
   }
 
   function updateFollowers(hands) {
-    const root = document.querySelector("#island2-art > svg");
     for (const [id, link] of followers) {
       if (Boolean(link.hand) !== hands) continue;
       const entity = entities.get(id);
@@ -442,12 +446,7 @@ const island2Renderer = (() => {
       let point = target.point;
       if (hands) {
         const hand = target.node.querySelector(".i2-hand");
-        let matrix = new DOMMatrix();
-        for (let node = hand; node !== root; node = node.parentElement) {
-          const transform = node.transform.baseVal.consolidate()?.matrix;
-          if (transform) matrix = new DOMMatrix([transform.a, transform.b, transform.c, transform.d, transform.e, transform.f]).multiply(matrix);
-        }
-        const origin = new DOMPoint(0, 0).matrixTransform(matrix);
+        const origin = worldPoint(hand);
         point = [origin.x, origin.y];
       }
       const desired = link.to || point.map((value, axis) => value + link.offset[axis]);
@@ -506,7 +505,7 @@ const island2Renderer = (() => {
     const upright = [.9, .9 * island2Iso.slope, 0, 1];
     const matrix = ground.map((value, i) => value + (upright[i] - value) * amount);
     const transform = `matrix(${matrix.join(" ")} 0 0)`;
-    root.setAttribute("transform", `translate(0 ${-26 - 12 * amount})`);
+    root.setAttribute("transform", `translate(0 ${-26 - 10 * amount})`);
     solid.querySelector("[data-iso-face]").setAttribute("transform", transform);
     solid.firstElementChild.setAttribute("transform", `translate(${5 * amount} ${5 - (5 + 5 * island2Iso.slope) * amount})`);
     solid.firstElementChild.firstElementChild.setAttribute("transform", transform);
@@ -532,6 +531,39 @@ const island2Renderer = (() => {
     assemblies.set(name, { start: performance.now() + delay, duration, update });
     update(0);
     wake();
+  }
+
+  function drawStone(tilt, yaw) {
+    stonePose = { tilt, yaw };
+    stoneFrame = island2Stone.frame(tilt, yaw);
+    const root = document.getElementById("i2-rock-solid");
+    for (const face of root.children) face.style.display = "none";
+    for (const face of stoneFrame.faces) {
+      const node = root.querySelector(`[data-rock-face="${face.index}"]`);
+      node.style.display = "";
+      node.setAttribute("d", face.d);
+      node.setAttribute("fill", face.fill);
+      root.append(node);
+    }
+    document.getElementById("i2-rock-outline").setAttribute("d", stoneFrame.outline);
+    [...document.getElementById("i2-rock-cracks").children].forEach((node, i) => node.setAttribute("d", stoneFrame.cracks[i]));
+    const [left, right, back, front] = stoneFrame.shadow;
+    const shadow = document.getElementById("i2-rock-contact");
+    shadow.setAttribute("cx", (left + right) / 2);
+    shadow.setAttribute("cy", (back + front) / 2);
+    shadow.setAttribute("rx", (right - left) / 2);
+    shadow.setAttribute("ry", (front - back) / 2);
+  }
+
+  function rockPose(flat, bridge) {
+    if (!assemblies.has("stone")) drawStone(flat ? Math.PI / 2 : 0, flat && !bridge ? -Math.PI / 4 : 0);
+  }
+
+  function turnStone(flat, bridge, duration, delay = 0) {
+    const from = { ...stonePose };
+    const target = { tilt: flat ? Math.PI / 2 : 0, yaw: flat && !bridge ? -Math.PI / 4 : 0 };
+    assembly("stone", duration, delay, (t) => drawStone(from.tilt + (target.tilt - from.tilt) * smooth(t),
+      from.yaw + (target.yaw - from.yaw) * smooth(t)));
   }
 
   function buildWheel(duration, delay = 0, pottery = false) {
@@ -593,7 +625,10 @@ const island2Renderer = (() => {
     const total = lengths.reduce((sum, length) => sum + length, 0);
     let cursor = 0;
     const offsets = [0, ...lengths.map((length) => { cursor += length; return cursor / Math.max(1, total); })];
-    move(id, points, duration, offsets, { path: points.map((point) => ({ point, plane, mode: "walk" })), length: total, role, delay });
+    const path = points.map((point) => ({ point, plane, mode: "walk",
+      height: context.story.bridgeBuilt && point.every((n, i) => Math.abs(n - nodes.bridge.point[i]) < .01)
+        ? nodes.bridge.height : undefined }));
+    move(id, points, duration, offsets, { path, length: total, role, delay });
     act(role, mode, duration, delay, direction);
   }
 
@@ -614,7 +649,7 @@ const island2Renderer = (() => {
 
   function mechanisms(now = performance.now()) {
     const stone = entities.get("i2-cover");
-    stone.depth = stone.point[1] + 2;
+    stone.depth = stone.point[1] + 4;
     if (context.story.crateBoat) entities.get("i2-crate").depth = entities.get("i2-crate").point[1] + 2;
     const cabin = entities.get("i2-crate");
     document.getElementById("i2-lift-rope").setAttribute("d", `M416 163V${Math.max(164, cabin.point[1] - 61)}`);
@@ -626,12 +661,12 @@ const island2Renderer = (() => {
       if (progress < .4) {
         const load = entities.get("i2-cargo").point;
         hook = [load[0], load[1] - 20];
-        tip = [hook[0], hook[1] - 45];
+        tip = [hook[0], 325 + (hook[0] - 448) * island2Iso.slope];
       } else {
         const returning = Math.min(1, (progress - .4) / .2);
         const load = island2LoadPoint(island2Layout.cabinBase);
         hook = [load[0] + (537 - load[0]) * returning, load[1] - 20 + (419 - load[1] + 20) * returning];
-        tip = [hook[0], hook[1] - (45 + 9 * returning)];
+        tip = [hook[0], 325 + (hook[0] - 448) * island2Iso.slope];
       }
     }
     const boom = `M448 325 ${tip[0]} ${tip[1]}`;
@@ -643,7 +678,9 @@ const island2Renderer = (() => {
     tether.style.display = context.story.tether ? "" : "none";
     if (context.story.tether) {
       const owner = entities.get(`i2-person-${context.story.tether}`);
-      tether.setAttribute("d", `M${owner.point[0]} ${owner.point[1] - 12} ${stone.point[0]} ${stone.point[1] - 6}`);
+      const palm = owner.node.querySelector(".i2-palm-front");
+      const hand = worldPoint(palm, new DOMPoint(+palm.getAttribute("cx"), +palm.getAttribute("cy")));
+      tether.setAttribute("d", `M${hand.x} ${hand.y} ${stone.point[0] + stoneFrame.anchor[0]} ${stone.point[1] + stoneFrame.anchor[1]}`);
     }
   }
 
@@ -732,7 +769,7 @@ const island2Renderer = (() => {
           - t * (effect.flat ? 5 : 22);
         const size = (.45 + Math.sin(Math.min(1, t * 1.25) * Math.PI) * .8) * (1 - t)
           * (index % 2 ? .7 : effect.maxed ? 1.25 : 1.1);
-        star.setAttribute("transform", `translate(${x} ${y}) rotate(${t * 70 + index * 35}) scale(${size})`);
+        star.setAttribute("transform", `translate(${x} ${y}) scale(1 ${1 / island2View.scaleY}) rotate(${t * 70 + index * 35}) scale(${size})`);
         star.setAttribute("opacity", 1 - t);
       });
     }
@@ -768,11 +805,14 @@ const island2Renderer = (() => {
         const step = journey.path[index + 1];
         setPlane(entity, elapsed < .5 ? journey.path[index].plane : step.plane);
         entity.direction = b[0] < a[0] ? -1 : 1;
-        const length = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
-        entity.heading = [(b[0] - a[0]) / length, (b[1] - a[1]) / length];
+        const length = Math.hypot(b[0] - a[0], (b[1] - a[1]) * island2View.scaleY) || 1;
+        entity.heading = [(b[0] - a[0]) / length, (b[1] - a[1]) * island2View.scaleY / length];
         entity.height = step.mode === "climb" ? step.plane === "dock" ? Math.min(0, 400 - entity.point[1])
           : Math.max(0, (step.plane === "gallery" ? 404 : 374) - entity.point[1])
-          : entity.plane === "gallery" ? 175 : entity.plane === "peak" ? 88 : entity.plane === "underground" ? -60 : entity.plane === "dock" ? -141 : 0;
+          : entity.plane === "gallery" ? 175 : entity.plane === "peak" ? 88 : entity.plane === "underground" ? -70 : entity.plane === "dock" ? 19 - island2View.depth : 0;
+        if (journey.path[index].height !== undefined || step.height !== undefined) {
+          entity.height = (journey.path[index].height || 0) * (1 - fraction) + (step.height || 0) * fraction;
+        }
         const gait = step.mode === "climb" ? "climb" : step.mode === "crawl" ? "crawl" : journey.gait || "walk";
         const acting = acts.get(id);
         if (acting && now >= acting.start && now < acting.start + acting.duration) {
@@ -784,6 +824,7 @@ const island2Renderer = (() => {
         journeys.delete(id);
         if (journey.path) {
           setPlane(entity, journey.path.at(-1).plane);
+          if (journey.path.at(-1).height !== undefined) entity.height = journey.path.at(-1).height;
           entity.pose = journey.idle ? "idle" : "work";
           context.story.people[journey.role] = [...entity.point];
         }
@@ -842,7 +883,10 @@ const island2Renderer = (() => {
       const entity = entities.get(id);
       if (!journey.idle) {
         place(entity, journey.points.at(-1));
-        if (journey.path) setPlane(entity, journey.path.at(-1).plane);
+        if (journey.path) {
+          setPlane(entity, journey.path.at(-1).plane);
+          if (journey.path.at(-1).height !== undefined) entity.height = journey.path.at(-1).height;
+        }
         if (journey.plane) setPlane(entity, journey.plane);
       }
       if (journey.role) context.story.people[journey.role] = [...entity.point];
@@ -880,7 +924,7 @@ const island2Renderer = (() => {
     layers.set("dock", layers.get("sea-front"));
     for (const [id, plane, point, anchor] of [
       ["i2-background", "background", [0, 0], -1000], ["i2-base-terrain", "base", [0, 0], -1000],
-      ["i2-cutaway", "base", [0, 0], 1], ["i2-magnet", "underground", [254, 475], 476],
+      ["i2-cutaway", "base", [0, 0], 1], ["i2-magnet", "underground", [254, 485], 486],
       ["i2-middle-walls", "walls", [0, 0], 382], ["i2-cave", "walls", [0, 0], 1], ["i2-cover", "front", island2Layout.coverHome],
       ["i2-water", "walls", [0, 0], 316],
       ["i2-tower", "peak", [0, 0], 374], ["i2-lamp", "front", island2Layout.lampRest], ["i2-glass", "front", island2Layout.glassRest],
@@ -888,15 +932,15 @@ const island2Renderer = (() => {
       ["i2-tea", "front", island2Layout.wheelRest, 401],
       ["i2-beam", "optics", [0, 0], 189], ["i2-seeds", "front", [0, 0], 356], ["i2-stream", "floor", [0, 0], 339],
       ["i2-overflow", "floor", [0, 0], 355],
-      ["i2-outfall", "floor", [0, 0], 615], ["i2-cliff-ladder", "front", [0, 0], 413],
-      ["i2-cliff-steps", "front", [0, 0], 368], ["i2-scaffold", "front", [0, 0], 363],
+      ["i2-outfall", "sea-back", [0, 0], 615], ["i2-cliff-ladder", "front", [0, 0], 413],
+      ["i2-scaffold", "front", [0, 0], 363],
       ["i2-scaffold-front", "front", [0, 0], 375], ["i2-scaffold-short", "front", [0, 0], 372],
       ["i2-crate", "front", island2Layout.crateRest, 374], ["i2-wheel", "front", island2Layout.wheelRest, 420],
       ["i2-crate-lid", "front", island2Layout.crateRest, 376],
       ["i2-lily", "front", island2Layout.lily, 355], ["i2-fish", "front", island2Layout.fish, 356],
       ["i2-rope-coil", "front", island2Layout.rope, 290], ["i2-copper", "front", island2Layout.copper, 436],
       ["i2-drive", "front", [0, 0], 390], ["i2-wire", "front", [0, 0], 391],
-      ["i2-dock", "sea-front", [0, 141], 413],
+      ["i2-dock", "sea-front", [0, island2Sea([0, 141])[1]], 399],
       ["i2-port-rope", "front", [0, 0], 375], ["i2-cargo", "front", island2Layout.cargoBoat, 376],
       ["i2-production", "cave", [0, 0], 365], ["i2-cave-lip", "front", [0, 0], 383],
       ["i2-splash", "front", [0, 0], 450], ["i2-gift", "front", [0, 0], 450],
@@ -922,6 +966,7 @@ const island2Renderer = (() => {
       island2Lighting.paint(document.getElementById(id), new DOMMatrix(), width, height);
     }
     for (const entity of entities.values()) place(entity, entity.point);
+    drawStone(0, 0);
     follow("i2-crate-lid", "i2-crate", [0, 0], { depthBias: 2 });
     sort();
   }
@@ -963,6 +1008,7 @@ const island2Renderer = (() => {
     for (const id of ["i2-crate-box", "i2-cabin-detail"]) document.getElementById(id).removeAttribute("transform");
     document.getElementById("i2-tower").removeAttribute("clip-path");
     wheelPose(0);
+    drawStone(0, 0);
     document.getElementById("i2-beam-pivot").setAttribute("transform", "scale(1 1)");
     document.getElementById("i2-lens-rings").setAttribute("transform", "scale(1 1)");
     document.getElementById("i2-lid-paddle").setAttribute("transform", "rotate(0)");
@@ -1023,5 +1069,5 @@ const island2Renderer = (() => {
     island2Lighting.reflection(document.getElementById("i2-lens-rings"), matrix);
   }
   return { mount, position, move, actor, act, perform, follow, release, sync, reset, clear, parcel,
-    glass, lamp, discPlane, buildWheel, buildCabin, upgrade, stopIdle, nodes, entities, journeys, followers, acts, assemblies, upgrades };
+    glass, lamp, discPlane, buildWheel, buildCabin, rockPose, turnStone, upgrade, stopIdle, nodes, entities, journeys, followers, acts, assemblies, upgrades };
 })();

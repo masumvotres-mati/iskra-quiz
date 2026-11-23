@@ -51,7 +51,7 @@ const island2Cinema = (() => {
       const to = key === "glass-2" ? island2Layout.glassRough : island2Layout.glassReady;
       return [...supportSteps("i2-glass", key === "glass-2" ? "scout" : "maker", to, key),
         scene("glass-polish-contact", "Szklany krążek leży płasko na powierzchni szlifowania.", 1000,
-          { actor: key === "glass-2" ? "scout" : "maker", to }),
+          { actor: key === "glass-2" ? "scout" : "maker", to, rough: key === "glass-2" }),
         reveal(change, key === "glass-2" ? "Brzeg szkła jest wyrównany." : "Soczewka jest gotowa do przeniesienia.")];
     }
     if (key === "glass-4") return [
@@ -145,7 +145,7 @@ const island2Cinema = (() => {
       const offset = step.prop === "i2-lamp" ? [-8, 12] : step.prop === "i2-tea" ? [0, 32] : [0, 0];
       const feet = location[1] < 250 ? at(name === "prop-approach" ? "upperLoad" : "lantern")
         : [location[0] - offset[0] - step.direction * 25 * island2ActorScale,
-          location[1] - offset[1] + 27 * island2ActorScale];
+          location[1] - offset[1] + 27 * island2ActorScaleY];
       walk(step, step.actor, feet, "offer", 150, step.direction, name === "prop-carry" ? "heavy" : "walk");
     } else if (name === "prop-take") {
       island2Renderer.act(step.actor, "offer", step.duration, 0, step.direction);
@@ -193,7 +193,8 @@ const island2Cinema = (() => {
       island2Move("i2-crate", [island2Layout.cabinBase, island2Layout.cabinTop], step.duration);
       sound("island-effort");
     } else if (name === "glass-polish-contact") {
-      walk(step, step.actor, [step.to[0] + 18, step.to[1] + 17], "polish", 1000, -1);
+      const rough = step.rough;
+      walk(step, step.actor, [step.to[0] + (rough ? 35 : 18), step.to[1] + (rough ? 25 : 17)], "polish", 1000, -1);
     } else if (name === "source-notice") {
       walk(step, "scout", at("spring"), "look", 650, 1);
       sound("island-notice");
@@ -213,7 +214,7 @@ const island2Cinema = (() => {
       island2Renderer.perform("scout", [[358, 389], [320, 404]], 1300, "push", 0, -1);
       island2Renderer.perform("maker", [[347, 416], [309, 428]], 1300, "push", 0, -1);
       island2Move("i2-cover", [[322, 386], island2Layout.coverBench], 1300);
-      island2Animate("i2-cover-panel", [{ transform: "scaleY(1)" }, { transform: "scaleY(.25)" }], 450, "ease-in-out", 850);
+      island2Renderer.turnStone(true, false, 450, 850);
     } else if (name === "magnet-peer") {
       walk(step, "scout", at("inside"), "kneel", 600, -1);
       sound("island-notice");
@@ -243,8 +244,7 @@ const island2Cinema = (() => {
       island2Renderer.perform("scout", [[315, 420], [314, 444]], 1400, "pull", 0, -1);
       island2Renderer.act("maker", "look", 1400, 0, -1);
       island2Move("i2-cover", [island2Layout.coverBench, island2Layout.coverBridge], 1400);
-      island2Animate("i2-cover-panel", [{ transform: "scaleY(.25)" },
-        { transform: "matrix(0,.3,-1,-.45,-23.5,-10.575)" }], 1000, "ease-in-out", 400);
+      island2Renderer.turnStone(true, true, 1000, 400);
       sound("island-effort");
     } else if (name === "bridge-approach") {
       const path = [point("i2-person-gardener"), at("wheel"), [236, 414], at("bridge")];
@@ -264,7 +264,7 @@ const island2Cinema = (() => {
       island2Renderer.act("scout", "startle", 850);
       sound("island-splash");
     } else if (name === "glass-polish") {
-      walk(step, island2Visual.water >= 2 ? "maker" : "scout", [309, 407], "polish", 550, -1);
+      walk(step, island2Visual.water >= 2 ? "maker" : "scout", [326, 411], "polish", 550, -1);
     } else if (name === "leaf-grow") {
       walk(step, "gardener", at("pondEdge"), "look", 1200, 1);
       island2Animate("i2-lily-body", [{ transform: "scale(1)" }, { transform: "scale(1.45)" }], 1000);
@@ -322,13 +322,15 @@ const island2Cinema = (() => {
       if (story.craftKind === "crate") {
         story.crateBoat = true;
         story.craftPoint = [...island2Layout.craftShore];
-        island2Move("i2-crate", [island2Layout.crateRest, [524, 372], [545, 420], island2Layout.craftShore],
+        island2Move("i2-crate", [island2Layout.crateRest, [524, 372],
+          [545, 372 + (island2Layout.craftShore[1] - 372) * .28], island2Layout.craftShore],
           1500, [0, .6, .8, 1], 0, "sea-front");
         island2Renderer.perform("scout", [[401, 397], [493, 378], at("shoreTop")], 900, "push");
       } else {
         story.leafFlat = true;
         island2Renderer.release("i2-lily");
-        island2Move("i2-lily", [point("i2-lily"), [544, 420], [551, 462], island2Layout.craftShore],
+        const origin = point("i2-lily"), peak = origin[1] - 18;
+        island2Move("i2-lily", [origin, [544, peak], [551, peak + (island2Layout.craftShore[1] - peak) * .42], island2Layout.craftShore],
           1400, [0, .28, .66, 1], 0, "sea-front");
         story.leafPoint = [...island2Layout.craftShore];
       }
@@ -352,21 +354,21 @@ const island2Cinema = (() => {
     } else if (name === "trade-sail" || name === "trade-return") {
       const craft = story.craftKind === "crate" ? "i2-crate" : "i2-lily";
       const destination = name === "trade-sail" ? island2Layout.craftSea : island2Layout.craftShore;
-      island2Move(craft, [point(craft), [565, 556], destination], 2200, undefined, 0, "sea-front");
+      island2Move(craft, [point(craft), island2Sea([565, 556]), destination], 2200, undefined, 0, "sea-front");
       if (story.craftKind === "crate") story.craftPoint = [...destination];
       else story.leafPoint = [...destination];
       if (name === "trade-sail") {
         story.boatSeen = true;
         element("i2-boat").style.display = "";
-        island2Move("i2-boat", [story.boat, [612, 390], [612, 510], [589, 551]], 2300);
-        story.boat = [589, 551];
+        island2Move("i2-boat", [story.boat, island2Sea([612, 390]), island2Sea([612, 510]), island2Sea([589, 551])], 2300);
+        story.boat = island2Sea([589, 551]);
       } else {
-        island2Move("i2-boat", [point("i2-boat"), [612, 510], [612, 390], island2Layout.boatWaiting], 2200);
+        island2Move("i2-boat", [point("i2-boat"), island2Sea([612, 510]), island2Sea([612, 390]), island2Layout.boatWaiting], 2200);
         story.boat = [...island2Layout.boatWaiting];
       }
     } else if (name === "trade-exchange") {
       story.giftSeen = true;
-      island2Position("i2-gift", [568, 543]);
+      island2Position("i2-gift", island2Sea([568, 543]));
       element("i2-gift").style.display = "";
       island2Renderer.follow("i2-gift", "i2-person-scout", [0, 0], { hand: true, blend: 950 });
       sound("island-discover");

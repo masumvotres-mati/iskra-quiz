@@ -1,5 +1,8 @@
 "use strict";
 
+const island2View = { scaleY: .81, top: 90, height: 740, depth: 332 };
+const island2Sea = ([x, y]) => [x, y + island2View.depth - 160];
+
 const island2Iso = (() => {
   const slope = 112 / 248;
   const unit = 24;
@@ -14,11 +17,11 @@ const island2Iso = (() => {
   const path = (points) => `M${points.map((point) => point.map((n) => +n.toFixed(3)).join(" ")).join("L")}Z`;
   const box = (x, y, width, depth, height, colors = ["#f3ce8c", "#e1ae6b", "#bd8b52"]) => {
     const p = (a, b, z) => [x + a - b, y + (a + b) * slope - z];
-    return `<path d="${path([p(-width / 2, -depth / 2, height), p(width / 2, -depth / 2, height),
+    return `<path stroke="none" d="${path([p(-width / 2, -depth / 2, height), p(width / 2, -depth / 2, height),
       p(width / 2, depth / 2, height), p(-width / 2, depth / 2, height)])}" fill="${colors[0]}"/>
-      <path d="${path([p(-width / 2, depth / 2, height), p(width / 2, depth / 2, height),
+      <path stroke="none" d="${path([p(-width / 2, depth / 2, height), p(width / 2, depth / 2, height),
         p(width / 2, depth / 2, 0), p(-width / 2, depth / 2, 0)])}" fill="${colors[1]}"/>
-      <path d="${path([p(width / 2, -depth / 2, height), p(width / 2, depth / 2, height),
+      <path stroke="none" d="${path([p(width / 2, -depth / 2, height), p(width / 2, depth / 2, height),
         p(width / 2, depth / 2, 0), p(width / 2, -depth / 2, 0)])}" fill="${colors[2]}"/>`;
   };
   const disc = (radius, thickness, plane, front, edge, contents = "") => {
@@ -28,21 +31,40 @@ const island2Iso = (() => {
       <g data-iso-face="${plane}" transform="${face(plane)}"><circle r="${radius}" fill="${front}"/>${contents}</g></g>`;
   };
   const cubeGrid = () => {
-    const p = (a, b, z) => `${318 + a - b} ${510 + (a + b) * slope - z}`;
-    const lines = [];
-    for (let i = 1; i < 12; i++) {
-      const n = -124 + 248 * i / 12;
-      lines.push(`M${p(n, -124, 160)}L${p(n, 124, 160)}L${p(n, 124, 0)}`);
-      lines.push(`M${p(-124, n, 160)}L${p(124, n, 160)}L${p(124, n, 0)}`);
-    }
-    for (let i = 1; i < 8; i++) lines.push(`M${p(-124, 124, i * 20)}L${p(124, 124, i * 20)}L${p(124, -124, i * 20)}`);
-    return `<path d="${lines.join("")}" fill="none" stroke="#755536" stroke-width=".8" opacity=".22"/>`;
+    return `<g stroke="none">
+      <rect x="-124" y="-124" width="248" height="248" fill="url(#i2-tiles-top)" transform="matrix(1 ${slope} -1 ${slope} 318 350)"/>
+      <rect x="-124" width="248" height="${island2View.depth}" fill="url(#i2-tiles-left)" transform="matrix(1 ${slope} 0 1 194 ${350 + 124 * slope})"/>
+      <rect x="-124" width="248" height="${island2View.depth}" fill="url(#i2-tiles-right)" transform="matrix(-1 ${slope} 0 1 442 ${350 + 124 * slope})"/>
+      </g>`;
   };
-  return { slope, unit, project, unproject, face, box, disc, cubeGrid };
+  const tilePattern = (id, height, reverse = false) => {
+    const width = 248 / 12, near = reverse ? width - .65 : .65, far = reverse ? .65 : width - .65;
+    const top = id === "i2-tiles-top";
+    return `<pattern id="${id}" width="${width}" height="${height}" patternUnits="userSpaceOnUse">
+      <path d="M${near} ${height - .65}V.65H${far}" fill="none" stroke="${top ? "#ffffff" : "#e5c595"}" stroke-width=".9" opacity="${top ? .1 : .22}"/>
+      <path d="M${far} .65V${height - .65}H${near}" fill="none" stroke="${top ? "#000000" : "#5d402b"}" stroke-width=".65" opacity="${top ? .19 : .16}"/>
+      </pattern>`;
+  };
+  return { slope, unit, project, unproject, face, box, disc, cubeGrid, tilePattern };
 })();
 
+const island2Layout = {
+  wheelRest: [244, 400], wheelDrive: [237, 418], wheelPottery: [237, 418],
+  crateRest: [432, 391], cabinBase: [416, 373], cabinTop: [416, 225], cabinLanding: [416, 284],
+  rope: [396, 289], copper: [328, 425], spring: [237, 316], farm: [157, 333],
+  glassRest: [188, 374], glassRough: [291, 386], glassReady: [378, 400], glassTop: [471, 190],
+  lamp: [471, 205], lampRest: [497, 358], cargoLanding: [445, 285], cargoBoat: island2Sea([567, 550]),
+  boatWaiting: island2Sea([574, 304]), boatDock: island2Sea([574, 558]), loadOffset: [0, -29],
+  coverHome: [341, 380], coverBench: [292, 406], coverBridge: [283, 432],
+  lily: [177, 323], fish: [157, 340], craftShore: island2Sea([566, 540]), craftSea: island2Sea([510, 566]),
+};
+
 const island2Lighting = (() => {
-  const direction = new DOMPoint(-.65, -.76, 0, 0);
+  const direction = new DOMPoint(-.65, -.76 / island2View.scaleY, 0, 0);
+  const lightHeight = .6 / island2View.scaleY;
+  const sum = (direction.y + lightHeight) / island2Iso.slope;
+  const sun = [(sum + direction.x) / 2, (sum - direction.x) / 2, lightHeight];
+  const sunLength = Math.hypot(...sun);
   function local(matrix, width = 1, height = 1) {
     const point = direction.matrixTransform(matrix.inverse());
     const x = point.x / width;
@@ -66,16 +88,137 @@ const island2Lighting = (() => {
     const light = local(matrix);
     node.setAttribute("transform", `rotate(${Math.atan2(light.y, light.x) * 180 / Math.PI + 120})`);
   }
-  return { local, paint, reflection };
+  const intensity = (normal) => .22 + .78 * Math.max(0,
+    normal.reduce((value, n, i) => value + n * sun[i] / sunLength, 0));
+  return { local, paint, reflection, intensity };
+})();
+
+const island2Water = (() => {
+  const unit = island2Iso.unit;
+  const spring = island2Iso.unproject(island2Layout.spring);
+  const bowl = [spring[0] + 10.5 / unit, spring[1] + 10.5 / unit, 26 / unit];
+  const outlet = [bowl[0] + 3 / unit, bowl[1], bowl[2]];
+  const inlet = [outlet[0], outlet[1], 0];
+  const wheel = island2Iso.unproject(island2Layout.wheelDrive);
+  const farm = island2Iso.unproject(island2Layout.farm);
+  const edge = [124 / unit + (283 - 318) / unit, 124 / unit, 0];
+  const route = [inlet, [inlet[0], wheel[1], 0], wheel, [edge[0], wheel[1], 0], edge];
+  const irrigation = [[inlet[0], farm[1], 0], farm];
+  const level = (point, z) => [point[0], point[1], z / unit];
+  const flow = route.map((point) => level(point, -1));
+  const fall = [flow.at(-1), level(edge, -island2View.depth)];
+  const pool = [edge[0] + .33, edge[1] + .33, -island2View.depth / unit];
+  const xy = (point) => island2Iso.project(point).map((value) => +value.toFixed(3));
+  const path = (points, close = false) => `M${points.map((point) => xy(point).join(" ")).join("L")}${close ? "Z" : ""}`;
+  function strip(a, b, width, z) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], length = Math.hypot(dx, dy);
+    const normal = [-dy / length * width / unit / 2, dx / length * width / unit / 2];
+    return path([[a[0] + normal[0], a[1] + normal[1], z / unit],
+      [b[0] + normal[0], b[1] + normal[1], z / unit],
+      [b[0] - normal[0], b[1] - normal[1], z / unit],
+      [a[0] - normal[0], a[1] - normal[1], z / unit]], true);
+  }
+  function channel(points) {
+    const segments = points.slice(1).map((point, index) => [points[index], point]);
+    const join = (point, width, z) => {
+      const half = width / unit / 2;
+      return path([[-half, -half], [half, -half], [half, half], [-half, half]]
+        .map(([u, v]) => [point[0] + u, point[1] + v, z / unit]), true);
+    };
+    return segments.map(([a, b]) => `<path d="${strip(a, b, 9, 0)}" fill="#9b875e"/>`).join("")
+      + points.slice(1, -1).map((p) => `<path d="${join(p, 9, 0)}" fill="#9b875e"/>`).join("")
+      + segments.map(([a, b]) => `<path d="${strip(a, b, 5.5, -1)}" fill="#63cde8"/>`).join("")
+      + points.slice(1, -1).map((p) => `<path d="${join(p, 5.5, -1)}" fill="#63cde8"/>`).join("")
+      + `<path class="i2-flow" d="${path(points.map((point) => level(point, -1)))}" fill="none" stroke="#d4faff" opacity=".75" stroke-width="1.05" stroke-dasharray="2 15"/>`;
+  }
+  const [wx, wy] = xy(level(wheel, -1));
+  const [fx, fy] = xy(fall[1]);
+  const [px, py] = xy(pool);
+  const source = `<path d="${path([bowl, outlet, level(inlet, -1)])}" fill="none" stroke="#2e91ac" stroke-width="5.5"/>
+    <path class="i2-flow" d="${path([bowl, outlet, level(inlet, -1)])}" fill="none" stroke="#a9f5ff" stroke-width="3.2" stroke-dasharray="7 6"/>`;
+  const channels = channel(route) + channel(irrigation)
+    + `<path d="${path(fall)}" fill="none" stroke="#339db5" stroke-width="5.5"/>
+      <path class="i2-flow" d="${path(fall)}" fill="none" stroke="#baf8ff" stroke-width="2.2" stroke-dasharray="8 10"/>
+      <g id="i2-wheel-flow" fill="none" stroke="#d2faff" stroke-width="1.4"><path d="M${wx - 10} ${wy + 1}q10 6 20 0m-16-2 2-4m9 3 3-4"/></g>
+      <g id="i2-bypass-flow" fill="none" stroke="#b6f3ff" stroke-width="1.2"><path d="M${wx - 5} ${wy + 1}l10 4.516"/></g>
+      <path d="M${fx - 7} ${fy + 2}q7 5 14 0m-9-2-2-5m6 5 3-4" fill="none" stroke="#e1ffff" stroke-width="1.5"/>`;
+  const basin = `<ellipse cx="${px}" cy="${py}" rx="26" ry="${26 * island2Iso.slope}" fill="#7ce7ef" stroke="#4aa5bb" stroke-width="1"/>
+    <path d="M${px - 14} ${py + 1}q14 9 28-1m-21-5q7 6 14 0" fill="none" stroke="#d3ffff" stroke-width="1.5"/>`;
+  return { route, irrigation, flow, fall, pool, source, channels, basin };
+})();
+
+const island2Stone = (() => {
+  const outline = [[-17, 0], [17, 0], [19, 29], [12, 47], [-9, 51], [-18, 35]];
+  const faces = [[5, 4, 3, 2, 1, 0], [6, 7, 8, 9, 10, 11],
+    ...outline.map((_, i) => [i, (i + 1) % 6, (i + 1) % 6 + 6, i + 6])];
+  const origin = island2Iso.project([0, 0, 0]);
+  const project = (point) => island2Iso.project(point.map((n) => n / island2Iso.unit)).map((n, i) => n - origin[i]);
+  const path = (points, close = false) => `M${points.map((p) => project(p).map((n) => +n.toFixed(3)).join(" ")).join("L")}${close ? "Z" : ""}`;
+  function normal(a, b, c) {
+    const u = b.map((n, i) => n - a[i]), v = c.map((n, i) => n - a[i]);
+    const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    const length = Math.hypot(...n);
+    return n.map((value) => value / length);
+  }
+  function hull(points) {
+    const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const turn = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    const edge = (values) => {
+      const result = [];
+      for (const point of values) {
+        while (result.length > 1 && turn(result.at(-2), result.at(-1), point) <= 0) result.pop();
+        result.push(point);
+      }
+      return result.slice(0, -1);
+    };
+    return [...edge(sorted), ...edge([...sorted].reverse())];
+  }
+  function frame(tilt, yaw) {
+    const rotate = ([u, v, z]) => {
+      const across = v * Math.cos(tilt) + (z - 25.5) * Math.sin(tilt);
+      return [(u * Math.cos(yaw) - across * Math.sin(yaw)) * .7,
+        (u * Math.sin(yaw) + across * Math.cos(yaw)) * .7,
+        ((z - 25.5) * Math.cos(tilt) - v * Math.sin(tilt)) * .7];
+    };
+    const vertices = [9, -9].flatMap((v) => outline.map(([u, z]) => rotate([u, v, z])));
+    const base = Math.min(...vertices.map((p) => p[2]));
+    for (const point of vertices) point[2] -= base;
+    const visible = faces.map((indices, index) => {
+      const points = indices.map((i) => vertices[i]);
+      const n = normal(...points.slice(0, 3));
+      const light = island2Lighting.intensity(n);
+      const color = [112, 126, 101].map((dark, i) => Math.round(dark + ([211, 219, 191][i] - dark) * light));
+      return { index, normal: n, d: path(points, true), fill: `rgb(${color.join(" ")})`,
+        depth: points.reduce((sum, p) => sum + p[0] + p[1] + p[2] * 2 * island2Iso.slope, 0) / points.length };
+    }).filter((f) => f.normal[0] + f.normal[1] + f.normal[2] * 2 * island2Iso.slope > 1e-6)
+      .sort((a, b) => a.depth - b.depth);
+    const cracks = [9.04, -9.04].map((v, index) => {
+      const points = [[-6, v, 39], [-1, v, 28], [-7, v, 17], [-1, v, 28], [8, v, 21]]
+        .map(rotate).map(([x, y, z]) => [x, y, z - base]);
+      return visible.some((face) => face.index === index) ? path(points) : "";
+    });
+    const projected = vertices.map(project);
+    const boundary = hull(projected);
+    const ground = vertices.map(([x, y]) => project([x, y, 0]));
+    return { vertices, faces: visible, cracks,
+      anchor: project(vertices.slice(6).reduce((sum, point) => sum.map((n, i) => n + point[i] / 6), [0, 0, 0])),
+      outline: `M${boundary.map((p) => p.map((n) => +n.toFixed(3)).join(" ")).join("L")}Z`,
+      shadow: [Math.min(...ground.map((p) => p[0])), Math.max(...ground.map((p) => p[0])),
+        Math.min(...ground.map((p) => p[1])), Math.max(...ground.map((p) => p[1]))] };
+  }
+  return { frame, thickness: 18 * .7 };
 })();
 
 const island2SceneArtwork = `
-<svg viewBox="0 0 640 690" role="img" aria-labelledby="i2-art-title i2-art-description" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 ${island2View.top} 640 ${island2View.height}" width="640" height="${island2View.height * island2View.scaleY}" preserveAspectRatio="none" role="img" aria-labelledby="i2-art-title i2-art-description" xmlns="http://www.w3.org/2000/svg">
 <title id="i2-art-title">Wyspa małych spraw</title>
 <desc id="i2-art-description">Mały świat, w którym mieszkańcy odkrywają przejścia, przerabiają przedmioty i pomagają sobie w nieoczekiwanych zadaniach.</desc>
 <defs>
+ ${island2Iso.tilePattern("i2-tiles-top", 248 / 12)}
+ ${island2Iso.tilePattern("i2-tiles-left", island2View.depth / 12)}
+ ${island2Iso.tilePattern("i2-tiles-right", island2View.depth / 12, true)}
  <clipPath id="i2-cave-mask"><path d="M325 383v-39a15 15 0 0 1 30 0v39Z"/></clipPath>
- <clipPath id="i2-under-mask"><path d="m210 425 80 36v35l-80-36Z"/></clipPath>
+ <clipPath id="i2-under-mask"><path d="m210 425 80 36v45l-80-36Z"/></clipPath>
  <clipPath id="i2-meadow-mask"><ellipse id="i2-meadow-radius" cx="157" cy="333" rx="0" ry="0"/></clipPath>
  <clipPath id="i2-tower-growth"><rect id="i2-tower-growth-rect" x="425" y="130" width="100" height="250"/></clipPath>
  <radialGradient id="i2-skin-head" cx="30%" cy="23%" r="85%"><stop stop-color="#ffffdc"/><stop offset=".58" stop-color="#ffffad"/><stop offset="1" stop-color="#d9dd86"/></radialGradient>
@@ -106,19 +249,19 @@ const island2SceneArtwork = `
  </g>
 </defs>
 <g id="i2-background">
- <rect width="640" height="690" fill="#64c8f4"/>
- <path d="m72 515 248 112 248-112 47 14-266 121-277-125Z" fill="#3088a5" opacity=".45"/>
- <g class="i2-waves" stroke="#c3f6ff" stroke-width="2" stroke-linecap="round" fill="none" opacity=".55"><path d="M26 535h18m8 88h28m448-80h22m32-55h23M548 327h29M24 337h19"/></g>
+ <rect width="640" height="${island2View.top + island2View.height}" fill="#64c8f4"/>
+ <path d="m72 ${355 + island2View.depth} 248 112 248-112 47 14-266 121-277-125Z" fill="#172e30" opacity=".8"/>
+ <g class="i2-waves" stroke="#c3f6ff" stroke-width="2" stroke-linecap="round" fill="none" opacity=".55"><path d="M26 ${375 + island2View.depth}h18m8 88h28m448-80h22m32-55h23M548 327h29M24 337h19"/></g>
 </g>
 <g id="i2-base-terrain" stroke="#654c30" stroke-width="1.5" stroke-linejoin="round">
- ${island2Iso.box(318, 510, 248, 248, 160, ["#bc9463", "#a58050", "#795d3a"])}
+ ${island2Iso.box(318, 350 + island2View.depth, 248, 248, island2View.depth, ["#bc9463", "#a58050", "#795d3a"])}
  <path d="M70 350 318 238 566 350 318 462Z" fill="#93dc52" stroke="none" clip-path="url(#i2-meadow-mask)"/>
  ${island2Iso.cubeGrid()}
 </g>
-<g id="i2-cutaway" stroke="#55735a" stroke-width="3" stroke-linejoin="round"><path d="m208 422 84 38v39l-84-38Z" fill="#78926e"/><path d="m212 428 76 34v30l-76-34Z" fill="#354d43"/><path d="m213 452 73 33" stroke="#b09a68" stroke-width="4"/><path d="m216 434 7 3m55 37 6 3" stroke="#67795d" stroke-width="2.5"/></g>
+<g id="i2-cutaway" stroke="#55735a" stroke-width="3" stroke-linejoin="round"><path d="m208 422 84 38v49l-84-38Z" fill="#78926e"/><path d="m212 428 76 34v40l-76-34Z" fill="#354d43"/><path d="m213 462 73 33" stroke="#b09a68" stroke-width="4"/><path d="m216 434 7 3m55 47 6 3" stroke="#67795d" stroke-width="2.5"/></g>
 <g id="i2-magnet"><use href="#i2-magnet-token"/></g>
 <g id="i2-middle-walls" stroke="#333027" stroke-width="2" stroke-linejoin="round">
- <ellipse cx="335" cy="374" rx="43" ry="17" fill="#635a35" opacity=".17" stroke="none"/>
+ <ellipse cx="335" cy="374" rx="43" ry="17" fill="#435132" opacity=".28" stroke="none"/>
  <path d="M296 366v-44q0-25 38-26 40 0 40 26v44l-34 16Z" fill="url(#i2-stone-wall)"/>
  <path d="M351 307q23 2 23 15v44l-23 11Z" fill="#8f7048" stroke="none" opacity=".14"/>
  <ellipse cx="334" cy="317" rx="40" ry="18" fill="#b49a65"/>
@@ -131,33 +274,23 @@ const island2SceneArtwork = `
  <path d="m339 355 12 5v8l-12-5m2 1v10m9-7v9" fill="#e1b779" stroke-width="2.5"/>
 </g>
 <path id="i2-cave-lip" d="M323 381v-37a17 17 0 0 1 34 0v37" fill="none" stroke="#7f9b83" stroke-width="4"/>
-<g id="i2-cover" stroke="#3d5847" stroke-width="3.5" stroke-linejoin="round">
- <g id="i2-cover-panel"><path d="M-17 0v-35q0-18 17-18t17 18v34L0 6Z" fill="#bdcbae"/><path d="m-10-44 7 11-5 13m5-13 13 9" fill="none" stroke="#829b7d" stroke-width="2.5"/></g>
- <g id="i2-stone-bridge-face"><path d="M-23.5-15.675 11.5 .075Q29.5 8.175 29.5 13.275 29.5 18.375 11.5 10.275L-22.5-5.025-29.5-13.275Z" fill="#bdcbae" stroke-width="3"/><path d="M20.5 6.225 9.5 3.375-3.5-3.975M9.5 3.375 .5 3.225" fill="none" stroke="#829b7d" stroke-width="2.5"/></g>
+<g id="i2-cover" stroke-linejoin="round">
+ <ellipse id="i2-rock-contact" fill="#435132" opacity=".28" stroke="none"/>
+ <g id="i2-rock-solid" stroke="none">${Array.from({ length: 8 }, (_, i) => `<path data-rock-face="${i}"/>`).join("")}</g>
+ <path id="i2-rock-outline" fill="none" stroke="#66725b" stroke-width="1.3"/>
+ <g id="i2-rock-cracks" fill="none" stroke="#718064" stroke-width="1.1" opacity=".75"><path/><path/></g>
 </g>
 <g id="i2-water" stroke="#2b3030" stroke-width="2" stroke-linejoin="round">
- <ellipse cx="237" cy="316" rx="35" ry="15" fill="#4a693c" opacity=".18" stroke="none"/>
+ <ellipse cx="237" cy="316" rx="35" ry="15" fill="#435132" opacity=".28" stroke="none"/>
  <path d="M207 312q-3-47 31-50 30 5 31 50l-30 15Z" fill="#d8cd9d"/><path d="M238 262q30 6 31 50l-30 15Z" fill="#b6a879"/>
  <path d="M216 290q21-13 43 0v10q-21 13-43 0Z" fill="#a29168" stroke-width="2"/>
  <ellipse cx="237" cy="290" rx="21" ry="9.48" fill="#23b5f1" stroke-width="2"/>
  <path d="M236 276q-10 12 0 15 11-3 0-15Z" fill="#77e9ff" stroke-width="1.5"/>
  <g id="i2-valve" stroke-width="3"><path d="m222 315 28 1v12l-28-1Z" fill="#e7b874"/><path d="M236 318v-15m-7 0h14" fill="none"/></g>
+ <g id="i2-source-fall" stroke-linejoin="round">${island2Water.source}</g>
 </g>
-<g id="i2-stream" fill="none" stroke-linecap="round">
- <path d="m218 306-40 27" stroke="#699b94" stroke-width="8"/>
- <path class="i2-flow" d="m218 306-40 27" stroke="#addfd4" stroke-width="4" stroke-dasharray="9 12"/>
- <g id="i2-wheel-flow">
- <path d="M237 299q15 8 15 28v16q-1 8-8 12" stroke="#4f929a" stroke-width="14"/>
- <path class="i2-flow" d="M237 299q15 8 15 28v16q-1 8-8 12" stroke="#9ee4e5" stroke-width="8" stroke-dasharray="12 10"/>
- <path d="M245 418q10 13 25 14 13 1 13 16v164" stroke="#359fac" stroke-width="8"/>
- <path class="i2-flow" d="M245 418q10 13 25 14 13 1 13 16v164" stroke="#a8f4ee" stroke-width="3" stroke-dasharray="10 12"/>
- </g>
- <g id="i2-bypass-flow"><path d="M237 299q25 12 30 44l27 26v61l-11 17v165" stroke="#359fac" stroke-width="6"/><path class="i2-flow" d="M237 299q25 12 30 44l27 26v61l-11 17v165" stroke="#a8f4ee" stroke-width="3" stroke-dasharray="10 12"/></g>
-</g>
-<g id="i2-outfall" stroke="#3b9eb6" stroke-width="1.5">
- <ellipse cx="283" cy="615" rx="26" ry="11.74" fill="#7ce7ef"/>
- <path d="M269 616q14 9 28-1m-21-5q7 6 14 0m-10-4-4-7m12 7 6-7" fill="none" stroke="#d3ffff" stroke-width="2"/>
-</g>
+<g id="i2-stream" stroke-linecap="round" stroke-linejoin="round">${island2Water.channels}</g>
+<g id="i2-outfall">${island2Water.basin}</g>
 <g id="i2-overflow"><path d="M109 327q10-8 28-8 15-14 32-3 23 0 35 14 9 11-16 17-22 14-41 5-29-1-38-13-7-7 0-12Z" fill="#86cacf" stroke="#58969b" stroke-width="3"/><path d="m128 333 29-13 28 13" fill="none" stroke="#c7eddf" stroke-width="3"/></g>
 <g id="i2-seeds" stroke="#3d5847" stroke-width="3" stroke-linejoin="round">
  <g class="i2-field-bed">
@@ -171,7 +304,6 @@ const island2SceneArtwork = `
 </g>
 <g id="i2-lily" stroke="#47754e" stroke-width="3"><g id="i2-lily-body"><path d="M-6 0q-11-12 5-14 20-2 23 8 4 13-17 15L-6 0 7-3Z" fill="#a0ce79"/><path d="m4-2 11-5M4-2l9 5" fill="none" stroke="#d5e9a1" stroke-width="2.5"/><path id="i2-lily-stem" d="M4 3v23" fill="none" stroke="#6b9455" stroke-width="4"/></g></g>
 <g id="i2-fish" fill="#efac63" stroke="#696849" stroke-width="2.5"><path d="M-10 0Q0-12 11 0 0 11-10 0Zm-1 0-7-6v12Z"/><circle cx="4" cy="-1" r="1.5" fill="#354d43" stroke="none"/></g>
-<path id="i2-cliff-steps" d="m286 368 14-6m-20-4 14-6m-19-4 14-6" fill="none" stroke="#a9c783" stroke-width="3" stroke-linecap="round"/>
 <g id="i2-scaffold-short" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
  ${island2Iso.box(394, 363, 6, 6, 69)}
  ${island2Iso.box(446, 363 + 52 * island2Iso.slope, 6, 6, 69)}
@@ -189,7 +321,7 @@ const island2SceneArtwork = `
  <path d="M441 373V217m0 12h6m-6 54h6m-6 78h6" fill="none" stroke="#969980" stroke-width="2"/>
 </g>
 <g id="i2-tower" stroke="#3d5847" stroke-width="4" stroke-linejoin="round">
- <ellipse cx="474" cy="362" rx="35" ry="15" fill="#a1bc80" stroke="none"/>
+ <ellipse cx="474" cy="362" rx="35" ry="15" fill="#435132" opacity=".26" stroke="none"/>
  ${island2Iso.box(470, 360, 30, 30, 145, ["#fffbe8", "#fff5d8", "#ddd5b1"])}
  <path d="m440 285 30 13.55v15L440 300Z" fill="#e7aa85" stroke="none"/>
  <path d="m470 298.55 30-13.55v15l-30 13.55Z" fill="#be805f" stroke="none"/>
@@ -215,9 +347,9 @@ const island2SceneArtwork = `
  <path d="m460 397 38-17 36 16-38 17Z" fill="#e6bc7e"/><path d="m470 393 35 16m-24-21 35 16m-24-21 35 16M466 400v36m62-36v36" fill="none" stroke-width="2.5"/><path d="M487 391v-15m22 7v-15" fill="none" stroke-width="4"/>
 </g>
 <g id="i2-cliff-ladder" fill="none" stroke="#745330" stroke-width="3" stroke-linecap="round">
- <path d="M501 390v155m14-149v155"/>
- ${Array.from({ length: 14 }, (_, i) => `<path d="m501 ${398 + i * 10} 14 6.32" stroke="#e9c07e" stroke-width="2.5"/>`).join("")}
- ${island2Iso.box(524, 511, 16, 14, 8, ["#eac182", "#bf8b4e", "#956734"])}
+ <path d="M501 390V${385 + island2View.depth}M515 396V${391 + island2View.depth}"/>
+ ${Array.from({ length: 14 + Math.round((island2View.depth - 160) / 10) }, (_, i) => `<path d="m501 ${398 + i * 10} 14 6.32" stroke="#e9c07e" stroke-width="2.5"/>`).join("")}
+ ${island2Iso.box(524, 351 + island2View.depth, 16, 14, 8, ["#eac182", "#bf8b4e", "#956734"])}
 </g>
 <g id="i2-port-rope" stroke-linecap="round" stroke-linejoin="round" fill="none"><path id="i2-crane-boom" d="M448 325 537 365" stroke="#514f3e" stroke-width="10"/><path id="i2-crane-boom-core" d="M448 325 537 365" stroke="#e0b574" stroke-width="6"/><circle cx="448" cy="325" r="7" fill="#edc98a" stroke="#514f3e" stroke-width="3"/><path id="i2-crane-line" d="M537 365v54" stroke="#8a774f" stroke-width="2.5"/><path id="i2-crane-hook" d="M-4 0v5q4 8 8 0" transform="translate(537 419)" stroke="#514f3e" stroke-width="3"/></g>
 <g id="i2-wheel" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round">
