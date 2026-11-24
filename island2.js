@@ -157,10 +157,10 @@ function island2Carry(kind, points, duration, offsets, delay = 0) {
   element("i2-held").innerHTML = kind === "magnet"
     ? '<g id="i2-parcel"><use href="#i2-magnet-token" transform="scale(.8)"/></g>'
     : kind === "planks"
-    ? '<g id="i2-parcel" stroke="#886849" stroke-width="2.5" stroke-linejoin="round"><path d="m-20-10 34-13 12 9-35 14Z" fill="#f3cd8c"/><path d="m-20-3 34-13 12 9-35 14Z" fill="#e1ae6f"/><path d="m-20 4 34-13 12 9-35 14Z" fill="#f3cd8c"/><path d="M0-15 9-8v13L0-2Z" fill="#b68e59"/></g>'
+    ? '<g id="i2-parcel" stroke="#c29b66" stroke-width="1" stroke-linejoin="round"><path d="m-20-10 34-13 12 9-35 14Z" fill="#e6c691"/><path d="m-20-3 34-13 12 9-35 14Z" fill="#cdab75"/><path d="m-20 4 34-13 12 9-35 14Z" fill="#e6c691"/><path d="M0-15 9-8v13L0-2Z" fill="#b68e59"/></g>'
     : kind === "food"
-    ? '<g id="i2-parcel"><path d="m-10-7 22 5-4 17-20-6Z" fill="#edbe7b" stroke="#806a49" stroke-width="3"/><ellipse cy="-8" rx="9" ry="8" fill="#efb566" stroke="#806a49" stroke-width="2"/></g>'
-    : '<g id="i2-parcel" stroke="#67877a" stroke-width="4" stroke-linecap="round"><path d="M-8-7 9 10m-3-22L-7 8"/><path d="m-11-9 7-5 6 7-7 5" fill="#e5be7f"/></g>';
+    ? '<g id="i2-parcel"><path d="m-10-7 22 5-4 17-20-6Z" fill="#e1bd83" stroke="#bf9c66" stroke-width="1"/><ellipse cy="-8" rx="9" ry="8" fill="#d9b477" stroke="#bf9c66" stroke-width=".8"/></g>'
+    : '<g id="i2-parcel" stroke="#a2b9a5" stroke-width="2.5" stroke-linecap="round"><path d="M-8-7 9 10m-3-22L-7 8"/><path d="m-11-9 7-5 6 7-7 5" fill="#e5be7f"/></g>';
   const carrier = island2Current?.carry === kind ? island2Current.actor : undefined;
   island2Renderer.parcel(element("i2-parcel"), carrier);
   if (carrier) return;
@@ -190,7 +190,9 @@ function renderIsland2() {
   show("i2-door-knock", island2Story.knocking);
   show("i2-seeds", l.seeds > 0 && (island2Story.fieldPrepared || island2Story.fieldWorking));
   show("i2-shovel", l.seeds > 0);
-  show("i2-clay", l.water > 0 && !island2Story.clayUsed);
+  show("i2-clay", island2Story.clayTaken && !island2Story.clayUsed);
+  show("i2-clay-bank", l.water > 0);
+  element("i2-clay-bank").style.opacity = island2Story.clayTaken ? ".5" : "1";
   show("i2-stream", l.seeds >= 2 || island2Story.channelDug);
   show("i2-waterfall", l.seeds >= 2 || island2Story.waterfallStarted);
   show("i2-fall-impact", l.seeds >= 2 || island2Story.waterfallLanded);
@@ -201,6 +203,8 @@ function renderIsland2() {
   show("i2-scaffold", l.rope >= 2 && l.timber >= 3);
   show("i2-scaffold-front", l.rope >= 2 && l.timber >= 3);
   show("i2-scaffold-short", l.rope >= 2 && l.timber < 3);
+  show("i2-service-low", l.timber >= 3);
+  show("i2-service-upper", l.timber >= 3);
   show("i2-tower", l.timber >= 3);
   show("i2-gallery-rail", l.timber >= 3);
   show("i2-roof", l.timber >= 4);
@@ -218,6 +222,7 @@ function renderIsland2() {
   show("i2-pond", island2State.branches.seeds === "pond" && l.seeds >= 2);
   show("i2-overflow", l.seeds >= 2 && island2State.branches.seeds === "pond");
   show("i2-cabin-detail", l.timber >= 3);
+  show("i2-cabin-front", l.timber >= 3 && !island2Story.crateBoat);
   show("i2-crate-box", l.timber < 3);
   show("i2-rope-coil", l.rope === 1);
   show("i2-loose-coil", l.copper === 1);
@@ -241,8 +246,10 @@ function renderIsland2() {
   show("i2-splash", false);
   show("i2-boat", island2Story.boatSeen);
   show("i2-lily", island2State.branches.seeds === "pond" && l.seeds >= 2);
+  show("i2-lily-contact", island2State.branches.seeds === "pond" && l.seeds >= 2 && !island2Story.lilyMoved);
   show("i2-fish", island2State.branches.seeds === "pond" && l.seeds >= 2);
   show("i2-lily-stem", island2Story.lilyMoved && (!island2Story.leafFlat || island2Story.leafSail));
+  show("i2-raft-ripple", island2Story.leafFlat && island2Story.craftKind === "leaf");
   show("i2-crate-open", island2Story.crateOpen);
   show("i2-crate-lid", !island2Story.oarStowed && l.timber > 0);
   show("i2-lid-board", !island2Story.oarMade);
@@ -254,7 +261,8 @@ function renderIsland2() {
   island2Position("i2-cover", island2Story.stonePoint);
   island2Renderer.rockPose(island2Story.stoneFlat, island2Story.bridgeBuilt);
   const leafTransform = island2Story.leafSail && island2Renderer.followers.get("i2-lily")?.target === "i2-crate"
-    ? "rotate(-35) scale(1.45 2.1)" : island2Story.leafGrown ? "scale(1.45)" : "";
+    ? island2Leaf.pose(island2Leaf.grown, -35, 1.9)
+    : island2Leaf.pose(island2Story.leafGrown ? island2Leaf.grown : island2Leaf.small);
   element("i2-lily-body").setAttribute("transform", leafTransform);
   island2Position("i2-lily", island2Story.leafPoint);
   island2Position("i2-fish", island2Layout.fish);
@@ -283,15 +291,21 @@ function renderIsland2() {
   island2Position("i2-rope-coil", island2Layout.rope);
   island2Position("i2-copper", island2Layout.copper);
   island2Position("i2-generator-base", island2Layout.copper);
-  island2Position("i2-glass", island2Story.glassPoint || (l.glass >= 4 ? island2Layout.glassTop : l.glass >= 3 ? island2Layout.glassReady
-    : l.glass >= 2 ? island2Layout.glassRough : island2Layout.glassRest));
-  island2Renderer.discPlane("i2-glass", island2Story.glassPlane || "x");
+  show("i2-glass-stand", island2Story.workshopOpen);
+  show("i2-glass-shadow", l.glass > 0 && l.glass < 4 && !island2Story.glassHeld);
+  island2Position("i2-glass-shadow", island2Layout.glassRest);
+  island2Position("i2-glass", island2Story.glassPoint || [island2Layout.glassRest[0], island2Layout.glassRest[1] - 5]);
+  island2Renderer.discPlane("i2-glass", island2Story.glassPlane);
+  element("i2-glass").setAttribute("stroke", l.glass >= 4 ? "#3d7375" : "#74babb");
+  element("i2-glass").setAttribute("stroke-width", l.glass >= 4 ? "3" : "1");
   island2Renderer.glass(l.glass >= 4);
   island2Position("i2-lamp", island2Story.lampPoint || (island2Story.lampRaised ? island2Layout.lamp : island2Layout.lampRest));
+  element("i2-lamp").setAttribute("stroke", island2Story.lampRaised ? "#63593f" : "#b28b52");
+  element("i2-lamp").setAttribute("stroke-width", island2Story.lampRaised ? "3" : "1");
   island2Renderer.lamp(island2Story.lampRaised);
   island2Position("i2-boat", island2Story.boat);
   island2Position("i2-cargo", island2Story.cargo === "unloaded" ? island2Layout.cargoLanding
-    : island2Story.cargo === "landing" ? island2LoadPoint(island2Layout.cabinLanding) : island2Layout.cargoBoat);
+    : island2Story.cargo === "landing" ? island2LoadPoint(island2Layout.cabinLanding, "i2-cargo") : island2Layout.cargoBoat);
   for (const [role, point] of Object.entries(island2Story.people)) island2Position(`i2-person-${role}`, point);
   element("island2-count").textContent = `${island2State.order.length} / 8`;
   element("island2-controls").setAttribute("aria-busy", String(island2State.busy));
@@ -435,6 +449,9 @@ function island2StartStep(step) {
       const base = island2Layout.cabinBase;
       const landing = island2Layout.cabinLanding;
       island2Carry("planks", [island2LoadPoint(base), island2LoadPoint(base), island2LoadPoint(landing), island2Layout.cargoLanding], 1450, offsets, travel);
+      island2Renderer.follow("i2-parcel", "i2-crate", [0, -14], { depthBias: 1 });
+      island2Renderer.entities.get("i2-person-maker").workGrip =
+        { prop: "i2-parcel", kind: "planks", start: performance.now() + travel + 1450 * .78 };
       island2Move("i2-crate", [base, base, landing, landing], 1450, offsets, travel);
       island2Story.cabin = [...landing];
       element("i2-roof").style.display = "";
@@ -450,7 +467,7 @@ function island2StartStep(step) {
     const offsets = [0, .2, .82, 1];
     island2Renderer.lamp(false, true);
     island2Move("i2-crate", [base, base, top, top], 2000, offsets, travel);
-    island2Move("i2-lamp", [island2Layout.lampRest, island2LoadPoint(base), island2LoadPoint(top), island2Layout.lamp], 2000, offsets, travel, "peak");
+    island2Move("i2-lamp", [island2Layout.lampRest, island2LoadPoint(base, "i2-lamp"), island2LoadPoint(top, "i2-lamp"), island2Layout.lamp], 2000, offsets, travel, "peak");
     island2Story.cabin = [...top];
   } else if (step.kind === "signal") {
     island2Story.reaction = true;
@@ -472,7 +489,7 @@ function island2StartStep(step) {
     const base = island2Layout.cabinBase;
     const landing = island2Layout.cabinLanding;
     island2Move("i2-cargo", [island2Layout.cargoBoat, ...swing,
-      island2LoadPoint(landing), island2LoadPoint(landing)], 2200, offsets);
+      island2LoadPoint(landing, "i2-cargo"), island2LoadPoint(landing, "i2-cargo")], 2200, offsets);
     island2Move("i2-crate", [base, base, landing, landing], 2200, [0, .65, .85, 1]);
     island2Story.cabin = [...landing];
     island2Actor("maker", island2Renderer.nodes.balcony.point);
@@ -773,7 +790,8 @@ function startIsland2() {
     channelDug: false, channelFilled: false, waterfallStarted: false, waterfallLanded: false,
     fieldPrepared: false, fieldWorking: false, usingShovel: "", shovelPoint: [...island2Work.shovelRest],
     knocking: false, sourceBracing: false, sourceControlling: false,
-    clayUsed: false, clayPoint: [...island2Work.clayBank],
+    clayUsed: false, clayTaken: false, clayPoint: [...island2Work.clayBank],
+    glassHeld: false, glassPlane: "ground", glassSupport: "ground",
     stonePoint: [...island2Layout.coverHome], magnetTaken: false, magnetHeld: false, bridgeBuilt: false, driveChecked: false, tether: "",
     wireLaying: false, wireHeld: "", wirePlugged: false,
     leafGrown: false, lilyMoved: false, leafFlat: false, leafSail: false, leafPoint: [...island2Layout.lily],
