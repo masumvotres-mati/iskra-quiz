@@ -21,6 +21,14 @@ const island2Cinema = (() => {
     scene("prop-lift", "Kabina podaje lampę do górnego podestu.", 1600),
     ...supportSteps("i2-lamp", "maker", island2Layout.lamp, "lamp-upper", -1, "light"),
   ];
+  const unloadCargo = () => [
+    { kind: "unload", text: "Dźwig podnosi paczkę ze statku, obraca ramię i odkłada ładunek w kabinie.", duration: 2300 },
+    ...supportSteps("i2-cargo", "maker", island2Layout.cargoLanding, "cargo-unload"),
+  ];
+  const parkOar = () => {
+    island2Story.oarResting = true;
+    island2Renderer.follow("i2-crate-lid", "i2-crate", [6, -6], { depthBias: 3, blend: 350 });
+  };
 
   function walk(step, role, destination, mode, work = 700, direction, gait) {
     const travel = Math.ceil(island2Renderer.actor(role, destination, false, 0, { gait }));
@@ -140,6 +148,14 @@ const island2Cinema = (() => {
       scene("magnet-connect", "Ty trzymaj magnes, ja nawinę drut.", 950, { actor: "scout", carry: "magnet" }),
       reveal(change, "Zwojnica i magnes są już połączone."),
     ];
+    if (key === "copper-3") return [
+      scene("wire-approach", "Majster podchodzi do zacisku prądnicy.", 350),
+      scene("wire-source", "Przykręca przewód do zacisku. Drugi koniec zostaje w dłoni.", 650),
+      scene("wire-carry", "Wnosi wolny koniec przewodu na galerię latarni.", 350),
+      scene("wire-plug", "Dłonie osadzają końcówkę w górnym zacisku.", 850),
+      scene("wire-seat", "Oba końce są zamocowane. Przewód układa się przy konstrukcji.", 800),
+      reveal(change, "Prądnica jest połączona z latarnią."),
+    ];
     if (key === "seeds-3" && branches.seeds === "pond") return [
       scene("leaf-grow", "Odbicie w szkle zwabia rybkę. A ten liść robi się coraz większy…", 1200),
       reveal(change, "Liść jest już dość duży na nowe zastosowanie."),
@@ -152,14 +168,19 @@ const island2Cinema = (() => {
   }
 
   function milestones(levels, story) {
-    if (!story.bridgeBuilt && levels.seeds >= 2 && levels.glass >= 3 && levels.rope >= 2) return [
+    const steps = [];
+    if (!story.bridgeBuilt && levels.seeds >= 2 && levels.glass >= 3 && levels.rope >= 2) steps.push(
       scene("bridge-ready", "Szlifowanie skończone. Kamienna płyta jest znów wolna.", 650),
       scene("bridge-haul", "Płyta zamiast kolejnej deski? Powstaje mostek nad odpływem!", 1400),
       scene("bridge-approach", "Przejście już gotowe. Zapasy można przenieść nad wodą.", 2200, { actor: "gardener", carry: "food" }),
       scene("bridge-cross", "Suchą nogą na drugą stronę!", 900, { actor: "gardener", carry: "food" }),
       scene("bridge-deliver", "Teraz zapasy mają krótszą drogę do pracowni.", 1700, { actor: "gardener", carry: "food" }),
-    ];
-    return [];
+    );
+    if (!story.driveChecked && levels.wheel >= 3 && levels.copper >= 3) steps.push(
+      scene("drive-clear", "Majster odsuwa dłonie od obracającego się pasa i sprawdza napęd z boku.", 350),
+      scene("drive-check", "Pas wraca drugim biegiem i obejmuje oba koła pasowe.", 1000),
+    );
+    return steps;
   }
 
   function preparation(previous, levels, placed, turn, branches) {
@@ -193,8 +214,12 @@ const island2Cinema = (() => {
     if (leaf && crate) steps.push(scene("sail-bring", "Żagiel jeszcze przed chwilą był parasolem.", 600),
       scene("sail-fit", "Łodyga staje się masztem. Wieko pozostaje siedziskiem.", 750));
     steps.push(scene("trade-sail", "Na horyzoncie ktoś zauważył małych podróżników!", 2500),
-      scene("trade-exchange", "Gliniane formy albo zielony podarunek za nowe nasiona.", 950),
-      scene("trade-return", "Teraz jest z czym wrócić do ogrodnika.", 2300),
+      scene("trade-moor", "Łódki podpływają burta w burtę. Paczka czeka na pokładzie.", 1000),
+      scene("trade-exchange", "Gliniane formy albo zielony podarunek za nowe nasiona.", 950));
+    if (crate && !leaf) steps.push(scene("gift-stow", "Paczka spoczywa na skrzyni. Dłonie są znów wolne do wiosłowania.", 650));
+    steps.push(scene("trade-return", "Teraz jest z czym wrócić do ogrodnika.", 2300));
+    if (crate && !leaf) steps.push(scene("gift-retrieve", "Przy brzegu mieszkaniec odkłada wiosło i zabiera paczkę.", 650));
+    steps.push(
       scene("craft-land", "Ładunek trzeba jeszcze dostarczyć.", 900),
       scene("gift-return", "Nowe nasiona! Jedna wyprawa daje początek kolejnej historii.", 900));
     return steps;
@@ -378,7 +403,7 @@ const island2Cinema = (() => {
     } else if (name === "magnet-return") {
       walk(step, "scout", at("generator"), "offer", 500, -1, "heavy");
     } else if (name === "magnet-connect") {
-      const travel = walk(step, "maker", [300, 428], "repair", 950, 1);
+      const travel = walk(step, "maker", [island2Layout.copper[0] - 28, island2Layout.copper[1] + 3], "repair", 950, 1);
       island2Renderer.act("scout", "offer", travel + 950, 0, -1);
       island2Renderer.follow("i2-magnet", "i2-person-scout", [-5.5, 2],
         { hand: true, to: island2Layout.copper, blend: travel + 950, support: "i2-copper" });
@@ -386,8 +411,30 @@ const island2Cinema = (() => {
       island2Renderer.entities.get("i2-person-maker").workGrip =
         { prop: "i2-generator", kind: "generator", start: performance.now() + travel };
       element("i2-generator").style.display = "";
+      element("i2-generator-base").style.display = "";
       island2Animate("i2-generator", [{ opacity: 0 }, { opacity: 1 }], 700, "ease-in-out", travel + 200);
+      island2Animate("i2-generator-base", [{ opacity: 0 }, { opacity: 1 }], 700, "ease-in-out", travel + 200);
       island2Animate("i2-loose-coil", [{ opacity: 1 }, { opacity: 0 }], 700, "ease-in-out", travel + 200);
+    } else if (name === "drive-clear") {
+      walk(step, "maker", [386, 405], "look", 350, -1);
+    } else if (name === "drive-check") {
+      island2Renderer.act("maker", "look", step.duration, 0, -1);
+    } else if (name === "wire-approach") {
+      walk(step, "maker", at("generator"), "kneel", 350, -1);
+    } else if (name === "wire-source") {
+      story.wireLaying = true;
+      story.wireHeld = "maker";
+      renderIsland2();
+      island2Renderer.act("maker", "kneel", step.duration, 0, -1);
+      island2Renderer.entities.get("i2-person-maker").workGrip = { prop: "i2-wire-lead", kind: "wire", end: false };
+    } else if (name === "wire-carry") {
+      walk(step, "maker", at("lantern"), "look", 350, -1);
+    } else if (name === "wire-plug") {
+      island2Renderer.act("maker", "kneel", step.duration, 0, -1);
+      island2Renderer.entities.get("i2-person-maker").workGrip = { prop: "i2-wire-lead", kind: "wire", end: true };
+    } else if (name === "wire-seat") {
+      story.wireHeld = "";
+      island2Renderer.seatWire(step.duration);
     } else if (name === "bridge-ready") {
       walk(step, "scout", [315, 420], "look", 650, -1);
       walk(step, "maker", at("workshop"), "look", 650, -1);
@@ -509,6 +556,10 @@ const island2Cinema = (() => {
       island2Animate("i2-lily-body", [{ transform: "scale(1.45)" }, { transform: "rotate(-35deg) scale(1.45,2.1)" }], 750);
       sound("island-discover");
     } else if (name === "trade-sail" || name === "trade-return") {
+      if (name === "trade-return" && story.oarMade && story.oarResting) {
+        story.oarResting = false;
+        island2Renderer.follow("i2-crate-lid", "i2-person-scout", [0, 0], { hand: true, blend: 350, depthBias: 3 });
+      }
       const craft = story.craftKind === "crate" ? "i2-crate" : "i2-lily";
       const destination = name === "trade-sail" ? island2Layout.craftSea : island2Layout.craftShore;
       island2Move(craft, [point(craft), island2Sea([565, 556]), destination], 2200, undefined, 0, "sea-front");
@@ -523,12 +574,32 @@ const island2Cinema = (() => {
         island2Move("i2-boat", [point("i2-boat"), island2Sea([612, 510]), island2Sea([612, 390]), island2Layout.boatWaiting], 2200);
         story.boat = [...island2Layout.boatWaiting];
       }
-    } else if (name === "trade-exchange") {
+    } else if (name === "trade-moor") {
+      const craft = story.craftKind === "crate" ? "i2-crate" : "i2-lily";
+      const destination = island2Sea([528, story.craftKind === "crate" ? 588 : 575]);
+      const boat = island2Sea([579, 567]);
+      island2Move(craft, [point(craft), destination], step.duration, undefined, 0, "sea-front");
+      island2Move("i2-boat", [point("i2-boat"), boat], step.duration);
+      if (story.craftKind === "crate") story.craftPoint = [...destination];
+      else story.leafPoint = [...destination];
+      story.boat = [...boat];
+      island2Renderer.act("scout", "sit", step.duration, 0, 1);
+      if (story.oarMade) parkOar();
       story.giftSeen = true;
-      island2Position("i2-gift", island2Sea([568, 543]));
       element("i2-gift").style.display = "";
-      island2Renderer.follow("i2-gift", "i2-person-scout", [0, 0], { hand: true, blend: 950 });
+      island2Renderer.follow("i2-gift", "i2-boat", [-39, -17], { depthBias: 1 });
+    } else if (name === "trade-exchange") {
+      island2Renderer.act("scout", "sit", step.duration, 0, 1);
+      island2Renderer.follow("i2-gift", "i2-person-scout", [0, 0], { hand: true, blend: 500 });
       sound("island-discover");
+    } else if (name === "gift-stow") {
+      island2Renderer.act("scout", "sit", step.duration, 0, 1);
+      island2Renderer.follow("i2-gift", "i2-person-scout", [0, 0],
+        { hand: true, to: island2Sea([540, 553]), blend: 450 });
+    } else if (name === "gift-retrieve") {
+      parkOar();
+      island2Renderer.act("scout", "sit", step.duration, 0, 1);
+      island2Renderer.follow("i2-gift", "i2-person-scout", [0, 0], { hand: true, blend: 450 });
     } else if (name === "craft-land") {
       island2Renderer.release("i2-person-scout");
       const origin = point("i2-person-scout");
@@ -537,7 +608,7 @@ const island2Cinema = (() => {
       walk(step, "gardener", at("farm"), "offer", 900, 1);
     } else if (name === "gift-return") {
       walk(step, "scout", [170, 372], "offer", 900, -1, "heavy");
-      walk(step, "gardener", at("farm"), "offer", 900, 1);
+      walk(step, "gardener", [142, 372], "offer", 900, 1);
       walk(step, "maker", island2State.branches.wheel === "pottery" ? at("potter") : at("workshop"), "repair", 700, -1);
     } else throw new Error(`Nieznana scena wyspy: ${name}`);
   }
@@ -556,6 +627,7 @@ const island2Cinema = (() => {
       }
       if (step.prop === "i2-lamp") story.lampPoint = [...step.to];
       if (step.prop === "i2-tea") { story.teaStored = true; story.teaPoint = [...step.to]; }
+      if (step.prop === "i2-cargo") story.cargo = "unloaded";
       if (step.support === "cabin") island2Renderer.follow(step.prop, "i2-crate",
         step.prop === "i2-lamp" ? [0, 0] : island2Layout.loadOffset, { depthBias: 1 });
       if (step.prop === "i2-lamp" && step.support === "light") story.lampRaised = true;
@@ -622,6 +694,15 @@ const island2Cinema = (() => {
         story.magnetHeld = false;
         island2Visual.copper = 2;
         break;
+      case "drive-check": story.driveChecked = true; break;
+      case "wire-plug": story.wirePlugged = true; break;
+      case "wire-seat":
+        story.wireLaying = false;
+        island2Visual.copper = 3;
+        break;
+      case "gift-stow":
+        island2Renderer.follow("i2-gift", "i2-crate", [12, -35], { depthBias: 3 });
+        break;
       case "bridge-haul":
         story.bridgeBuilt = true;
         story.tether = "";
@@ -657,5 +738,5 @@ const island2Cinema = (() => {
     }
   }
 
-  return { afterPlacement, grow, milestones, preparation, ending, start, commit, scene, fitLamp };
+  return { afterPlacement, grow, milestones, preparation, ending, start, commit, scene, fitLamp, unloadCargo };
 })();

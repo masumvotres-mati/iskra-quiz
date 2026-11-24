@@ -30,6 +30,20 @@ const island2Iso = (() => {
       <g transform="translate(${offset.join(" ")})"><g transform="${face(plane)}"><circle r="${radius}" fill="${edge}"/></g></g>
       <g data-iso-face="${plane}" transform="${face(plane)}"><circle r="${radius}" fill="${front}"/>${contents}</g></g>`;
   };
+  const strand = (id, d, width, colors = ["#9a7848", "#c5a36b", "#e7cd99"]) =>
+    `<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <defs><path id="${id}" d="${d}"/></defs>
+      <use href="#${id}" stroke="${colors[0]}" stroke-width="${width}"/>
+      <use href="#${id}" stroke="${colors[1]}" stroke-width="${width * .64}"/>
+      <use href="#${id}" stroke="${colors[2]}" stroke-width="${width * .2}" transform="translate(${-width * .12} ${-width * .15})"/>
+    </g>`;
+  const prism = (points, offset, colors) => {
+    const back = points.map((point) => point.map((n, i) => n + offset[i]));
+    return `<path d="${path(back)}" fill="${colors[2]}"/>` +
+      points.map((point, i) => `<path d="${path([point, points[(i + 1) % points.length],
+        back[(i + 1) % points.length], back[i]])}" fill="${i % 2 ? colors[2] : colors[1]}"/>`).join("") +
+      `<path d="${path(points)}" fill="${colors[0]}"/>`;
+  };
   const cubeGrid = () => {
     return `<g stroke="none">
       <rect x="-124" y="-124" width="248" height="248" fill="url(#i2-tiles-top)" transform="matrix(1 ${slope} -1 ${slope} 318 350)"/>
@@ -45,13 +59,13 @@ const island2Iso = (() => {
       <path d="M${far} .65V${height - .65}H${near}" fill="none" stroke="${top ? "#000000" : "#5d402b"}" stroke-width=".65" opacity="${top ? .19 : .16}"/>
       </pattern>`;
   };
-  return { slope, unit, project, unproject, face, box, disc, cubeGrid, tilePattern };
+  return { slope, unit, project, unproject, face, box, disc, strand, prism, cubeGrid, tilePattern };
 })();
 
 const island2Layout = {
   wheelRest: [244, 400], wheelDrive: [237, 418], wheelPottery: [244, 400],
   crateRest: [432, 391], cabinBase: [416, 373], cabinTop: [416, 225], cabinLanding: [416, 284],
-  rope: [396, 289], copper: [328, 425], spring: [237, 316], farm: [157, 333],
+  rope: [396, 289], copper: [348, 416], spring: [237, 316], farm: [157, 333],
   glassRest: [188, 374], glassRough: [291, 386], glassReady: [378, 400], glassTop: [471, 190],
   lamp: [471, 205], lampRest: [497, 358], cargoLanding: [445, 285], cargoBoat: island2Sea([567, 550]),
   boatWaiting: island2Sea([574, 304]), boatDock: island2Sea([574, 558]), loadOffset: [0, -29],
@@ -303,6 +317,32 @@ const island2Work = (() => {
   return { shovelRest: [111, 325], clayBank: [210, 348], fieldClip, cutawayClip };
 })();
 
+const island2Crane = (() => {
+  const radius = 89;
+  const angleAt = (x, back) => {
+    const across = x - 448;
+    const along = (back ? -1 : 1) * Math.sqrt(2 * radius * radius - across * across);
+    return Math.atan2(along - across, along + across);
+  };
+  const first = angleAt(island2Layout.cargoBoat[0], false);
+  const last = angleAt(island2Layout.cabinBase[0], true);
+  const tipAt = (angle) => [448 + radius * (Math.cos(angle) - Math.sin(angle)),
+    325 + radius * island2Iso.slope * (Math.cos(angle) + Math.sin(angle))];
+  const drop = island2Layout.cabinBase[1] + island2Layout.loadOffset[1] - tipAt(last)[1];
+  const pose = (t) => {
+    const tip = tipAt(first + (last - first) * t);
+    return { tip, load: [tip[0], tip[1] + drop] };
+  };
+  const returning = (t) => tipAt(last * (1 - t));
+  return { pose, returning, radius };
+})();
+
+const island2Wiring = {
+  points: [[island2Layout.copper[0] + 20, island2Layout.copper[1] - 5],
+    [377, 407], [377, 346], [407, 333], [446, 350], [446, 243], [478, 228], [478, 207]],
+  path: (points) => `M${points.map((point) => point.join(" ")).join("L")}`,
+};
+
 const island2SceneArtwork = `
 <svg viewBox="0 ${island2View.top} 640 ${island2View.height}" width="640" height="${island2View.height * island2View.scaleY}" preserveAspectRatio="none" role="img" aria-labelledby="i2-art-title i2-art-description" xmlns="http://www.w3.org/2000/svg">
 <title id="i2-art-title">Wyspa małych spraw</title>
@@ -348,8 +388,28 @@ const island2SceneArtwork = `
   <path d="m-21-26 21 9 22-9-22-10Z" fill="#f3ce8c"/><path d="M0-17V1l22-10v-17Z" fill="#c68e54"/>
   <path d="m-13-26 14 6 13-6M-14-14l7 3m14 0 8-3" fill="none" stroke-width="2.5"/>
  </g>
- <g id="i2-ear" fill="#efc663" stroke="#695e3d" stroke-width="2.5" stroke-linecap="round">
-  <path d="M0 0v-31m0 16-7-8m7 1 7-8" fill="none"/><ellipse cx="-5" cy="-23" rx="3.5" ry="6" transform="rotate(-35 -5 -23)"/><ellipse cx="5" cy="-29" rx="3.5" ry="6" transform="rotate(35 5 -29)"/><ellipse cy="-36" rx="3.5" ry="6"/>
+ <g id="i2-ear" stroke="none">
+  <ellipse rx="7" ry="2.2" fill="#87683d" opacity=".2"/>
+  <path d="M-1.6 0Q-3-15 1-30L3-30Q-.4-13 1.4 0Z" fill="#aa8d43"/>
+  <path d="M-1-2Q-13-6-12-15-3-13 0-5Z" fill="#b9a44f"/>
+  <path d="M0-5Q3-16 12-17 11-7 0-5Z" fill="#c8b35a"/>
+  <path d="M0-5Q5-12 12-17 8-7 0-5Z" fill="#a28d42"/>
+  <g fill="#e2b956">
+   <path d="M1-23Q-7-21-7-29 0-31 2-25ZM2-29Q-5-29-4-36 3-37 4-31ZM3-34Q-1-37 3-43 9-40 5-34Z"/>
+   <path d="M2-24Q2-31 10-32 12-25 2-24ZM4-31Q3-37 10-39 14-32 4-31Z"/>
+  </g>
+  <g fill="#f7db83">
+   <path d="M0-25Q-5-25-5-28 0-30 0-25ZM2-31Q-2-32-2-35 2-36 2-31ZM4-36Q2-38 4-41 7-39 4-36Z"/>
+   <path d="M5-27Q6-30 9-30 9-27 5-27ZM6-33Q6-36 9-37 11-34 6-33Z"/>
+  </g>
+ </g>
+ <g id="i2-sprout" stroke="none">
+  <ellipse rx="7" ry="2" fill="#716b38" opacity=".18"/>
+  <path d="M-1.5 0Q-2-9 0-19H2Q.5-9 1.2 0Z" fill="#628b48"/>
+  <path d="M0-11Q-14-10-15-21-4-24 0-11Z" fill="#75b15d"/>
+  <path d="M0-11Q-10-12-15-21-10-14 0-14Z" fill="#96c77a"/>
+  <path d="M1-14Q4-27 15-24 18-13 1-14Z" fill="#8bc36c"/>
+  <path d="M1-14Q8-16 15-24 18-13 1-14Z" fill="#609b4d"/>
  </g>
 </defs>
 <g id="i2-background">
@@ -396,8 +456,8 @@ const island2SceneArtwork = `
 <g id="i2-cover" stroke-linejoin="round">
  <ellipse id="i2-rock-contact" fill="#435132" opacity=".28" stroke="none"/>
  <g id="i2-rock-solid" stroke="none">${Array.from({ length: 8 }, (_, i) => `<path data-rock-face="${i}"/>`).join("")}</g>
- <path id="i2-rock-outline" fill="none" stroke="#66725b" stroke-width="1.3"/>
- <g id="i2-rock-cracks" fill="none" stroke="#718064" stroke-width="1.1" opacity=".75"><path/><path/></g>
+ <path id="i2-rock-outline" fill="none" stroke="#59634f" stroke-width="1.2"/>
+ <g id="i2-rock-cracks" fill="none" stroke="#929e80" stroke-width=".8" opacity=".65"><path/><path/></g>
 </g>
 <g id="i2-water" stroke="none">
  ${island2Water.source}
@@ -442,24 +502,51 @@ const island2SceneArtwork = `
   <path d="m-5-3 8-2 3 7-9 1Z"/><path d="m-5-3 8-2 3 7-9 1Z"/><path d="m-5-3 8-2 3 7-9 1Z"/>
  </g>
  <g class="i2-seed-first" fill="#f7d793" stroke="none"><ellipse cx="139" cy="331" rx="4" ry="2.5"/><ellipse cx="157" cy="326" rx="4" ry="2.5"/><ellipse cx="173" cy="338" rx="4" ry="2.5"/></g>
- <g class="i2-sprouts" fill="#7ab46b"><path d="M139 332v-17m0 8q-13-2-9-10 11 0 9 10m0-5q10-10 13-1-2 8-13 6M174 338v-19m0 10q-13-2-10-11 12 0 10 11m0-5q10-12 14-3-3 8-14 8"/></g>
- <g class="i2-harvest"><use href="#i2-ear" x="135" y="332"/><use href="#i2-ear" x="157" y="324"/><use href="#i2-ear" x="178" y="339"/><path d="m111 344 19 8-4 13-19-8Z" fill="#edc58b"/><path d="m111 348 16 7" fill="none" stroke-width="2.5"/></g>
+ <g class="i2-sprouts"><use href="#i2-sprout" transform="translate(139 332) scale(.8 .9)"/><use href="#i2-sprout" transform="translate(174 338)"/></g>
+ <g class="i2-harvest"><use href="#i2-ear" transform="translate(157 324) scale(.85 .9)"/><use href="#i2-ear" transform="translate(135 332)"/><use href="#i2-ear" transform="translate(178 339) scale(.9 .92)"/>
+  ${island2Iso.box(118, 357, 11, 6, 8, ["#efd19a", "#d9b780", "#b9925d"])}
+  <path d="m108 350 10 4 15-7" fill="none" stroke="#a5804e" stroke-width="1"/>
+ </g>
  <g id="i2-pond"><path d="M134 329q-13-7-19 0-5 9 11 13 16 1 16-9l-8-4 3 9" fill="#91bd71" stroke="none"/></g>
 </g>
-<g id="i2-lily" stroke="#47754e" stroke-width="3"><g id="i2-lily-body"><path d="M-6 0q-11-12 5-14 20-2 23 8 4 13-17 15L-6 0 7-3Z" fill="#a0ce79"/><path d="m4-2 11-5M4-2l9 5" fill="none" stroke="#d5e9a1" stroke-width="2.5"/><path id="i2-lily-stem" d="M4 3v23" fill="none" stroke="#6b9455" stroke-width="4"/></g></g>
-<g id="i2-fish" fill="#efac63" stroke="#696849" stroke-width="2.5"><path d="M-10 0Q0-12 11 0 0 11-10 0Zm-1 0-7-6v12Z"/><circle cx="4" cy="-1" r="1.5" fill="#354d43" stroke="none"/></g>
+<g id="i2-lily" stroke="none"><g id="i2-lily-body">
+ <g id="i2-lily-stem">${island2Iso.strand("i2-leaf-stalk", "M4-3Q1 8 4 23", 3.6, ["#568448", "#85ac5c", "#b0cf7e"])}</g>
+ <g transform="translate(4 -3) matrix(1 ${island2Iso.slope} -1 ${island2Iso.slope} 0 0)">
+  <path d="M0 0 14 5C18-3 12-15 2-16-8-18-17-10-16 0-15 12-2 17 10 12Z" fill="#568b4c" transform="translate(1 1.8)"/>
+  <path d="M0 0 14 5C18-3 12-15 2-16-8-18-17-10-16 0-15 12-2 17 10 12Z" fill="#9acb74"/>
+  <path d="M-14-6Q-5-17 8-11 2-7 0 0L-9 10Q-13 6-14-6Z" fill="#aed985"/>
+  <path d="M0 0-8-9M0 0 0-13M0 0-12 1M0 0 7-10" fill="none" stroke="#7ab45c" stroke-width=".9"/>
+ </g>
+</g></g>
+<g id="i2-fish" stroke="none">
+ <g id="i2-fish-body">
+  <path d="M-9-1-17-7-16 6-8 2Z" fill="#d58c4d"/>
+  <path d="M-10 0Q-5-10 5-7 17-2 9 4-3 10-10 0Z" fill="#efb263"/>
+  <path d="M-8-2Q-1-10 8-5 0-6-5 0Z" fill="#ffcf87"/>
+  <path d="M-3 2 3 0 0 7Z" fill="#d68e4d"/>
+  <circle cx="8" cy="-2" r="1.2" fill="#48543d"/>
+ </g>
+ <g id="i2-fish-waterline" fill="none" stroke="#c1e3f7" stroke-width="1" opacity=".8"><path d="M-15 4Q0 10 14 3M-10-8Q-4-11 2-10"/></g>
+</g>
 <g id="i2-scaffold-short" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
  ${island2Iso.box(394, 363, 6, 6, 69)}
  ${island2Iso.box(446, 363 + 52 * island2Iso.slope, 6, 6, 69)}
  ${island2Iso.box(420, 307, 58, 6, 8)}
- <circle cx="416" cy="321" r="9" fill="#edc98a"/><path d="M416 330v26m-4 0q4 9 8 0" fill="none" stroke="#8a774f"/>
+ <g transform="translate(416 321)" stroke="#8f7045" stroke-width="1">
+  ${island2Iso.disc(8, 3, "x", "#e7c084", "#a57b45", '<circle r="5.6" fill="none" stroke="#b48b55" stroke-width="1.2"/><circle r="1.7" fill="#8d7048"/>')}
+ </g>
+ ${island2Iso.strand("i2-short-rope", "M409 318V350Q409 354 416 356", 2.8)}
+ <path d="M412 356q4 9 8 0" fill="none" stroke="#8a774f" stroke-width="2"/>
 </g>
 <g id="i2-scaffold" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
  ${island2Iso.box(431, 158, 36, 6, 6)}
  <circle cx="442" cy="163" r="2" fill="#946d3c" stroke-width="1"/>
- <path id="i2-lift-rope" d="M416 163v149" fill="none" stroke="#8a774f" stroke-width="2.5"/>
- <g transform="translate(416 153)">${island2Iso.disc(10, 4, "x", "#edc780", "#ad8955",
-   '<g id="i2-pulley-rotor"><path d="M-6 0H6M0-6V6" fill="none" stroke-width="2.5"/></g>')}</g>
+ <path d="M416 153 431 159.77" fill="none" stroke="#8e784f" stroke-width="4"/>
+ ${island2Iso.strand("i2-lift-rope", "M408 149V312", 2.6)}
+ <g transform="translate(416 153)" stroke="#886e46" stroke-width="1.1">${island2Iso.disc(10, 4, "x", "#edc780", "#ad8955",
+   '<circle r="8" fill="none" stroke="#b18a51" stroke-width="2"/><g id="i2-pulley-rotor"><path d="M-5 0H5M0-5V5" fill="none" stroke-width="1.2"/></g><circle r="2" fill="#8d7048"/>')}
+  <g transform="${island2Iso.face("x")}">${island2Iso.strand("i2-pulley-wrap", "M-8.8 0A8.8 8.8 0 0 1 8.8 0", 2.6)}</g>
+ </g>
 </g>
 <g id="i2-scaffold-front" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
  <path d="M441 373V217m0 12h6m-6 54h6m-6 78h6" fill="none" stroke="#969980" stroke-width="2"/>
@@ -485,27 +572,53 @@ const island2SceneArtwork = `
 <g id="i2-gallery-rail" fill="none" stroke="#8a754f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
  <path d="M434 242v-8l34 15.35 42-18.97v8m-42 10.97v8"/>
 </g>
-<g id="i2-drive" fill="none" stroke-linecap="round"><path d="M252 384 308 416" stroke="#696849" stroke-width="7"/><path class="i2-running-belt" d="M252 384 308 416" stroke="#d3b778" stroke-width="3" stroke-dasharray="7 12"/></g>
-<path id="i2-wire" d="M348 420 377 407V346l30-13 39 17V243l25-11" fill="none" stroke="#ba8c58" stroke-width="3"/>
-<g id="i2-dock" stroke="#65563e" stroke-width="3.5" stroke-linejoin="round">
- <path d="m460 397 38-17 36 16-38 17Z" fill="#e6bc7e"/><path d="m470 393 35 16m-24-21 35 16m-24-21 35 16M466 400v36m62-36v36" fill="none" stroke-width="2.5"/><path d="M487 391v-15m22 7v-15" fill="none" stroke-width="4"/>
+<g id="i2-drive" fill="none" stroke-linecap="round">
+ <g transform="translate(242 ${387 - 5 * island2Iso.slope}) matrix(.9 ${.9 * island2Iso.slope} 0 1 0 0)">
+  <circle r="9" fill="#bc985e" stroke="#8b714a" stroke-width="1"/>
+  <circle r="2.5" fill="#866d48"/>
+  <path id="i2-belt-loop" stroke="#806d48" stroke-width="3.4"/>
+  <use href="#i2-belt-loop" stroke="#c3a36a" stroke-width="1.7"/>
+  <use href="#i2-belt-loop" class="i2-running-belt" stroke="#e0c58f" stroke-width=".8" stroke-dasharray="4 10"/>
+ </g>
 </g>
-<g id="i2-cliff-ladder" fill="none" stroke="#745330" stroke-width="3" stroke-linecap="round">
- <path d="M501 390V${385 + island2View.depth}M515 396V${391 + island2View.depth}"/>
- ${Array.from({ length: 14 + Math.round((island2View.depth - 160) / 10) }, (_, i) => `<path d="m501 ${398 + i * 10} 14 6.32" stroke="#e9c07e" stroke-width="2.5"/>`).join("")}
+<g id="i2-wire">
+ ${island2Iso.strand("i2-wire-lead", island2Wiring.path(island2Wiring.points), 2.8, ["#9a6546", "#cb9567", "#ebc291"])}
+ <g id="i2-wire-base-terminal">${island2Iso.box(island2Layout.copper[0] + 20, island2Layout.copper[1] - 3, 3, 3, 5, ["#e6ca8b", "#bb985d", "#8d774e"])}</g>
+ <g id="i2-wire-top-terminal">${island2Iso.box(478, 208, 2.5, 2.5, 4, ["#e6ca8b", "#bb985d", "#8d774e"])}</g>
+</g>
+<g id="i2-dock" stroke="none">
+ ${island2Iso.box(466, 438, 3, 3, 41, ["#d9b174", "#b38c54", "#8c693f"])}
+ ${island2Iso.box(528, 438, 3, 3, 41, ["#d9b174", "#b38c54", "#8c693f"])}
+ ${island2Iso.box(497, 402, 38, 36, 5, ["#e6bc7e", "#c79b61", "#a77a46"])}
+ <path d="m470 393 35 16m-24-21 35 16m-24-21 35 16" fill="none" stroke="#ba905a" stroke-width="1"/>
+ ${island2Iso.box(487, 391, 3, 3, 14, ["#e7c286", "#b88c52", "#94703f"])}
+ ${island2Iso.box(509, 383, 3, 3, 14, ["#e7c286", "#b88c52", "#94703f"])}
+</g>
+<g id="i2-cliff-ladder" stroke="none">
+ ${[414, 514, 614, 704].map((y) => `<path d="M497 ${y - 2} 503 ${y + 1}M511 ${y + 4.32} 517 ${y + 7.32}" fill="none" stroke="#7d7357" stroke-width="2.5"/>`).join("")}
+ ${island2Iso.strand("i2-ladder-left", `M501 390V${385 + island2View.depth}`, 3, ["#987543", "#d0a569", "#ebc98e"])}
+ ${island2Iso.strand("i2-ladder-right", `M515 396V${391 + island2View.depth}`, 3, ["#987543", "#d0a569", "#ebc98e"])}
+ ${Array.from({ length: 14 + Math.round((island2View.depth - 160) / 10) }, (_, i) =>
+   island2Iso.strand(`i2-rung-${i}`, `m501 ${398 + i * 10} 14 6.32`, 2.7)).join("")}
  ${island2Iso.box(524, 351 + island2View.depth, 16, 14, 8, ["#eac182", "#bf8b4e", "#956734"])}
 </g>
-<g id="i2-port-rope" stroke-linecap="round" stroke-linejoin="round" fill="none"><path id="i2-crane-boom" d="M448 325 537 365" stroke="#514f3e" stroke-width="10"/><path id="i2-crane-boom-core" d="M448 325 537 365" stroke="#e0b574" stroke-width="6"/><circle cx="448" cy="325" r="7" fill="#edc98a" stroke="#514f3e" stroke-width="3"/><path id="i2-crane-line" d="M537 365v54" stroke="#8a774f" stroke-width="2.5"/><path id="i2-crane-hook" d="M-4 0v5q4 8 8 0" transform="translate(537 419)" stroke="#514f3e" stroke-width="3"/></g>
-<g id="i2-wheel" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round">
+<g id="i2-port-rope" stroke-linecap="round" stroke-linejoin="round">
+ <path id="i2-crane-boom" fill="#c69a5e"/><path id="i2-crane-boom-core" fill="#efcb8c"/><path id="i2-crane-boom-end" fill="#a87e49"/>
+ <g transform="translate(448 322)" stroke="#8c7046" stroke-width="1.2">${island2Iso.disc(7, 3, "x", "#edc98a", "#a27c49", '<circle r="2.1" fill="#967342"/>')}</g>
+ <g id="i2-crane-tip" stroke="#8c7046" stroke-width="1">${island2Iso.disc(3.2, 2, "x", "#dec18b", "#9d7c4c", '<circle r="1.2" fill="#826b49"/>')}</g>
+ ${island2Iso.strand("i2-crane-line", "M537 365v54", 2.8)}
+ <path id="i2-crane-hook" d="M0-2v5q-5 10 5 5l1-4" transform="translate(537 419)" fill="none" stroke="#6b7766" stroke-width="2.5"/>
+</g>
+<g id="i2-wheel" stroke="#76613e" stroke-width="1.6" stroke-linejoin="round">
  <g id="i2-table-feet"><path d="m-17-20-4 19m38-19 4 19" fill="none" stroke-width="5"/></g>
  <g id="i2-waterwheel"><path d="M-23-10v-31m46 52v-31" fill="none" stroke="#876b3c" stroke-width="5"/></g>
  <g id="i2-tabletop" transform="translate(0 -26)">${island2Iso.disc(30, 5, "ground", "url(#i2-wood-round)", "#936435",
    `<g id="i2-wheel-rotor"><g id="i2-table-rotor"><path d="M-21 8Q0 15 21 7" fill="none" stroke="#a97840" stroke-width="1" opacity=".55"/></g>
-    <g id="i2-paddles" fill="#f3cb82">${Array.from({ length: 8 }, (_, i) =>
-      `<g class="i2-paddle" transform="rotate(${i * 45})"><path d="M-6-36H6v14H-6Z"/><path d="M6-36l4-2v14l-4 2Z" fill="#b17c42"/></g>`).join("")}</g>
     <circle r="4" fill="#72512e"/></g><g id="i2-wood-highlight"><path d="M-23-8Q-15-25 9-24" fill="none" stroke="#fff1c1" stroke-width="3.5" stroke-linecap="round"/></g>`)}</g>
- <g id="i2-tea" stroke-width="2.5"><path d="M-7-39v10q7 6 14 0v-10m0 2q10-3 6 5H7" fill="#fff9e2"/><ellipse cy="-39" rx="7" ry="3.16" fill="#d8c39c"/><path d="M-4-38q4 2 8 0M0-44q-3-4 0-7" fill="none" stroke="#fff9e2"/></g>
- <g id="i2-pottery"><path d="M-7-48v6q-12 3-12 10 1 7 19 7t19-7q0-7-12-10v-6Z" fill="url(#i2-pot-round)"/><ellipse cy="-48" rx="7" ry="3.5" fill="#76533f"/><path id="i2-pot-tie" d="M-11-40q11 11 22 0M0-35v10m-3-7 6-5" fill="none" stroke="#7d7047" stroke-width="3"/></g>
+ <g id="i2-paddles" stroke="none">${Array.from({ length: 8 }, (_, i) =>
+   `<g class="i2-paddle" data-blade="${i}">${"<path/>".repeat(6)}</g>`).join("")}</g>
+ <g id="i2-tea" stroke="#8a8061" stroke-width="1.3"><path d="M-7-39v10q7 6 14 0v-10m0 2q10-3 6 5H7" fill="#fff9e2"/><ellipse cy="-39" rx="7" ry="3.16" fill="#d8c39c"/><path d="M-4-38q4 2 8 0M0-44q-3-4 0-7" fill="none" stroke="#fff9e2"/></g>
+ <g id="i2-pottery" stroke="#906343" stroke-width="1.2"><path d="M-7-48v6q-12 3-12 10 1 7 19 7t19-7q0-7-12-10v-6Z" fill="url(#i2-pot-round)"/><ellipse cy="-48" rx="7" ry="3.5" fill="#76533f"/><path id="i2-pot-tie" d="M-11-40q11 11 22 0M0-35v10m-3-7 6-5" fill="none" stroke="#7d7047" stroke-width="2"/></g>
 </g>
 <g id="i2-crate" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round">
  <g id="i2-crate-ripple" fill="none" stroke="#e6faf1" stroke-width="2.5" stroke-linecap="round"><path d="M-32 1q-7 6 2 10m60-10q7 6-2 10m-44 0 14 4 14-4"/></g>
@@ -514,14 +627,20 @@ const island2SceneArtwork = `
  <g id="i2-cabin-detail"><path d="m-21-48 21-10 22 10v38L0 0-21-10Z" fill="#d3a365"/><path d="M0-38 22-48v38L0 0Z" fill="#b88954"/><path d="m-17-43 14 6v22l-14-6Zm22 6 12-6v22L5-15Z" fill="#6e7660"/><path d="m-23-8 23 10 24-11" fill="none"/></g>
 </g>
 <g id="i2-crate-lid" stroke="#514f3e" stroke-width="3.5" stroke-linejoin="round"><g id="i2-lid-board"><path d="m-21-26 21-10 22 10-22 9Z" fill="#f3ce8c"/><path d="m-13-26 14 6 13-6" fill="none" stroke-width="2.5"/></g><g id="i2-lid-paddle"><path d="M0-18v39m0-5-7 6 1 13q6 7 12 0l1-13Z" fill="#edc98a" stroke-linecap="round"/></g></g>
-<g id="i2-rope-coil" stroke="#8a744d" stroke-width="3.5" fill="none"><ellipse cy="-4" rx="14" ry="6"/><ellipse cy="-9" rx="14" ry="6"/><path d="M14-9q16 0 9 14" stroke-linecap="round"/></g>
+<g id="i2-rope-coil" stroke="none">
+ <ellipse cy="1" rx="18" ry="7" fill="#756846" opacity=".16"/>
+ ${[0, 1, 2].map((i) => island2Iso.strand(`i2-rope-turn-${i}`,
+   `M14 ${-3 - i * 3.4}a14 6.32 0 1 1-28 0 14 6.32 0 1 1 28 0`, 3.8)).join("")}
+ ${island2Iso.strand("i2-rope-tail", "M14-9.8Q26-11 24-1L21 6", 3.8)}
+</g>
 <g id="i2-copper" stroke="#514f3e" stroke-width="3" stroke-linejoin="round">
- <g id="i2-loose-coil" fill="none" stroke="#cc8d68" stroke-width="5"><path d="M-20-2h6v-17q0-12 8-9t8 11V-1q0 9 7 7t7-10v-15q0-9 7-7t7 10v13"/></g>
+ <g id="i2-loose-coil">${island2Iso.strand("i2-copper-wind", "M-20-2h6v-17q0-12 8-9t8 11V-1q0 9 7 7t7-10v-15q0-9 7-7t7 10v13",
+   5.2, ["#a86440", "#d99967", "#f0c797"])}<ellipse cx="-20" cy="-2" rx="2.6" ry="1.2" fill="#f0c797" stroke="#ac764c" stroke-width=".7"/></g>
  <g id="i2-generator">
-  <path d="m-25-12 25-11 26 11v12L0 11-25 0Z" fill="#c6d0b4"/><path d="M0-1v12L26 0v-12Z" fill="#96a78e"/>
+  <g id="i2-generator-base" stroke="#514f3e" stroke-width="3" stroke-linejoin="round"><path d="m-25-12 25-11 26 11v12L0 11-25 0Z" fill="#c6d0b4"/><path d="M0-1v12L26 0v-12Z" fill="#96a78e"/></g>
   <path d="M-20-9-1-17.58" fill="none" stroke="#66756b" stroke-width="2"/>
   <g transform="translate(-20 -9)" stroke-width="1.2">${island2Iso.disc(6, 3, "x", "#d0b882", "#8b764f",
-    '<g id="i2-generator-pulley"><path d="M-4 0H4M0-4V4" stroke="#80683f" stroke-width="1.1"/></g>')}</g>
+    '<circle r="4.8" fill="none" stroke="#a28554" stroke-width="1.2"/><g id="i2-generator-pulley"><path d="M-3.5 0H3.5M0-3.5V3.5" stroke="#80683f" stroke-width="1.1"/></g>')}</g>
   <use id="i2-generator-magnet" href="#i2-magnet-solid"/>
   <g transform="translate(-1 -17.58)" stroke-width="1.2">${island2Iso.disc(5.5, 2, "x", "#e8b47e", "#a57750",
     '<g id="i2-generator-rotor"><path d="M-3-4H3V4H-3Zm2 0V-4m2 8V-4" fill="none" stroke="#905c35" stroke-width="1"/></g>')}</g>
@@ -551,8 +670,14 @@ const island2SceneArtwork = `
  <circle cx="-14" cy="15" r="3" fill="#f4d395"/><circle cx="7" cy="15" r="3" fill="#f4d395"/>
  </g></g>
 </g></g>
-<g id="i2-cargo"><use href="#i2-box" transform="scale(.55)"/></g>
-<g id="i2-gift" stroke="#5b6848" stroke-width="2.5" stroke-linejoin="round"><path d="M-8-12H8V8H-8Z" fill="#fff0b7"/><path d="M0 3v-10m0 5q-9-1-6-7 8 0 6 7m0-3q7-7 10-1-3 6-10 5" fill="#93b96c"/></g>
+<g id="i2-cargo"><use href="#i2-box" transform="scale(.55)"/>
+ <path id="i2-cargo-sling" d="M-10-12 0-20 11-12M-8-9 0-5 8-9" fill="none" stroke="#ab8d59" stroke-width="1.5" stroke-linejoin="round"/>
+</g>
+<g id="i2-gift" stroke="none">
+ ${island2Iso.prism([[-8, -14], [8, -7], [8, 9], [-8, 2]], [3, -1.35], ["#f8e6ab", "#fff2ca", "#d3bd83"])}
+ <path d="m-8-14 8 10 8-3" fill="#fff0c3"/>
+ <path d="M0 2v-6M0 0Q-6-2-5-7 0-6 0 0M0-1Q1-7 6-5 6-1 0-1" fill="#8eaf62" stroke="#82a35a" stroke-width="1"/>
+</g>
 <g id="i2-splash" fill="none" stroke="#91dadd" stroke-width="4" stroke-linecap="round"><path d="M-16 2q-2-14-11-16M-6-2v-20m15 22q6-19 17-20M18 7l13-3"/></g>
 <g id="i2-production" stroke="#514f3e" stroke-width="2.5" stroke-linejoin="round"><g id="i2-mill-arm"><path d="M347 361v-13h-6" fill="none" stroke="#c4a06a" stroke-width="3"/><path d="m339 346 8 3v6l-8-3Z" fill="#edc98a"/></g></g>
 <g id="i2-people"><g id="i2-person-scout"></g><g id="i2-person-maker"></g><g id="i2-person-gardener"></g></g>

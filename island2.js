@@ -222,10 +222,12 @@ function renderIsland2() {
   show("i2-rope-coil", l.rope === 1);
   show("i2-loose-coil", l.copper === 1);
   show("i2-generator", l.copper >= 2);
+  show("i2-generator-base", l.copper >= 2);
   show("i2-magnet", island2Story.magnetHeld || island2Story.cutawayOpen && !island2Story.magnetTaken && l.copper < 2);
   show("i2-generator-magnet", l.copper >= 2);
   show("i2-sparks", l.copper >= 3);
-  show("i2-wire", l.copper >= 3);
+  show("i2-wire", l.copper >= 3 || island2Story.wireLaying);
+  show("i2-wire-top-terminal", l.copper >= 3 || island2Story.wirePlugged);
   show("i2-light-halo", l.lamp >= 2);
   show("i2-bulb", l.lamp >= 2);
   show("i2-lens-rings", l.glass >= 3);
@@ -280,6 +282,7 @@ function renderIsland2() {
   island2Position("i2-crate", island2Story.crateBoat ? island2Story.craftPoint : island2Story.cratePoint || (l.timber >= 3 ? island2Story.cabin : island2Layout.crateRest));
   island2Position("i2-rope-coil", island2Layout.rope);
   island2Position("i2-copper", island2Layout.copper);
+  island2Position("i2-generator-base", island2Layout.copper);
   island2Position("i2-glass", island2Story.glassPoint || (l.glass >= 4 ? island2Layout.glassTop : l.glass >= 3 ? island2Layout.glassReady
     : l.glass >= 2 ? island2Layout.glassRough : island2Layout.glassRest));
   island2Renderer.discPlane("i2-glass", island2Story.glassPlane || "x");
@@ -287,7 +290,8 @@ function renderIsland2() {
   island2Position("i2-lamp", island2Story.lampPoint || (island2Story.lampRaised ? island2Layout.lamp : island2Layout.lampRest));
   island2Renderer.lamp(island2Story.lampRaised);
   island2Position("i2-boat", island2Story.boat);
-  island2Position("i2-cargo", island2Story.cargo === "unloaded" ? island2Layout.cargoLanding : island2Layout.cargoBoat);
+  island2Position("i2-cargo", island2Story.cargo === "unloaded" ? island2Layout.cargoLanding
+    : island2Story.cargo === "landing" ? island2LoadPoint(island2Layout.cabinLanding) : island2Layout.cargoBoat);
   for (const [role, point] of Object.entries(island2Story.people)) island2Position(`i2-person-${role}`, point);
   element("island2-count").textContent = `${island2State.order.length} / 8`;
   element("island2-controls").setAttribute("aria-busy", String(island2State.busy));
@@ -453,17 +457,23 @@ function island2StartStep(step) {
     island2Actor("scout", island2Renderer.nodes.balcony.point);
     if (island2CanAnimate()) playSound("island-signal");
   } else if (step.kind === "sail") {
+    island2Story.cargo = "aboard";
+    element("i2-cargo").style.display = "";
+    island2Renderer.follow("i2-cargo", "i2-boat",
+      island2Layout.cargoBoat.map((n, i) => n - island2Layout.boatDock[i]), { depthBias: 1 });
     island2Move("i2-boat", [island2Story.boat, island2Sea([612, 390]), island2Sea([612, 510]), island2Layout.boatDock], 2400);
     island2Story.boat = [...island2Layout.boatDock];
   } else if (step.kind === "unload") {
     island2Story.cargo = "moving";
+    island2Renderer.release("i2-cargo");
     element("i2-cargo").style.display = "";
-    const offsets = [0, 0.18, 0.4, 0.85, 1];
+    const swing = Array.from({ length: 13 }, (_, i) => island2Crane.pose(i / 12).load);
+    const offsets = [0, ...swing.map((_, i) => .35 + .3 * i / 12), .85, 1];
     const base = island2Layout.cabinBase;
     const landing = island2Layout.cabinLanding;
-    island2Move("i2-cargo", [island2Layout.cargoBoat, [537, 402], island2LoadPoint(base),
-      island2LoadPoint(landing), island2Layout.cargoLanding], 2200, offsets);
-    island2Move("i2-crate", [base, base, base, landing, landing], 2200, offsets);
+    island2Move("i2-cargo", [island2Layout.cargoBoat, ...swing,
+      island2LoadPoint(landing), island2LoadPoint(landing)], 2200, offsets);
+    island2Move("i2-crate", [base, base, landing, landing], 2200, [0, .65, .85, 1]);
     island2Story.cabin = [...landing];
     island2Actor("maker", island2Renderer.nodes.balcony.point);
   } else if (step.kind === "lower") {
@@ -516,7 +526,7 @@ function island2CommitStep(step) {
     island2Visual[step.id] = step.level;
     if (step.id === "lamp" && step.level >= 2) island2Story.boatSeen = true;
   }
-  if (step.kind === "unload") island2Story.cargo = "unloaded";
+  if (step.kind === "unload") island2Story.cargo = "landing";
   if (step.kind === "fit-lamp") island2Story.lampRaised = true;
   if (step.kind === "cheer") island2Story.celebrating = true;
   island2ClearMotion(true);
@@ -584,7 +594,7 @@ function island2EndingSteps() {
   if (full) return [
     { kind: "signal", text: "Kapitan zauważa obracające się światło. Jest droga do portu!", duration: 900 },
     { kind: "sail", text: "Statek opływa skałę i podchodzi do nowej przystani.", duration: 2500 },
-    { kind: "unload", text: "Dźwig odbiera paczkę. Ta sama skrzynia znów pracuje jako winda!", duration: 2300 },
+    ...island2Cinema.unloadCargo(),
     { kind: "lower", text: "Paczka na tarasie. Pusta kabina wraca po następny ładunek.", duration: 750 },
     { kind: "cheer", text: "Dostawa dotarła na górę. Mała wyspa połączyła się ze światem!", duration: 1000 },
   ];
@@ -764,10 +774,11 @@ function startIsland2() {
     fieldPrepared: false, fieldWorking: false, usingShovel: "", shovelPoint: [...island2Work.shovelRest],
     knocking: false, sourceBracing: false, sourceControlling: false,
     clayUsed: false, clayPoint: [...island2Work.clayBank],
-    stonePoint: [...island2Layout.coverHome], magnetTaken: false, magnetHeld: false, bridgeBuilt: false, tether: "",
+    stonePoint: [...island2Layout.coverHome], magnetTaken: false, magnetHeld: false, bridgeBuilt: false, driveChecked: false, tether: "",
+    wireLaying: false, wireHeld: "", wirePlugged: false,
     leafGrown: false, lilyMoved: false, leafFlat: false, leafSail: false, leafPoint: [...island2Layout.lily],
     formsReady: false, crateOpen: false, crateBoat: false, craftKind: "", craftPoint: [...island2Layout.crateRest],
-    oarMade: false, oarStowed: false, lidSeat: false, sailing: false, boatSeen: false,
+    oarMade: false, oarStowed: false, oarResting: false, lidSeat: false, sailing: false, boatSeen: false,
     giftSeen: false, giftReturned: false, tradeDone: false,
   };
   island2Renderer.reset();
