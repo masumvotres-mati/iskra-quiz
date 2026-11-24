@@ -2,38 +2,38 @@
 
 const island2Items = [
   { id: "water", name: "Woda", icon: '<path d="M16 3C12 10 7 15 7 21a9 9 0 0 0 18 0c0-6-5-11-9-18Z" fill="#7bd6e8"/><path d="M11 21q0 5 5 5"/>',
-    growth: [{ age: 0, needs: { timber: 1 } }, { age: 0, needs: { rope: 2, wheel: 2 } }],
-    stages: ["Źródełko", "Odsłonięta pracownia", "Woda pod kontrolą"],
-    explanation: "Kanał prowadzi wodę do pola i koła. Przepływająca woda dostarcza energii, a nie sam fakt obecności wody. Odsłonięcie jaskini to baśniowy element tej wyspy.",
+    growth: [{ age: 0, needs: { timber: 1 } }, { age: 0, needs: { rope: 2, seeds: 2 } }],
+    stages: ["Źródełko", "Umocniony brzeg", "Woda pod kontrolą"],
+    explanation: "Samo źródło nie tworzy kanału. Dopiero łopata pozwala przekopać drogę do grządki. Drewno wzmacnia brzeg, a lina pozwala mieszkańcowi podnosić zastawkę przy gotowym kanale.",
     sources: ["history-6", "history-64"] },
-  { id: "seeds", name: "Nasiona", icon: '<path d="M16 29V15M16 21C4 21 3 10 4 7c9 0 14 5 12 14Zm0-6C16 6 22 3 29 4c0 8-5 13-13 11Z" fill="#91ce6e"/>',
+  { id: "seeds", name: "Łopata", icon: '<path d="M12 3h8v6q-4 5-8 0Zm4 10v10" stroke="#996b3d" stroke-width="3"/><path d="M9 22h14v6l-7 5-7-5Z" fill="#b9c9c4"/><path d="m16 23 5 1v3l-5 4Z" fill="#7e9c96" stroke="none"/>',
     growth: [{ age: 1, needs: { water: 1 } }, { age: 4, needs: { water: 2, timber: 1 } }],
-    stages: ["Nasiona w ziemi", "Zielony ogródek", "Zbiory dla budowniczych"],
+    stages: ["Przygotowana grządka", "Kanał i nawodniony ogródek", "Zbiory dla budowniczych"],
     alternate: { id: "pond", growth: [{ age: 1, needs: { water: 1 } }, { age: 3, needs: { water: 2, glass: 2 } }],
-      stages: ["Nasiona w zalanej ziemi", "Staw z liliami", "Wielki liść do nowych przygód"] },
-    explanation: "Nawodnione rośliny potrzebują czasu, by wyrosnąć. Żywność wspiera rozbudowę pracowni. W tej łamigłówce włączenie kanału przed zasianiem pustej grządki zamienia ją w staw — to reguła tej wyspy, nie uniwersalna zasada nawadniania.",
+      stages: ["Przygotowana mokra niecka", "Kanał i staw z liliami", "Wielki liść do nowych przygód"] },
+    explanation: "Łopata najpierw przygotowuje ziemię. Najwcześniej przy kolejnym wyborze, jeśli istnieje już źródło, mieszkaniec przekopuje kanał. Przy wcześniej umocnionym źródle mokra niecka staje się stawem; sucha grządka pozostaje ogródkiem. To baśniowe reguły tej wyspy.",
     sources: ["history-4", "history-6"] },
   { id: "timber", name: "Skrzynia", icon: '<path d="m3 9 13-6 13 6v17l-13 5-13-5Z" fill="#edb574"/><path d="m3 9 13 6 13-6M16 15v16M8 7l13 6M8 20l5 2"/>',
-    growth: [{ age: 1, needs: { seeds: 2 } }, { age: 2, needs: { wheel: 2 } }, { age: 4, needs: { rope: 3 } }],
-    stages: ["Zwykła skrzynia", "Pracownia z zapasami", "Skrzynia zmieniona w kabinę", "Wieża i przystań"],
-    explanation: "Mieszkańcy nie wyrzucają skrzyni: zdejmują wieko i przerabiają ją na kabinę windy. Napęd ułatwia prace stolarskie. To przykład ponownego użycia części, nie rekonstrukcja konkretnego wynalazku.",
+    growth: [{ age: 1, needs: {} }, { age: 2, needs: { wheel: 2 } }, { age: 4, needs: { rope: 3 } }],
+    stages: ["Skrzynia i uwolniony majster", "Skrzynia przygotowana do przebudowy", "Skrzynia zmieniona w kabinę", "Wieża i przystań"],
+    explanation: "Stuknięcie ciężkiej skrzyni budzi majstra za zablokowanymi drzwiami. Mieszkańcy wspólnie odsuwają płytę, która później służy za ławę i mostek. Majster przygotowuje skrzynię do przebudowy, a napęd pozwala zmienić ją w kabinę. Te same części dostają nowe zadania.",
     sources: ["history-4", "history-64"] },
   { id: "wheel", name: "Krążek", icon: '<ellipse cx="16" cy="12" rx="13" ry="8" fill="#e1ae70"/><path d="M3 12v5c0 11 26 11 26 0v-5M16 8v8m-7-6 14 4"/>',
-    growth: [{ age: 1, needs: { water: 2, timber: 1 } }, { age: 2, needs: { copper: 2 } }, { age: 4, needs: { rope: 3 } }],
+    growth: [{ age: 1, needs: { water: 1, timber: 1 } }, { age: 2, needs: { copper: 2 } }, { age: 4, needs: { rope: 3 } }],
     stages: ["Stolik na herbatę", "Koło wodne", "Napęd prądnicy", "Napęd windy i optyki"],
-    alternate: { id: "pottery", growth: [{ age: 1, needs: { timber: 2 } }, { age: 3, needs: { water: 2, rope: 2 } }],
+    alternate: { id: "pottery", growth: [{ age: 1, needs: { water: 1, timber: 1 } }, { age: 3, needs: { water: 2, rope: 2 } }],
       stages: ["Krążek dla garncarza", "Koło garncarskie", "Gliniane formy związane do transportu"] },
-    explanation: "Krążek jest najpierw blatem. Oś i łopatki zmieniają go w koło wodne, a garncarz może wykorzystać go do formowania naczyń. Lepienie, suszenie i wypał to osobne procesy: transport glinianych form nie oznacza, że mokra glina stała się ceramiką. Koła wodne historycznie napędzały m.in. tartaki i młoty.",
+    explanation: "Krążek zaczyna jako stolik. Przy pierwszej przebudowie mieszkaniec sprawdza jego otoczenie: gotowy kanał oznacza łopatki i koło wodne, a samo źródło bez kanału — mokrą glinę i ręczne koło garncarskie. Raz zbudowane urządzenie zachowuje swoje zadanie, nawet gdy później pojawi się kanał. Lepienie i wypał to odrębne procesy.",
     sources: ["history-10", "history-64"] },
   { id: "rope", name: "Lina", icon: '<path d="M22 28V12a7 7 0 0 0-14 0v8a4 4 0 0 0 8 0V10m6 11h6m-6 5h6" fill="none" stroke="#b48b4e" stroke-width="4"/>',
     growth: [{ age: 1, needs: { timber: 2 } }, { age: 2, needs: { wheel: 2 } }, { age: 3, needs: { timber: 3, seeds: 3 } }],
     stages: ["Zwinięta lina", "Bloczek i przeciwwaga", "Wciągarka z napędem", "Dźwig portowy"],
-    explanation: "Lina przez bloczek przenosi siłę i zmienia kierunek ciągnięcia. Dopiero koło wodne dostarcza tu energii do podnoszenia. Winda i dźwig to uproszczone, autorskie konstrukcje.",
+    explanation: "Lina przez bloczek przenosi siłę i zmienia jej kierunek, ale sama nie jest źródłem energii. Zastawkę mieszkaniec podnosi ręcznie; do napędu wciągarki i dźwigu potrzebne jest koło wodne. To uproszczone, autorskie konstrukcje.",
     sources: ["history-64"] },
   { id: "copper", name: "Drut", icon: '<path d="M4 23h4V11c0-8 7-8 7 0v12c0 7 7 7 7 0V11c0-7 6-7 6 0v12" fill="none" stroke="#dc8763" stroke-width="4"/>',
-    growth: [{ age: 0, needs: { timber: 2 } }, { age: 0, needs: { wheel: 3 } }],
+    growth: [{ age: 0, needs: { timber: 2, seeds: 2 } }, { age: 0, needs: { wheel: 3 } }],
     stages: ["Zwój drutu", "Zwojnica i magnes", "Prądnica zasila latarnię"],
-    explanation: "Sam miedziany drut nie wytwarza prądu. Mieszkańcy łączą zwojnicę z magnesem znalezionym pod pracownią. Koło dostarcza ruchu; indukcja elektromagnetyczna pozwala zamienić energię mechaniczną w elektryczną.",
+    explanation: "Przy kopaniu kanału osypuje się ziemia i odsłania metal w ścianie wyspy. Dopiero gdy pojawia się drut, mieszkaniec wraca po zauważony magnes i buduje zwojnicę. Sam drut nie wytwarza prądu: potrzebny jest jeszcze ruch zapewniany przez koło wodne.",
     sources: ["history-38"] },
   { id: "glass", name: "Szkło", icon: '<ellipse cx="16" cy="16" rx="10" ry="13" fill="#b9eff0"/><path d="m12 9 7-3m-9 10 12-6" stroke="#fff"/>',
     growth: [{ age: 1, needs: { timber: 1 } }, { age: 4, needs: { timber: 2 } }, { age: 5, needs: { lamp: 2, rope: 3, timber: 3 } }],
@@ -54,7 +54,6 @@ function emptyIsland2Levels() {
 function island2BranchOnPlacement(levels, branches, id) {
   const next = { ...branches };
   if (id === "seeds") next.seeds = levels.water >= 2 ? "pond" : "field";
-  if (id === "wheel") next.wheel = levels.timber >= 2 ? "pottery" : "drive";
   return next;
 }
 
@@ -78,18 +77,24 @@ function island2Preparation(item, levels, placed, turn, branches) {
 
 function advanceIsland2(levels, placed, turn, branches = {}) {
   const next = { ...levels };
+  const nextBranches = { ...branches };
   const waves = [];
   while (true) {
+    const channelPending = next.seeds === 1 && turn - placed.seeds >= 1 && next.water >= 1;
+    if (next.wheel === 1 && !nextBranches.wheel && turn - placed.wheel >= 1 &&
+        next.water >= 1 && next.timber >= 1 && !channelPending) {
+      nextBranches.wheel = next.seeds >= 2 ? "drive" : "pottery";
+    }
     const changes = island2Items.filter((item) => {
-      const rule = island2Track(item, branches).growth[next[item.id] - 1];
-      return next[item.id] > 0 && rule && turn - placed[item.id] >= rule.age &&
-        island2NeedsReady(next, rule.needs, branches);
+      const rule = island2Track(item, nextBranches).growth[next[item.id] - 1];
+      return next[item.id] > 0 && rule && !(item.id === "wheel" && !nextBranches.wheel) &&
+        turn - placed[item.id] >= rule.age && island2NeedsReady(next, rule.needs, nextBranches);
     }).map(({ id }) => ({ id, level: next[id] + 1 }));
     if (!changes.length) break;
     for (const { id, level } of changes) next[id] = level;
     waves.push(changes);
   }
-  return { levels: next, waves };
+  return { levels: next, waves, branches: nextBranches };
 }
 
 let island2State;
@@ -101,6 +106,11 @@ let island2Animations = [];
 let island2Current;
 let island2Paused = false;
 let island2Skipping = false;
+const island2Caption = document.createElement("div");
+island2Caption.className = "island2-caption";
+island2Caption.setAttribute("aria-hidden", "true");
+island2Caption.hidden = true;
+element("island2-scene").append(island2Caption);
 
 function island2CanAnimate() {
   return !motionPreference.matches && !island2Paused && !island2Skipping && !document.hidden;
@@ -132,6 +142,7 @@ function island2ClearMotion(keepUpgrades = false) {
   island2Renderer.clear(keepUpgrades);
   element("i2-held").replaceChildren();
   element("island2-scene").dataset.action = "";
+  island2Caption.hidden = true;
 }
 
 function island2Actor(role, destination) {
@@ -163,7 +174,7 @@ function renderIsland2() {
   scene.dataset.live = String(island2CanAnimate() && !element("island2").hidden);
   for (const item of island2Items) scene.dataset[item.id] = l[item.id];
   scene.dataset.seedsForm = island2State.branches.seeds;
-  scene.dataset.wheelForm = island2State.branches.wheel;
+  scene.dataset.wheelForm = island2State.branches.wheel || "table";
   scene.dataset.ending = island2Story.ending;
   scene.dataset.celebrating = String(island2Story.celebrating);
   const show = (id, condition) => { element(id).style.display = condition ? "" : "none"; };
@@ -171,17 +182,22 @@ function renderIsland2() {
     ["i2-wheel", "wheel"], ["i2-rope-coil", "rope"], ["i2-copper", "copper"], ["i2-glass", "glass"], ["i2-lamp", "lamp"]]) {
     show(id, l[key] > 0);
   }
-  show("i2-cave", l.water >= 2 || island2Story.workshopOpen);
-  show("i2-cave-lip", l.water >= 2 || island2Story.workshopOpen);
-  show("i2-middle-walls", l.water > 0 || island2Story.workshopOpen);
+  show("i2-cave", island2Story.workshopOpen);
+  show("i2-cave-lip", island2Story.workshopOpen);
+  show("i2-middle-walls", true);
   show("i2-cutaway", island2Story.cutawayOpen);
-  show("i2-cover", l.water > 0 && l.water < 2 || island2Story.stoneSaved);
-  show("i2-stream", l.water >= 2 || island2Story.channelDug);
-  show("i2-waterfall", l.water >= 2 || island2Story.waterfallStarted);
-  show("i2-fall-impact", l.water >= 2 || island2Story.waterfallLanded);
-  show("i2-outfall", l.water >= 2 || island2Story.waterfallLanded);
-  show("i2-cliff-ladder", l.water >= 2);
-  show("i2-valve", l.water >= 3);
+  show("i2-cover", !island2Story.workshopOpen || island2Story.stoneSaved);
+  show("i2-door-knock", island2Story.knocking);
+  show("i2-seeds", l.seeds > 0 && (island2Story.fieldPrepared || island2Story.fieldWorking));
+  show("i2-shovel", l.seeds > 0);
+  show("i2-clay", l.water > 0 && !island2Story.clayUsed);
+  show("i2-stream", l.seeds >= 2 || island2Story.channelDug);
+  show("i2-waterfall", l.seeds >= 2 || island2Story.waterfallStarted);
+  show("i2-fall-impact", l.seeds >= 2 || island2Story.waterfallLanded);
+  show("i2-outfall", l.seeds >= 2 || island2Story.waterfallLanded);
+  show("i2-cliff-ladder", l.timber >= 2 && l.rope >= 2);
+  show("i2-valve", l.water >= 2 || island2Story.sourceBracing);
+  show("i2-valve-cord", l.water >= 3 || island2Story.sourceControlling);
   show("i2-scaffold", l.rope >= 2 && l.timber >= 3);
   show("i2-scaffold-front", l.rope >= 2 && l.timber >= 3);
   show("i2-scaffold-short", l.rope >= 2 && l.timber < 3);
@@ -192,21 +208,22 @@ function renderIsland2() {
   show("i2-port-rope", l.rope >= 4);
   show("i2-drive", l.wheel >= 3);
   const pottery = island2State.branches.wheel === "pottery";
-  show("i2-wheel-flow", (l.water >= 2 || island2Story.channelFilled) && l.wheel >= 2 && !pottery);
-  show("i2-bypass-flow", (l.water >= 2 || island2Story.channelFilled) && (l.wheel < 2 || pottery));
+  show("i2-wheel-flow", (l.seeds >= 2 || island2Story.channelFilled) && l.wheel >= 2 && !pottery);
+  show("i2-bypass-flow", (l.seeds >= 2 || island2Story.channelFilled) && (l.wheel < 2 || pottery));
   show("i2-table-feet", l.wheel === 1 || pottery);
   show("i2-tea", l.wheel > 0);
   show("i2-waterwheel", l.wheel >= 2 && !pottery);
   show("i2-tabletop", l.wheel > 0);
   show("i2-pottery", l.wheel >= 2 && pottery);
   show("i2-pond", island2State.branches.seeds === "pond" && l.seeds >= 2);
-  show("i2-overflow", l.water >= 2 && (l.seeds === 0 || island2State.branches.seeds === "pond"));
+  show("i2-overflow", l.seeds >= 2 && island2State.branches.seeds === "pond");
   show("i2-cabin-detail", l.timber >= 3);
   show("i2-crate-box", l.timber < 3);
   show("i2-rope-coil", l.rope === 1);
   show("i2-loose-coil", l.copper === 1);
   show("i2-generator", l.copper >= 2);
-  show("i2-magnet", island2Story.cutawayOpen && !island2Story.magnetTaken && l.copper < 2);
+  show("i2-magnet", island2Story.magnetHeld || island2Story.cutawayOpen && !island2Story.magnetTaken && l.copper < 2);
+  show("i2-generator-magnet", l.copper >= 2);
   show("i2-sparks", l.copper >= 3);
   show("i2-wire", l.copper >= 3);
   show("i2-light-halo", l.lamp >= 2);
@@ -216,9 +233,9 @@ function renderIsland2() {
   show("i2-production", island2Story.producing);
   show("i2-cargo", island2Story.cargo !== "hidden");
   show("i2-reaction", island2Story.reaction);
-  show("i2-person-maker", l.water >= 2 || island2Story.workshopOpen);
-  show("i2-person-scout", island2State.order.length > 0);
-  show("i2-person-gardener", l.seeds >= 2);
+  show("i2-person-maker", island2Story.workshopOpen);
+  show("i2-person-scout", true);
+  show("i2-person-gardener", l.seeds > 0);
   show("i2-splash", false);
   show("i2-boat", island2Story.boatSeen);
   show("i2-lily", island2State.branches.seeds === "pond" && l.seeds >= 2);
@@ -239,6 +256,8 @@ function renderIsland2() {
   element("i2-lily-body").setAttribute("transform", leafTransform);
   island2Position("i2-lily", island2Story.leafPoint);
   island2Position("i2-fish", island2Layout.fish);
+  island2Position("i2-shovel", island2Story.shovelPoint);
+  island2Position("i2-clay", island2Story.clayPoint);
   element("i2-lid-board").setAttribute("transform", l.timber >= 3 && !island2Story.crateBoat ? "translate(0 -19) scale(1.16)" : "");
   if (l.glass) {
     const age = island2State.order.length - island2State.placed.glass;
@@ -255,6 +274,9 @@ function renderIsland2() {
   element("i2-saw-cuts").style.opacity = String(Math.min(1, timberAge / 4));
   island2Position("i2-wheel", island2Story.wheelPoint || (l.wheel >= 2 ? pottery ? island2Layout.wheelPottery : island2Layout.wheelDrive : island2Layout.wheelRest));
   island2Position("i2-tea", island2Story.teaPoint || island2Layout.wheelRest);
+  if (island2Story.teaStored && !island2Renderer.followers.has("i2-tea")) {
+    island2Renderer.position("i2-tea", island2Story.teaPoint, "cave");
+  }
   island2Position("i2-crate", island2Story.crateBoat ? island2Story.craftPoint : island2Story.cratePoint || (l.timber >= 3 ? island2Story.cabin : island2Layout.crateRest));
   island2Position("i2-rope-coil", island2Layout.rope);
   island2Position("i2-copper", island2Layout.copper);
@@ -291,11 +313,11 @@ function renderIsland2() {
 }
 
 const island2Actions = {
-  "water-2": { text: "Woda otwiera drogę. Mieszkaniec odsuwa kamienną płytę!", actor: "scout", to: island2Renderer.nodes.cave.point, duration: 1350 },
+  "water-2": { text: "Drewniane wsporniki wzmacniają brzeg źródła.", actor: "maker", to: island2Renderer.nodes.spring.point, duration: 900 },
   "water-3": { text: "Lina i drewniane wrota regulują strumień.", actor: "maker", to: island2Renderer.nodes.spring.point, duration: 850 },
-  "seeds-2": { text: "Strumień dociera do nasion. Pierwsze listki!", actor: "scout", to: island2Renderer.nodes.farm.point, duration: 850 },
+  "seeds-2": { text: "Łopata wyznacza kanał od gotowego źródła do grządki.", actor: "gardener", to: island2Renderer.nodes.farm.point, duration: 850 },
   "seeds-3": { text: "Ogródek dojrzał. Zapasy jadą do pracowni.", actor: "gardener", to: island2Renderer.nodes.cave.point, duration: 1150, carry: "food" },
-  "timber-2": { text: "Jedzenie dla majsterkowicza! Skrzynia dostarcza zapasów.", actor: "gardener", to: island2Renderer.nodes.cave.point, duration: 1150, carry: "food" },
+  "timber-2": { text: "Uwolniony majster przygotowuje skrzynię do następnego zadania.", actor: "maker", to: [405, 401], duration: 1150, carry: "tools" },
   "timber-3": { text: "Wieko w górę, boki na podpory… To już kabina windy!", actor: "maker", to: island2Renderer.nodes.lift.point, duration: 1600, carry: "tools" },
   "timber-4": { text: "Wciągarka podaje deski. Powstają dach i pomost.", actor: "maker", to: island2Renderer.nodes.balcony.point, duration: 1800 },
   "wheel-2": { text: "Herbata wypita. Blat dostaje łopatki i wędruje pod strumień!", actor: "scout", to: island2Renderer.nodes.wheel.point, duration: 1500, carry: "tools" },
@@ -315,6 +337,9 @@ const island2Actions = {
 
 function island2StartStep(step) {
   element("island2-status").textContent = step.text;
+  island2Caption.textContent = step.caption || "";
+  island2Caption.hidden = !step.caption;
+  island2Caption.dataset.tower = String(island2Visual.timber >= 3);
   element("island2-scene").dataset.action = step.key || step.kind;
   if (step.kind === "scene") {
     element("island2-scene").dataset.action = step.scene;
@@ -328,11 +353,17 @@ function island2StartStep(step) {
     if (step.id === "water") {
       const travel = Math.ceil(island2Actor("scout", island2Renderer.nodes.spring.point));
       step.duration = travel + 1950;
-      island2Renderer.act("scout", "dig", 1850, travel, 1);
+      island2Renderer.act("scout", "look", 1850, travel, 1);
       island2Renderer.fillSpring(1600, travel + 250, () => {
         if (island2CanAnimate()) playSound("island2-flow");
       });
       playSound("island-effort");
+      return;
+    }
+    if (step.id === "seeds") {
+      const point = island2Work.shovelRest;
+      island2Move("i2-shovel", [[point[0], point[1] - 70], point], 450);
+      playSound("island-place");
       return;
     }
     const nodeId = { timber: "crate", rope: "rope-coil" }[step.id] || step.id;
@@ -347,14 +378,6 @@ function island2StartStep(step) {
     const travel = Math.ceil(island2Actor(step.actor, step.to));
     step.duration += travel;
     if (step.carry) island2Carry(step.carry, [[origin[0] + 18, origin[1] - 28], [step.to[0] + 18, step.to[1] - 28]], Math.min(750, step.duration - 300));
-    if (step.key === "water-2") {
-      element("i2-cave").style.display = "";
-      element("i2-stream").style.display = "";
-      island2Move("i2-cover", [[0, 0], [-23, 8], [-45, 17]], 1250, undefined, travel);
-      island2Animate("i2-cover", [{ opacity: 1 }, { opacity: 0 }], 1250, "ease-in-out", travel);
-      element("i2-person-maker").style.display = "";
-      island2Renderer.actor("maker", island2Renderer.nodes.cave.point, false, travel + 900);
-    }
     if (step.key === "seeds-2") {
       element("i2-person-gardener").style.display = "";
       const arrival = island2Actor("gardener", island2Renderer.nodes.farm.point);
@@ -545,10 +568,10 @@ function island2Stage(id, level) {
 
 function island2BranchHint(id) {
   if (id === "seeds" && island2State.branches.seeds === "pond") {
-    return "Nasiona trafiły na już zalaną grządkę. Powstał staw zamiast pola. Zmień kolejność zasiewu i doprowadzenia wody.";
+    return "Łopata trafiła na mokrą ziemię przy umocnionym źródle. Kanał napełnił nieckę i powstał staw zamiast pola.";
   }
   if (id === "wheel" && island2State.branches.wheel === "pottery") {
-    return "Krążek trafił do już działającej pracowni. Garncarz zatrzymał go dla siebie. Żeby posłużył za napęd, musi wcześniej dostać inne zadanie.";
+    return "Gdy mieszkaniec przebudowywał stolik, obok nie było jeszcze kanału. Przyniósł więc mokrą glinę i zrobił koło garncarskie. Późniejszy strumień nie zmienia gotowego urządzenia.";
   }
   return "";
 }
@@ -556,8 +579,8 @@ function island2BranchHint(id) {
 function island2EndingSteps() {
   const levels = island2State.levels;
   const full = island2Items.every((item) => levels[item.id] === item.stages.length);
-  island2Story.ending = full ? "beacon" : island2State.branches.seeds === "pond" ? "pond"
-    : island2State.branches.wheel === "pottery" && levels.wheel >= 2 ? "pottery" : levels.lamp >= 2 ? "light" : "workshop";
+  island2Story.ending = full ? "beacon" : island2State.branches.wheel === "pottery" && levels.wheel >= 2 ? "pottery"
+    : island2State.branches.seeds === "pond" ? "pond" : levels.lamp >= 2 ? "light" : "workshop";
   if (full) return [
     { kind: "signal", text: "Kapitan zauważa obracające się światło. Jest droga do portu!", duration: 900 },
     { kind: "sail", text: "Statek opływa skałę i podchodzi do nowej przystani.", duration: 2500 },
@@ -607,9 +630,11 @@ function pickIsland2(id) {
   island2State.placed[id] = island2State.order.length;
   const seeded = { ...island2State.levels, [id]: 1 };
   const result = advanceIsland2(seeded, island2State.placed, island2State.order.length, island2State.branches);
+  island2State.branches = result.branches;
   island2State.levels = result.levels;
   island2State.busy = true;
-  island2Queue = [{ kind: "place", id, text: id === "water" ? "Z ziemi wybija źródełko." : `${item.name} trafia na wyspę.`, duration: 500 }];
+  island2Queue = [{ kind: "place", id, text: id === "water" ? "Z ziemi wybija źródełko." : `${item.name} trafia na wyspę.`, duration: 500 },
+    ...island2Cinema.afterPlacement(id)];
   let lampFitted = island2Story.lampRaised;
   const fitLamp = () => {
     island2Queue.push(...island2Cinema.fitLamp(),
@@ -621,7 +646,7 @@ function pickIsland2(id) {
     const key = `${change.id}-${change.level}`;
     if (key === "glass-4" && !lampFitted) fitLamp();
     const action = { ...island2Actions[key] };
-    if (key === "seeds-2" && island2State.branches.seeds === "pond") action.text = "Nasiona wpadły w wodę. W stawie pojawiają się lilie!";
+    if (key === "seeds-2" && island2State.branches.seeds === "pond") action.text = "Kanał napełnia przygotowaną mokrą nieckę.";
     if (key === "wheel-2" && island2State.branches.wheel === "pottery") {
       action.text = "Garncarz zabiera krążek do pracowni. Będzie na nim lepić naczynia!";
       action.actor = "maker";
@@ -727,7 +752,7 @@ function startIsland2() {
   island2Queue = [];
   island2Current = undefined;
   island2Skipping = false;
-  island2State = { levels: emptyIsland2Levels(), placed: {}, order: [], branches: { seeds: "field", wheel: "drive" }, busy: false, finished: false };
+  island2State = { levels: emptyIsland2Levels(), placed: {}, order: [], branches: { seeds: "field" }, busy: false, finished: false };
   island2Visual = emptyIsland2Levels();
   island2Story = {
     people: { scout: [...island2Renderer.nodes.spring.point], maker: [...island2Renderer.nodes.inside.point],
@@ -736,7 +761,10 @@ function startIsland2() {
     cargo: "hidden", ending: "", celebrating: false, producing: false, reaction: false, lampRaised: false,
     cutawayOpen: false, workshopOpen: false, stoneSaved: false, stoneFlat: false,
     channelDug: false, channelFilled: false, waterfallStarted: false, waterfallLanded: false,
-    stonePoint: [...island2Layout.coverHome], magnetTaken: false, bridgeBuilt: false, tether: "",
+    fieldPrepared: false, fieldWorking: false, usingShovel: "", shovelPoint: [...island2Work.shovelRest],
+    knocking: false, sourceBracing: false, sourceControlling: false,
+    clayUsed: false, clayPoint: [...island2Work.clayBank],
+    stonePoint: [...island2Layout.coverHome], magnetTaken: false, magnetHeld: false, bridgeBuilt: false, tether: "",
     leafGrown: false, lilyMoved: false, leafFlat: false, leafSail: false, leafPoint: [...island2Layout.lily],
     formsReady: false, crateOpen: false, crateBoat: false, craftKind: "", craftPoint: [...island2Layout.crateRest],
     oarMade: false, oarStowed: false, lidSeat: false, sailing: false, boatSeen: false,

@@ -344,6 +344,8 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .island2-goal { margin: 7px 0 11px; color: #648174; font-size: 12px; }
 #island2-exit { min-height: 44px; margin: 0; padding: 6px 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
 .island2-scene { position: sticky; top: 0; z-index: 1; overflow: hidden; width: 100%; max-width: 640px; margin: auto; border: 0; border-radius: 0; background: #64c8f4; }
+.island2-caption { position: absolute; top: 8px; right: 12px; left: 12px; padding: 6px 9px; border: 1px solid #6c7359; border-radius: 6px; background: #fffff0ed; color: #3b4632; font-size: 11px; font-weight: 650; line-height: 1.35; text-align: center; pointer-events: none; }
+.island2-caption[data-tower="true"] { right: auto; width: calc(65% - 24px); }
 #island2:has(#island2-results:not([hidden])) .island2-scene { position: relative; }
 #island2-art { position: relative; aspect-ratio: 640 / 599.4; }
 #island2-art > svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
@@ -384,7 +386,12 @@ footer { padding: 28px 0 max(20px, env(safe-area-inset-bottom)); text-align: cen
 .island2-scene[data-seeds="2"] .i2-sprouts, .island2-scene[data-seeds="3"] .i2-harvest { display: inline; }
 .island2-scene[data-seeds="2"] .i2-seed-first, .island2-scene[data-seeds="3"] .i2-seed-first { display: none; }
 .island2-scene[data-seeds-form="pond"] .i2-sprouts, .island2-scene[data-seeds-form="pond"] .i2-harvest { display: none; }
-.island2-scene[data-seeds-form="pond"] .i2-field-bed { display: none; }
+.island2-scene[data-seeds-form="pond"][data-seeds="2"] .i2-field-bed,
+.island2-scene[data-seeds-form="pond"][data-seeds="3"] .i2-field-bed { display: none; }
+.i2-field-basin { display: none; }
+.island2-scene[data-seeds-form="pond"][data-seeds="1"] .i2-field-basin { display: inline; }
+.island2-scene[data-seeds-form="pond"][data-seeds="1"] .i2-field-bed,
+.island2-scene[data-seeds-form="pond"][data-seeds="1"] .i2-seed-first { display: none; }
 .i2-person { pointer-events: none; }
 .island2-scene[data-seeds="0"] .i2-water-bank, .island2-scene[data-seeds="1"] .i2-water-bank { fill: #8d744c; }
 .island2-scene[data-live="true"] .i2-waves { animation: i2-water 4s ease-in-out infinite; }

@@ -25,6 +25,7 @@ const island2Renderer = (() => {
   let wheelAngle = 0;
   let generatorAngle = 0;
   let tableAngle = 0;
+  let shovelAngle = -15;
   let stonePose = { tilt: 0, yaw: 0 };
   let stoneFrame;
   const nodes = {
@@ -33,11 +34,11 @@ const island2Renderer = (() => {
     cave: { point: [340, 389], plane: "front" },
     inside: { point: [333, 378], plane: "cave" },
     workshop: { point: [379, 398], plane: "front" },
-    potter: { point: [269, 415], plane: "front" },
-    teaLeft: { point: [204, 402], plane: "front" },
+    potter: { point: [267, 392], plane: "front" },
+    teaLeft: { point: [204, 389], plane: "front" },
     teaRight: { point: [283, 408], plane: "front" },
-    wheel: { point: [195, 396], plane: "front" },
-    mill: { point: [287, 432], plane: "front" },
+    wheel: { point: [195, 383], plane: "front" },
+    mill: { point: [287, 423], plane: "front" },
     landing: { point: [377, 421], plane: "front" },
     generator: { point: [351, 429], plane: "front" },
     lift: { point: [383, 382], plane: "front" },
@@ -60,13 +61,13 @@ const island2Renderer = (() => {
   const edges = [
     ["rear", "farm", [[278, 341], [249, 348], [204, 357]], "around"],
     ["farm", "cave", [[219, 365], [283, 389]]],
-    ["cave", "inside", [], "door"],
+    ["cave", "inside", [], "door", "workshop"],
     ["cave", "workshop", []],
     ["cave", "potter", [[284, 406]]],
     ["wheel", "teaLeft", []], ["mill", "teaRight", []],
     ["cave", "wheel", [[287, 409]]],
     ["cave", "stairs", [[377, 393]]],
-    ["wheel", "mill", [[236, 414]]],
+    ["wheel", "mill", [[236, 402]]],
     ["mill", "generator", []],
     ["generator", "landing", []],
     ["landing", "stairs", []],
@@ -211,7 +212,9 @@ const island2Renderer = (() => {
       const key = path.at(-1);
       if (key === end) { chain = path; break; }
       for (const [a, b, , , requirement] of edges) {
-        if (requirement === "cutaway" && !context.story.cutawayOpen || requirement === "bridge" && !context.story.bridgeBuilt) continue;
+        if (requirement === "cutaway" && !context.story.cutawayOpen ||
+            requirement === "bridge" && !context.story.bridgeBuilt ||
+            requirement === "workshop" && !context.story.workshopOpen) continue;
         const next = a === key ? b : b === key ? a : undefined;
         if (next && !visited.has(next)) {
           visited.add(next);
@@ -219,6 +222,7 @@ const island2Renderer = (() => {
         }
       }
     }
+    if (!chain.length) throw new Error(`Brak drogi między ${start} i ${end}.`);
     const result = [{ point: origin, plane: nodes[start].plane, mode: "walk",
       height: Math.hypot(origin[0] - nodes[start].point[0], origin[1] - nodes[start].point[1]) < 2 ? nodes[start].height : undefined }];
     if (Math.hypot(origin[0] - nodes[start].point[0], origin[1] - nodes[start].point[1]) > 4) {
@@ -262,7 +266,6 @@ const island2Renderer = (() => {
     const crouch = working || tending ? 3 + (1 - Math.cos(phase)) * 2.25 : 0;
     if (shaping) entity.direction = -1;
     if (tending || carrying) entity.direction = 1;
-    if (mode === "repair") entity.direction = entity.point[0] > 350 ? -1 : 1;
     if (chatting) entity.direction = entity.point[0] < island2Layout.wheelRest[0] ? 1 : -1;
     entity.node.querySelector(".i2-facing").setAttribute("transform", `scale(${entity.direction} 1)`);
     body.setAttribute("transform", `translate(0 ${walking ? -Math.abs(front) * 1.7 : cheering ? -Math.max(0, front) * 8 : crouch}) rotate(${working || tending ? 12 + front * 3 : 0} 0 -12)`);
@@ -330,6 +333,10 @@ const island2Renderer = (() => {
           `M${side * 4}-12Q${side * (kneeling ? 15 : 8)} -5 ${foot.x} ${foot.y}`);
       }
     }
+    if (mode === "dig" && entity.sowing) {
+      entity.node.querySelector(".i2-arm-back").setAttribute("d",
+        `M-6-32Q-13-23 ${-12 + Math.sin(entity.sowing * Math.PI * 4) * 5} -17`);
+    }
     for (const limb of ["i2-leg-front", "i2-leg-back", "i2-arm-front", "i2-arm-back"]) {
       entity.node.querySelector(`.${limb}-core`).setAttribute("d", entity.node.querySelector(`.${limb}`).getAttribute("d"));
     }
@@ -338,7 +345,9 @@ const island2Renderer = (() => {
     entity.node.dataset.pose = mode;
     entity.node.querySelector(".i2-person-shadow").setAttribute("opacity", ["climb", "crawl", "row", "sit"].includes(mode) ? ".05" : ".2");
     entity.node.querySelector(".i2-task-prop").style.display = tending || mode === "repair" || carrying ? "" : "none";
-    entity.node.querySelector(".i2-dig-tool").setAttribute("display", mode === "dig" || mode === "channel" ? "" : "none");
+    const holdsShovel = followers.get("i2-shovel")?.target === entity.id;
+    entity.node.querySelector(".i2-dig-tool").setAttribute("display",
+      (mode === "dig" || mode === "channel") && !holdsShovel ? "" : "none");
     entity.node.querySelector(".i2-dig-tool").setAttribute("transform", mode === "channel" && entity.direction === 1 ? "scale(-1 1)" : "");
     syncPalms(entity);
     lightPerson(entity, body);
@@ -458,22 +467,29 @@ const island2Renderer = (() => {
       if (!context?.live) link.blend = 0;
       setPlane(entity, link.plane || target.plane);
       entity.depth = depth(target) + (link.depthBias ?? 1);
+      if (link.support) entity.depth = Math.max(entity.depth, depth(entities.get(link.support)) + 1);
+      if (hands && ["i2-tea", "i2-clay"].includes(id) && nearTable(entity)) {
+        entity.depth = Math.max(entity.depth, depth(entities.get("i2-wheel")) + 1);
+      }
     }
     if (hands) gripHands();
   }
 
   function gripHands() {
     for (const [id, link] of followers) {
-      if (!link.hand || !["i2-glass", "i2-lamp"].includes(id)) continue;
+      if (!link.hand || !["i2-glass", "i2-lamp", "i2-shovel", "i2-clay", "i2-tea", "i2-magnet"].includes(id)) continue;
       const carrier = entities.get(link.target);
       const prop = entities.get(id);
       const body = carrier.node.querySelector(".i2-body");
-      const matrix = body.getCTM().inverse().multiply(prop.node.getCTM());
+      const surface = id === "i2-magnet" ? document.getElementById("i2-found-magnet") : prop.node;
+      const matrix = body.getCTM().inverse().multiply(surface.getCTM());
       const grips = id === "i2-glass" ? carrier.plane === "gallery" ? [[10, -4], [10, 12]]
-        : [[-12, -12 * island2Iso.slope], [12, 12 * island2Iso.slope]] : [[8, -12]];
+        : [[-12, -12 * island2Iso.slope], [12, 12 * island2Iso.slope]]
+        : id === "i2-lamp" ? [[8, -12]] : id === "i2-tea" ? [[10, -34]]
+          : id === "i2-magnet" ? [[-11, -10], [11, -10]] : [[0, 0]];
       grips.forEach((point, index) => {
         const contact = new DOMPoint(...point).matrixTransform(matrix);
-        const side = index ? "front" : id === "i2-lamp" ? "front" : "back";
+        const side = index || !["i2-glass", "i2-magnet"].includes(id) ? "front" : "back";
         const shoulder = side === "front" ? 6 : -6;
         const d = `M${shoulder}-32Q${(shoulder + contact.x) / 2} ${Math.max(-25, contact.y + 6)} ${contact.x} ${contact.y}`;
         carrier.node.querySelector(`.i2-arm-${side}`).setAttribute("d", d);
@@ -482,18 +498,56 @@ const island2Renderer = (() => {
       });
     }
     for (const carrier of entities.values()) {
-      if (!carrier.workGrip) continue;
-      const { prop, side } = carrier.workGrip;
-      const face = document.getElementById(prop).querySelector("[data-iso-face]");
+      if (!carrier.workGrip || context?.live && carrier.workGrip.start > performance.now()) continue;
+      const { prop, side, kind } = carrier.workGrip;
+      const owner = document.getElementById(prop);
+      const face = kind ? owner : owner.querySelector("[data-iso-face]");
       const body = carrier.node.querySelector(".i2-body");
       const matrix = body.getCTM().inverse().multiply(face.getCTM());
       [-1, 1].forEach((hand, i) => {
-        const contact = new DOMPoint(side * 25, hand * 5).matrixTransform(matrix);
+        const local = kind === "pottery" ? new DOMPoint(i ? 14 : 7, i ? -34 : -35)
+          : kind === "generator" ? new DOMPoint(i ? -8 : -13, i ? -17 : -13)
+          : kind === "valve" ? owner.getPointAtLength(owner.getTotalLength() * (i ? .65 : .35))
+            : new DOMPoint(side * 25, hand * 5);
+        const contact = new DOMPoint(local.x, local.y).matrixTransform(matrix);
         const name = i ? "front" : "back";
         const d = `M${i ? 6 : -6}-32Q${contact.x * .65} ${contact.y + 10} ${contact.x} ${contact.y}`;
         carrier.node.querySelector(`.i2-arm-${name}`).setAttribute("d", d);
         carrier.node.querySelector(`.i2-arm-${name}-core`).setAttribute("d", d);
         setPalm(carrier, name, contact);
+      });
+    }
+    updateContactLayers();
+  }
+
+  function nearTable(entity) {
+    const table = entities.get("i2-wheel");
+    return Math.abs(entity.point[0] - table.point[0]) < 42 &&
+      entity.point[1] > table.point[1] - 48 && entity.point[1] < table.point[1] + 30;
+  }
+
+  function updateContactLayers() {
+    const viewport = document.querySelector("#island2-art > svg");
+    for (const role of ["scout", "maker", "gardener"]) {
+      const owner = entities.get(`i2-person-${role}`);
+      if (!owner?.contactLayer) continue;
+      const held = ["i2-tea", "i2-clay"].some((id) =>
+        followers.get(id)?.hand && followers.get(id).target === owner.id && nearTable(entities.get(id)));
+      const working = ["i2-tabletop", "i2-pottery"].includes(owner.workGrip?.prop) &&
+        (!context?.live || !owner.workGrip.start || performance.now() >= owner.workGrip.start);
+      const magnet = followers.get("i2-magnet");
+      const assembling = magnet?.hand && magnet.target === owner.id && magnet.support ||
+        owner.workGrip?.kind === "generator" &&
+        (!context?.live || !owner.workGrip.start || performance.now() >= owner.workGrip.start);
+      const active = (held || working || assembling) && owner.node.parentNode === layers.get("world");
+      owner.contactLayer.node.style.display = active ? "" : "none";
+      if (!active) continue;
+      const matrix = viewport.getCTM().inverse().multiply(owner.node.querySelector(".i2-body").getCTM());
+      owner.contactLayer.node.setAttribute("transform",
+        `matrix(${matrix.a} ${matrix.b} ${matrix.c} ${matrix.d} ${matrix.e} ${matrix.f})`);
+      owner.contactLayer.depth = depth(entities.get(assembling ? "i2-copper" : "i2-wheel")) + 3;
+      owner.contactParts.forEach(([source, copy]) => {
+        for (const key of source.tagName === "path" ? ["d"] : ["cx", "cy"]) copy.setAttribute(key, source.getAttribute(key));
       });
     }
   }
@@ -534,6 +588,111 @@ const island2Renderer = (() => {
     assemblies.set(name, { start: performance.now() + delay, duration, update });
     update(0);
     wake();
+  }
+
+  function shovelPose(angle) {
+    shovelAngle = angle;
+    document.getElementById("i2-shovel-pose").setAttribute("transform", `rotate(${angle})`);
+  }
+
+  function turnShovel(angle, duration = 350) {
+    const from = shovelAngle;
+    assembly("shovel", duration, 0, (t) => shovelPose(from + (angle - from) * smooth(t)));
+  }
+
+  function digField(duration) {
+    const field = document.getElementById("i2-seeds");
+    const clods = document.getElementById("i2-field-clods");
+    const seeds = document.getElementById("i2-sowing-seeds");
+    const gardener = entities.get("i2-person-gardener");
+    const sow = context.branches.seeds === "field";
+    const markers = [...document.querySelectorAll("#i2-seeds .i2-seed-first ellipse")];
+    field.setAttribute("clip-path", "url(#i2-field-work-mask)");
+    clods.style.display = "";
+    assembly("field", duration, 0, (t) => {
+      document.querySelector("#i2-field-work-mask path").setAttribute("d", island2Work.fieldClip(smooth(t)));
+      const tip = worldPoint(document.getElementById("i2-shovel-pose"), new DOMPoint(0, 20));
+      [...clods.children].forEach((node, i) => {
+        const p = (t * 6 + i / 3) % 1;
+        node.setAttribute("transform", `translate(${tip.x - 8 + i * 5 + p * 6} ${tip.y - 3 - Math.sin(p * Math.PI) * 9})`);
+        node.setAttribute("opacity", 1 - p);
+      });
+      const planting = bounded((t - .67) / .33);
+      gardener.sowing = sow ? planting : 0;
+      seeds.style.display = sow && planting > 0 && t < 1 ? "" : "none";
+      if (sow) {
+        const palm = gardener.node.querySelector(".i2-palm-back");
+        const from = worldPoint(palm, new DOMPoint(+palm.getAttribute("cx"), +palm.getAttribute("cy")));
+        const to = [[139, 331], [157, 326], [173, 338]];
+        [...seeds.children].forEach((node, i) => {
+          const p = bounded((planting - i * .12) / .64);
+          node.setAttribute("transform", `translate(${from.x + (to[i][0] - from.x) * p} ${from.y + (to[i][1] - from.y) * p - Math.sin(p * Math.PI) * 7})`);
+          node.setAttribute("opacity", p > 0 && p < 1 ? 1 : 0);
+          markers[i].style.opacity = p === 1 ? "1" : "0";
+        });
+      }
+      if (t === 1) {
+        field.removeAttribute("clip-path");
+        clods.style.display = "none";
+        seeds.style.display = "none";
+        gardener.sowing = 0;
+        markers.forEach((node) => { node.style.opacity = ""; });
+      }
+    });
+  }
+
+  function knockDoor(duration) {
+    const from = { ...stonePose };
+    assembly("stone", duration, 0, (t) => drawStone(from.tilt,
+      from.yaw + Math.sin(t * Math.PI * 6) * .06 * (1 - t)));
+  }
+
+  function braceSource(duration) {
+    const pieces = [...document.getElementById("i2-valve").children];
+    assembly("source-brace", duration, 0, (t) => {
+      pieces.forEach((node, i) => { node.style.opacity = t === 1 ? "" : String(smooth(t * 2 - i / 8)); });
+    });
+  }
+
+  function operateSluice(duration) {
+    assembly("sluice", duration, 0, (t) => {
+      const lift = t === 1 ? 0 : Math.sin(t * Math.PI) * 4;
+      document.getElementById("i2-valve-board").setAttribute("transform", `translate(0 ${-lift})`);
+      document.getElementById("i2-valve-cord").setAttribute("d", island2Water.gateCord(lift));
+    });
+  }
+
+  function growMagnet(duration, delay = 0) {
+    assembly("magnet", duration, delay, (t) => {
+      const scale = .5 + .5 * smooth(t);
+      document.getElementById("i2-found-magnet").setAttribute("transform", `translate(0 ${3 * (1 - smooth(t))}) scale(${scale})`);
+    });
+  }
+
+  function revealCutaway(duration, onMetal) {
+    const opening = document.getElementById("i2-cutaway");
+    const underground = layers.get("underground");
+    const clods = document.getElementById("i2-cliff-clods");
+    let noticed = false;
+    opening.setAttribute("clip-path", "url(#i2-cutaway-work-mask)");
+    underground.setAttribute("clip-path", "url(#i2-cutaway-work-mask)");
+    clods.style.display = "";
+    assembly("cutaway", duration, 0, (t) => {
+      document.querySelector("#i2-cutaway-work-mask path").setAttribute("d", island2Work.cutawayClip(smooth(t)));
+      [...clods.children].forEach((node, i) => {
+        const p = Math.max(0, Math.min(1, (t - i * .12) / .64));
+        node.setAttribute("transform", `translate(${225 + i * 25 + p * 5} ${448 + i * 12 + p * p * 65})`);
+        node.setAttribute("opacity", p > 0 ? 1 - p : 0);
+      });
+      document.getElementById("i2-magnet-glint").setAttribute("opacity",
+        t > .55 && t < 1 ? Math.sin((t - .55) / .45 * Math.PI * 2) ** 2 : 0);
+      if (!noticed && t > .6 && t < 1) { noticed = true; onMetal?.(); }
+      if (t === 1) {
+        opening.removeAttribute("clip-path");
+        underground.setAttribute("clip-path", "url(#i2-under-mask)");
+        clods.style.display = "none";
+      }
+    });
   }
 
   function fillSpring(duration, delay = 0, onWet) {
@@ -615,6 +774,7 @@ const island2Renderer = (() => {
   }
 
   function buildWheel(duration, delay = 0, pottery = false) {
+    const fromTable = tableAngle;
     assembly("wheel", duration, delay, (t) => {
       if (pottery) {
         wheelPose(0);
@@ -623,7 +783,9 @@ const island2Renderer = (() => {
         document.getElementById("i2-pottery").setAttribute("transform", `translate(0 -26) scale(1 ${height}) translate(0 26)`);
         island2Lighting.paint(document.getElementById("i2-pot-round"),
           document.getElementById("i2-pottery").transform.baseVal.consolidate().matrix, 38, 23);
-        tableAngle = -t * 270;
+        document.getElementById("i2-clay").style.opacity = String(1 - smooth(t));
+        document.getElementById("i2-pottery").style.opacity = String(smooth(t));
+        tableAngle = fromTable - t * 270;
         document.getElementById("i2-table-rotor").setAttribute("transform", `rotate(${tableAngle})`);
       } else {
         const amount = smooth((t - .12) / .72);
@@ -677,8 +839,8 @@ const island2Renderer = (() => {
       height: context.story.bridgeBuilt && point.every((n, i) => Math.abs(n - nodes.bridge.point[i]) < .01)
         ? nodes.bridge.height : undefined }));
     move(id, points, duration, offsets, { path, length: total, role, delay,
-      gait: mode === "channel" ? mode : undefined });
-    if (mode !== "channel") act(role, mode, duration, delay, direction);
+      gait: mode === "channel" || mode === "walk" ? mode : undefined });
+    if (mode !== "channel" && mode !== "walk") act(role, mode, duration, delay, direction);
   }
 
   function sort() {
@@ -697,6 +859,9 @@ const island2Renderer = (() => {
   }
 
   function mechanisms(now = performance.now()) {
+    const table = entities.get("i2-wheel");
+    table.depth = table.point[1] + (context.levels.wheel >= 2 && context.branches.wheel !== "pottery" ? 2 : 13.6);
+    entities.get("i2-seeds").depth = context.story.usingShovel === "gardener" ? 349 : 356;
     const stone = entities.get("i2-cover");
     stone.depth = stone.point[1] + 4;
     if (context.story.crateBoat) entities.get("i2-crate").depth = entities.get("i2-crate").point[1] + 2;
@@ -910,7 +1075,9 @@ const island2Renderer = (() => {
     if (context.levels.rope >= 3) rotate("i2-pulley-rotor",
       (entities.get("i2-crate").point[1] - island2Layout.cabinBase[1]) / 10 * 180 / Math.PI);
     if (context.story.producing) document.getElementById("i2-mill-arm").setAttribute("transform", `translate(0 ${-Math.max(0, Math.sin(clock / 180)) * 5})`);
-    if (context.branches.wheel === "pottery" && context.levels.wheel >= 2) {
+    const shaping = acts.get("i2-person-maker");
+    if (context.branches.wheel === "pottery" && context.levels.wheel >= 2 &&
+        shaping?.mode === "shape" && now >= shaping.start && now < shaping.start + shaping.duration) {
       tableAngle += elapsedTime / 18;
       rotate("i2-table-rotor", tableAngle);
     }
@@ -979,6 +1146,10 @@ const island2Renderer = (() => {
     for (const [id, plane, point, anchor] of [
       ["i2-background", "background", [0, 0], -1000], ["i2-base-terrain", "base", [0, 0], -1000],
       ["i2-cutaway", "base", [0, 0], 1], ["i2-magnet", "underground", [254, 485], 486],
+      ["i2-shovel", "front", island2Work.shovelRest, 350], ["i2-clay", "front", island2Work.clayBank, 340],
+      ["i2-field-clods", "front", [0, 0], 360], ["i2-cliff-clods", "front", [0, 0], 520],
+      ["i2-sowing-seeds", "front", [0, 0], 360],
+      ["i2-door-knock", "front", [0, 0], 391],
       ["i2-middle-walls", "walls", [0, 0], 382], ["i2-cave", "walls", [0, 0], 1], ["i2-cover", "front", island2Layout.coverHome],
       ["i2-water", "floor", [0, 0], 340],
       ["i2-tower", "peak", [0, 0], 374], ["i2-lamp", "front", island2Layout.lampRest], ["i2-glass", "front", island2Layout.glassRest],
@@ -1011,6 +1182,19 @@ const island2Renderer = (() => {
       old.replaceWith(person(role));
       register(`i2-person-${role}`, nodes[name].plane, nodes[name].point);
     }
+    for (const role of ["scout", "maker", "gardener"]) {
+      const owner = entities.get(`i2-person-${role}`);
+      const overlay = svg("g", { id: `i2-contact-${role}`, stroke: "#34372b", "stroke-width": "1.8",
+        "stroke-linecap": "round", "stroke-linejoin": "round", "pointer-events": "none", style: "display:none" });
+      root.append(overlay);
+      owner.contactLayer = register(overlay.id, "front", [0, 0], 0);
+      owner.contactParts = [...owner.node.querySelectorAll(
+        ".i2-arm-front,.i2-arm-front-core,.i2-arm-back,.i2-arm-back-core,.i2-palm-front,.i2-palm-back")].map((source) => {
+        const copy = source.cloneNode(false);
+        overlay.append(copy);
+        return [source, copy];
+      });
+    }
     document.getElementById("i2-person-scout").querySelector(".i2-facing").append(document.getElementById("i2-reaction"));
     document.getElementById("i2-reaction").setAttribute("transform", "translate(0 -77)");
     upgradeLayer = svg("g", { id: "i2-upgrade-effects", "pointer-events": "none" });
@@ -1027,6 +1211,7 @@ const island2Renderer = (() => {
     document.getElementById("i2-main-cut-water").removeAttribute("clip-path");
     document.getElementById("i2-dig-crumbs").style.display = "none";
     follow("i2-crate-lid", "i2-crate", [0, 0], { depthBias: 2 });
+    follow("i2-tea", "i2-wheel", [0, 0], { depthBias: 1 });
     sort();
   }
 
@@ -1052,6 +1237,7 @@ const island2Renderer = (() => {
     wheelAngle = 0;
     generatorAngle = 0;
     tableAngle = 0;
+    shovelPose(-15);
     for (const entity of entities.values()) {
       setPlane(entity, entity.initial.plane);
       place(entity, entity.initial.point);
@@ -1061,11 +1247,15 @@ const island2Renderer = (() => {
       entity.height = 0;
       entity.heading = [1, island2Iso.slope];
       entity.workGrip = null;
+      entity.sowing = 0;
     }
     for (const id of ["i2-wheel-rotor", "i2-table-rotor", "i2-pulley-rotor", "i2-generator-pulley", "i2-generator-rotor", "i2-mill-arm"]) {
       document.getElementById(id).setAttribute("transform", "translate(0 0)");
     }
     for (const id of ["i2-crate-box", "i2-cabin-detail"]) document.getElementById(id).removeAttribute("transform");
+    document.getElementById("i2-clay").style.opacity = "";
+    document.getElementById("i2-pottery").style.opacity = "";
+    document.getElementById("i2-found-magnet").setAttribute("transform", "translate(0 3) scale(.5)");
     document.getElementById("i2-tower").removeAttribute("clip-path");
     wheelPose(0);
     drawStone(0, 0);
@@ -1080,6 +1270,8 @@ const island2Renderer = (() => {
       pose(entity, "idle");
     }
     follow("i2-crate-lid", "i2-crate", [0, 0], { depthBias: 2 });
+    follow("i2-tea", "i2-wheel", [0, 0], { depthBias: 1 });
+    updateContactLayers();
   }
 
   function parcel(node, carrier) {
@@ -1103,6 +1295,7 @@ const island2Renderer = (() => {
       entity.workGrip = null;
       pose(entity, "idle");
     }
+    updateContactLayers();
   }
 
   function elevate(id, raised, moving = false) {
@@ -1129,6 +1322,7 @@ const island2Renderer = (() => {
     island2Lighting.reflection(document.getElementById("i2-lens-rings"), matrix);
   }
   return { mount, position, move, actor, act, perform, follow, release, sync, reset, clear, parcel,
-    glass, lamp, discPlane, buildWheel, buildCabin, fillSpring, digChannel, fillFall, rockPose, turnStone, upgrade,
+    glass, lamp, discPlane, buildWheel, buildCabin, fillSpring, digChannel, fillFall, rockPose, turnStone,
+    shovelPose, turnShovel, digField, knockDoor, braceSource, operateSluice, revealCutaway, growMagnet, upgrade,
     stopIdle, nodes, entities, journeys, followers, acts, assemblies, upgrades };
 })();

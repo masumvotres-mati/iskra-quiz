@@ -21,6 +21,7 @@ const soundPatterns = {
   "island2-max": { notes: [523.25, 783.99, 1046.5, 1318.51], duration: .38, spacing: .055, volume: .044, wave: "triangle", overtone: .18 },
   "island2-touch": { notes: [293.66], duration: .065, spacing: 0, volume: .018 },
   "island2-flow": { notes: [392, 523.25, 440, 659.25], duration: .085, spacing: .11, volume: .018 },
+  "island2-knock": { notes: [174.61, 174.61, 174.61], duration: .055, spacing: .13, volume: .018, wave: "triangle" },
 };
 
 function updateSoundControl() {
