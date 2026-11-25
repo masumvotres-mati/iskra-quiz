@@ -36,9 +36,9 @@ const island2Items = [
     explanation: "Przy kopaniu kanału osypuje się ziemia i odsłania metal w ścianie wyspy. Dopiero gdy pojawia się drut, mieszkaniec wraca po zauważony magnes i buduje zwojnicę. Sam drut nie wytwarza prądu: potrzebny jest jeszcze ruch zapewniany przez koło wodne.",
     sources: ["history-38"] },
   { id: "glass", name: "Szkło", icon: '<ellipse cx="16" cy="16" rx="10" ry="13" fill="#b9eff0"/><path d="m12 9 7-3m-9 10 12-6" stroke="#fff"/>',
-    growth: [{ age: 1, needs: { timber: 1 } }, { age: 4, needs: { timber: 2 } }, { age: 5, needs: { lamp: 2, rope: 3, timber: 3 } }],
+    growth: [{ age: 0, needs: { timber: 1 } }, { age: 4, needs: { timber: 2 } }, { age: 5, needs: { lamp: 2, rope: 3, timber: 3 } }],
     stages: ["Szklany krążek", "Wstępne szlifowanie", "Gotowa soczewka", "Soczewka na szczycie"],
-    explanation: "Rzemieślnik szlifuje szkło, zamiast otrzymać gotowy reflektor z niczego. Soczewka kieruje światło lampy; sama nie jest źródłem światła. Cytat dotyczy soczewek w okularach, nie wynalezienia latarni ani jej optyki.",
+    explanation: "Gdy warsztat jest otwarty, mieszkaniec od razu zanosi szkło do szlifowania. Każda kolejna runda pracy usuwa następną część matowej powierzchni. Bez warsztatu najpierw ogląda i oczyszcza krążek na ziemi. Soczewka kieruje światło lampy; sama nie jest źródłem światła. Cytat dotyczy soczewek w okularach, nie wynalezienia latarni ani jej optyki.",
     sources: ["history-22"] },
   { id: "lamp", name: "Lampa", icon: '<path d="M11 7V4h10v3M7 10h18v16H7Zm-2 19h22M4 8h24" fill="#ffda76"/><path d="M16 13v9m-4-5h8"/>',
     growth: [{ age: 0, needs: { copper: 3, glass: 3 } }, { age: 0, needs: { glass: 4, wheel: 4 } }],
@@ -186,9 +186,19 @@ function renderIsland2() {
   show("i2-cave-lip", island2Story.workshopOpen);
   show("i2-middle-walls", true);
   show("i2-cutaway", island2Story.cutawayOpen);
+  show("i2-port-stairs", island2Story.portStairs > 0 || island2Story.portBuilding > 0);
+  show("i2-tunnels", island2Story.tunnelStage > 0 || island2Story.tunnelBuilding > 0);
+  for (let stage = 1; stage <= 3; stage++) show(`i2-port-stage-${stage}`,
+    stage === island2Story.portStairs || stage === island2Story.portBuilding);
+  for (let stage = 1; stage <= 2; stage++) show(`i2-tunnel-stage-${stage}`,
+    stage <= Math.max(island2Story.tunnelStage, island2Story.tunnelBuilding));
+  show("i2-underground-stores", island2Story.storesDelivered);
   show("i2-cover", !island2Story.workshopOpen || island2Story.stoneSaved);
   show("i2-door-knock", island2Story.knocking);
   show("i2-seeds", l.seeds > 0 && (island2Story.fieldPrepared || island2Story.fieldWorking));
+  for (const id of [...island2Plot.plants.map((_, index) => `i2-crop-${index}`), "i2-crop-box"]) {
+    show(id, l.seeds > 0 && island2Story.fieldPrepared);
+  }
   show("i2-shovel", l.seeds > 0);
   show("i2-clay", island2Story.clayTaken && !island2Story.clayUsed);
   show("i2-clay-bank", l.water > 0);
@@ -197,7 +207,6 @@ function renderIsland2() {
   show("i2-waterfall", l.seeds >= 2 || island2Story.waterfallStarted);
   show("i2-fall-impact", l.seeds >= 2 || island2Story.waterfallLanded);
   show("i2-outfall", l.seeds >= 2 || island2Story.waterfallLanded);
-  show("i2-cliff-ladder", l.timber >= 2 && l.rope >= 2);
   show("i2-valve", l.water >= 2 || island2Story.sourceBracing);
   show("i2-valve-cord", l.water >= 3 || island2Story.sourceControlling);
   show("i2-scaffold", l.rope >= 2 && l.timber >= 3);
@@ -269,17 +278,14 @@ function renderIsland2() {
   island2Position("i2-shovel", island2Story.shovelPoint);
   island2Position("i2-clay", island2Story.clayPoint);
   element("i2-lid-board").setAttribute("transform", l.timber >= 3 && !island2Story.crateBoat ? "translate(0 -19) scale(1.16)" : "");
-  if (l.glass) {
-    const age = island2State.order.length - island2State.placed.glass;
-    const passes = l.glass >= 3 ? 3 : l.glass >= 2 ? Math.min(2, Math.max(0, age - 1)) : 0;
-    [...element("i2-glass-roughness").children].forEach((patch, index) => { patch.style.opacity = index < passes ? "0" : ".8"; });
-  }
+  island2Renderer.glassFinish(island2Story.glassFinish);
   const cropAge = l.seeds ? island2State.order.length - island2State.placed.seeds : 0;
   const meadow = l.seeds >= 3 ? 700 : l.seeds >= 2 ? 80 + Math.min(3, cropAge) * 30 : 0;
   element("i2-meadow-radius").setAttribute("rx", meadow);
   element("i2-meadow-radius").setAttribute("ry", meadow * island2Iso.slope);
-  const sprouts = element("i2-seeds").querySelector(".i2-sprouts");
-  sprouts.setAttribute("transform", `translate(157 336) scale(1 ${.65 + Math.min(1, cropAge / 4) * .6}) translate(-157 -336)`);
+  for (const sprouts of document.querySelectorAll("#island2-art .i2-sprouts")) {
+    sprouts.setAttribute("transform", `scale(1 ${.65 + Math.min(1, cropAge / 4) * .6})`);
+  }
   const timberAge = l.timber ? island2State.order.length - island2State.placed.timber : 0;
   element("i2-saw-cuts").style.opacity = String(Math.min(1, timberAge / 4));
   island2Position("i2-wheel", island2Story.wheelPoint || (l.wheel >= 2 ? pottery ? island2Layout.wheelPottery : island2Layout.wheelDrive : island2Layout.wheelRest));
@@ -787,11 +793,12 @@ function startIsland2() {
     boat: [...island2Layout.boatWaiting], cabin: [...island2Layout.cabinBase],
     cargo: "hidden", ending: "", celebrating: false, producing: false, reaction: false, lampRaised: false,
     cutawayOpen: false, workshopOpen: false, stoneSaved: false, stoneFlat: false,
+    portStairs: 0, portBuilding: 0, tunnelStage: 0, tunnelBuilding: 0, storesDelivered: false,
     channelDug: false, channelFilled: false, waterfallStarted: false, waterfallLanded: false,
     fieldPrepared: false, fieldWorking: false, usingShovel: "", shovelPoint: [...island2Work.shovelRest],
     knocking: false, sourceBracing: false, sourceControlling: false,
     clayUsed: false, clayTaken: false, clayPoint: [...island2Work.clayBank],
-    glassHeld: false, glassPlane: "ground", glassSupport: "ground",
+    glassHeld: false, glassPlane: "ground", glassSupport: "ground", glassFinish: 0,
     stonePoint: [...island2Layout.coverHome], magnetTaken: false, magnetHeld: false, bridgeBuilt: false, driveChecked: false, tether: "",
     wireLaying: false, wireHeld: "", wirePlugged: false,
     leafGrown: false, lilyMoved: false, leafFlat: false, leafSail: false, leafPoint: [...island2Layout.lily],

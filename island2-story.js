@@ -47,6 +47,7 @@ const island2Cinema = (() => {
     const travel = walk(step, role, [stone[0] + 23, stone[1] + 4], "polish", 1000, -1);
     island2Renderer.entities.get(`i2-person-${role}`).workGrip =
       { prop: "i2-glass", kind: "polish", start: performance.now() + travel };
+    island2Renderer.polishGlass(1000, travel, step.finish);
   }
 
   const shovelPickup = () => [
@@ -55,6 +56,10 @@ const island2Cinema = (() => {
   ];
 
   function afterPlacement(id) {
+    if (id === "glass" && island2State.levels.glass === 1) return [
+      scene("glass-inspect", "Bez warsztatu nie ma jeszcze czym szlifować. Mieszkaniec od razu ogląda szkło i ściera z niego pył.", 700,
+        { finish: .1, caption: "Najpierw oczyszczenie. Do szlifowania przyda się warsztat." }),
+    ];
     if (id === "seeds") return [
       ...shovelPickup(),
       scene("field-ready", "Łopata przyda się do przygotowania ziemi.", 550),
@@ -113,7 +118,7 @@ const island2Cinema = (() => {
       const actor = key === "glass-2" ? "scout" : "maker";
       return [...supportSteps("i2-glass", actor, island2Layout.glassRough, key, -1, "stone"),
         scene("glass-polish-contact", "Szklany krążek leży płasko na powierzchni szlifowania.", 1000,
-          { actor, rough: key === "glass-2" }),
+          { actor, finish: key === "glass-2" ? .2 : 1 }),
         ...(key === "glass-3" ? supportSteps("i2-glass", actor, island2Layout.glassReady, "glass-ready", -1, "rack") : []),
         reveal(change, key === "glass-2" ? "Brzeg szkła jest wyrównany." : "Soczewka jest gotowa do przeniesienia.")];
     }
@@ -182,6 +187,40 @@ const island2Cinema = (() => {
 
   function milestones(levels, story) {
     const steps = [];
+    const portStage = levels.timber >= 4 && levels.rope >= 4 ? 3 : levels.timber >= 3 ? 2
+      : levels.timber >= 2 && levels.seeds ? 1 : 0;
+    for (let stage = story.portStairs + 1; stage <= portStage; stage++) steps.push(
+      ...shovelPickup(),
+      scene("terrain-approach", stage === 1 ? "Zanim powstanie przystań, trzeba wyciąć bezpieczne zejście w skale."
+        : stage === 2 ? "Cięższe ładunki potrzebują szerszych stopni i miejsc do mijania."
+          : "Dźwig jest gotowy. Zejście otrzymuje szeroki kamienny podest przy porcie.", 400, { terrain: "port", stage }),
+      scene("terrain-carve", stage === 1 ? "Mieszkaniec wycina kolejne stopnie, schodząc zakosami w dół kostki."
+        : "Te same schody zostają poszerzone i wyrównane — od góry aż do wody.", 3600, { terrain: "port", stage }),
+      scene("terrain-return", "Mieszkaniec wraca po wykutych stopniach, żeby odnieść łopatę.", 400, { terrain: "port", stage }),
+      scene("shovel-return", "Łopata wraca do ogrodu.", 450),
+      scene("shovel-put", "Narzędzie czeka na następną przebudowę.", 450),
+    );
+    const tunnelStage = levels.copper >= 2 && levels.seeds >= 2
+      ? levels.seeds >= 3 || levels.wheel >= 3 ? 2 : 1 : 0;
+    for (let stage = story.tunnelStage + 1; stage <= tunnelStage; stage++) steps.push(
+      ...shovelPickup(),
+      scene("terrain-approach", stage === 1 ? "Znalezisko zabrane. Odsłoniętą wnękę można teraz poszerzyć w przejście."
+        : "Pracownia potrzebuje magazynu. Z istniejącego tunelu powstaną schodki do niższej komory.", 400,
+        { terrain: "tunnel", stage }),
+      scene("terrain-carve", stage === 1 ? "Mieszkaniec pogłębia korytarz pod grządką. W przekroju widać ściany i podłogę."
+        : "Kolejne warstwy ziemi ustępują miejsca schodom i podziemnemu magazynowi.", 2200,
+        { terrain: "tunnel", stage }),
+      scene("terrain-return", "Do warsztatu wraca tym samym przejściem, a nie przez ścianę.", 400,
+        { terrain: "tunnel", stage }),
+      scene("shovel-return", "Po pracy łopata wraca obok grządki.", 450),
+      scene("shovel-put", "Wykop jest gotowy.", 450),
+      ...(stage === 2 ? [
+        scene("store-fetch", "Zapasy nie muszą leżeć na ścieżce. Majster bierze je z pracowni.", 400,
+          { actor: "maker", carry: "food" }),
+        scene("store-deliver", "Schodzi nowym przejściem i odkłada zapasy w dolnym magazynie.", 800,
+          { actor: "maker", carry: "food" }),
+      ] : []),
+    );
     if (!story.bridgeBuilt && levels.seeds >= 2 && levels.glass >= 3 && levels.rope >= 2) steps.push(
       scene("bridge-ready", "Szlifowanie skończone. Kamienna płyta jest znów wolna.", 650),
       scene("bridge-haul", "Płyta zamiast kolejnej deski? Powstaje mostek nad odpływem!", 1400),
@@ -197,8 +236,9 @@ const island2Cinema = (() => {
   }
 
   function preparation(previous, levels, placed, turn, branches) {
-    if (levels.glass === 2 && previous.glass === 2 && turn - placed.glass < 4) return [
-      scene("glass-polish", "Jeszcze jeden brzeg. Szkło staje się coraz gładsze.", 550),
+    if (levels.glass === 2 && previous.glass === 2 && island2Story.glassFinish < .79) return [
+      scene("glass-polish", "Jeszcze jeden brzeg. Z krążka znika kolejny matowy pas.", 1000,
+        { finish: Math.min(.8, island2Story.glassFinish + .2) }),
     ];
     return [];
   }
@@ -246,7 +286,28 @@ const island2Cinema = (() => {
   function start(step) {
     const story = island2Story;
     const name = step.scene;
-    if (name === "shovel-approach") {
+    if (name === "terrain-approach") {
+      walk(step, "gardener", at(step.terrain === "port" ? "dockTop" : "tunnel"), "dig", 400, 1);
+    } else if (name === "terrain-carve") {
+      story[step.terrain === "port" ? "portBuilding" : "tunnelBuilding"] = step.stage;
+      renderIsland2();
+      island2Renderer.carveTerrain(step.terrain, step.stage, step.duration);
+      sound("island-effort");
+    } else if (name === "terrain-return") {
+      walk(step, "gardener", at("spring"), "offer", 250, -1);
+    } else if (name === "store-fetch") {
+      walk(step, "maker", at("inside"), "offer", 400, 1);
+      island2Carry("food", [], 1);
+    } else if (name === "store-deliver") {
+      walk(step, "maker", at("cellar"), "offer", 800, 1, "heavy");
+      island2Carry("food", [], 1);
+    } else if (name === "glass-inspect") {
+      const glass = point("i2-glass");
+      const travel = walk(step, "scout", [glass[0] + 23, glass[1] + 9], "polish", 700, -1);
+      island2Renderer.entities.get("i2-person-scout").workGrip =
+        { prop: "i2-glass", kind: "polish", start: performance.now() + travel };
+      island2Renderer.polishGlass(700, travel, step.finish);
+    } else if (name === "shovel-approach") {
       walk(step, "gardener", [97, 344], "offer", 250, 1);
     } else if (name === "shovel-take") {
       story.usingShovel = "gardener";
@@ -262,7 +323,7 @@ const island2Cinema = (() => {
       island2Renderer.digField(step.duration);
       sound("island-effort");
     } else if (name === "shovel-return") {
-      island2Renderer.perform("gardener", [[135, 350], [97, 344]], step.duration, "walk");
+      walk(step, "gardener", [97, 344], "offer", 250, 1);
     } else if (name === "shovel-bank-return") {
       island2Renderer.perform("gardener", [...island2Water.bankPath].reverse()
         .concat([[217, 347], [156, 361], [97, 344]]), step.duration, "walk");
@@ -679,6 +740,15 @@ const island2Cinema = (() => {
       sound("island2-touch");
     }
     switch (step.scene) {
+      case "terrain-carve":
+        story[step.terrain === "port" ? "portStairs" : "tunnelStage"] = step.stage;
+        story[step.terrain === "port" ? "portBuilding" : "tunnelBuilding"] = 0;
+        sound("island2-touch");
+        break;
+      case "store-deliver": story.storesDelivered = true; break;
+      case "glass-inspect":
+      case "glass-polish-contact":
+      case "glass-polish": story.glassFinish = step.finish; break;
       case "workshop-notice": story.knocking = false; break;
       case "field-dig": story.fieldWorking = false; story.fieldPrepared = true; break;
       case "shovel-put":

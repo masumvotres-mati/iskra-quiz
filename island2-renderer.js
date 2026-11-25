@@ -45,8 +45,8 @@ const island2Renderer = (() => {
     landing: { point: [377, 421], plane: "front" },
     generator: { point: [island2Layout.copper[0] + 17, island2Layout.copper[1] + 10], plane: "front" },
     lift: { point: [383, 382], plane: "front" },
-    dock: { point: island2Sea([507, 541]), plane: "dock" },
-    dockTop: { point: island2Layout.cliffTop, plane: "front" },
+    dock: { ...island2Terrain.portFloor.at(-1), plane: "dock" },
+    dockTop: { ...island2Terrain.portFloor[0], plane: "front" },
     stairs: { point: [383, 370], plane: "front" },
     terrace: { point: [282, 327], plane: "terrace" },
     spring: { point: [221, 344], plane: "terrace" },
@@ -55,11 +55,14 @@ const island2Renderer = (() => {
     balcony: { point: [435, 288], plane: "peak" },
     lantern: { point: [488, 212], plane: "gallery" },
     upperLoad: { point: [437, 244], plane: "gallery" },
-    tunnel: { point: [238, 480], plane: "underground" },
+    tunnel: { point: [238, 480], height: -54, plane: "underground" },
+    passage: { ...island2Terrain.upperPath.at(-1), plane: "underground", tunnelStage: 1 },
+    cellar: { ...island2Terrain.lowerPath.at(-1), plane: "underground", tunnelStage: 2 },
     bridge: { point: [283, 424], plane: "front", height: island2Stone.thickness },
     pondEdge: { point: [136, 350], plane: "front" },
     receiver: { point: [154, 368], plane: "front" },
-    shore: { point: island2Sea([524, 503]), plane: "dock" },
+    shore: { point: [524, island2Terrain.portFloor.at(-1).point[1] - 17 * island2Iso.slope],
+      height: -island2View.depth, plane: "dock" },
     shoreTop: { point: [524, 362], plane: "front" },
   };
   const edges = [
@@ -80,7 +83,7 @@ const island2Renderer = (() => {
     ["landing", "lift", []],
     ["lift", "dockTop", [[446, 402]]],
     ["dockTop", "shoreTop", []],
-    ["dockTop", "dock", [], "climb"],
+    ["dockTop", "dock", island2Terrain.portFloor.slice(1, -1).map(({ point }) => point), "stairs", "port"],
     ["stairs", "terrace", [[377, 395], [282, 393]]],
     ["terrace", "spring", [[252, 347], [217, 347]]],
     ["terrace", "behind", [[294, 323], [294, 295], [268, 283]]],
@@ -89,11 +92,12 @@ const island2Renderer = (() => {
     ["balcony", "upperLoad", [[427, 263], [435, 239]], "climb"],
     ["upperLoad", "lantern", [[463, 226]]],
     ["inside", "tunnel", [[317, 410], [289, 457], [254, 473]], "crawl", "cutaway"],
+    ["tunnel", "passage", [], "walk", "passage"],
+    ["tunnel", "cellar", island2Terrain.lowerPath.slice(1, -1).map(({ point }) => point), "stairs", "cellar"],
     ["wheel", "bridge", [[236, 414]], "walk", "bridge"],
     ["bridge", "generator", [], "walk", "bridge"],
     ["farm", "pondEdge", []], ["lift", "shoreTop", [[481, 375]]],
-    ["shoreTop", "shore", [island2Layout.cliffTop, island2Sea([507, 483])], "climb"],
-    ["dock", "shore", [island2Sea([524, 520])]],
+    ["dock", "shore", []],
   ];
 
   function svg(tag, attributes = {}) {
@@ -211,7 +215,8 @@ const island2Renderer = (() => {
   }
 
   function nearest(point) {
-    return Object.keys(nodes).filter((key) => key !== "bridge" || context?.story.bridgeBuilt).reduce((best, key) =>
+    return Object.keys(nodes).filter((key) => (key !== "bridge" || context?.story.bridgeBuilt) &&
+      (!nodes[key].tunnelStage || context?.story.tunnelStage >= nodes[key].tunnelStage)).reduce((best, key) =>
       Math.hypot(...nodes[key].point.map((value, index) => value - point[index])) <
       Math.hypot(...nodes[best].point.map((value, index) => value - point[index])) ? key : best, "farm");
   }
@@ -230,7 +235,10 @@ const island2Renderer = (() => {
         if (requirement === "cutaway" && !context.story.cutawayOpen ||
             requirement === "bridge" && !context.story.bridgeBuilt ||
             requirement === "workshop" && !context.story.workshopOpen ||
-            requirement === "dry" && context.story.channelDug) continue;
+            requirement === "dry" && context.story.channelDug ||
+            requirement === "port" && !context.story.portStairs ||
+            requirement === "passage" && context.story.tunnelStage < 1 ||
+            requirement === "cellar" && context.story.tunnelStage < 2) continue;
         const next = a === key ? b : b === key ? a : undefined;
         if (next && !visited.has(next)) {
           visited.add(next);
@@ -253,6 +261,15 @@ const island2Renderer = (() => {
         plane: mode === "climb" ? "front" : mode === "crawl" ? "underground"
           : mode === "around" ? point[1] > 335 ? "front" : "ground-back" : nodes[from].plane, mode });
       result.push({ ...nodes[to], mode });
+      if (mode === "stairs") {
+        const floor = [from, to].includes("cellar") ? island2Terrain.lowerPath : island2Terrain.portFloor;
+        const plane = [from, to].includes("cellar") ? "underground" : "front";
+        for (const step of result.slice(-(waypoints.length + 1))) {
+          const support = floor.find(({ point }) => Math.hypot(point[0] - step.point[0], point[1] - step.point[1]) < .01);
+          if (support) step.height = support.height;
+          if (!["dock", "shore"].includes(to) || step !== result.at(-1)) step.plane = plane;
+        }
+      }
     }
     if (Math.hypot(result.at(-1).point[0] - destination[0], result.at(-1).point[1] - destination[1]) > 2) {
       result.push({ point: destination, plane: nodes[end].plane, mode: "walk" });
@@ -511,9 +528,7 @@ const island2Renderer = (() => {
       if (!context?.live) link.blend = 0;
       setPlane(entity, link.plane || target.plane);
       entity.depth = depth(target) + (link.depthBias ?? 1);
-      if (hands && target.height < 0 && target.node.dataset.pose === "climb") {
-        entity.depth = Math.max(entity.depth, depth(entities.get("i2-cliff-ladder")) + 1);
-      } else if (hands && target.height > 0 && target.node.dataset.pose === "climb" && target.point[1] > 270) {
+      if (hands && target.height > 0 && target.node.dataset.pose === "climb" && target.point[1] > 270) {
         entity.depth = Math.max(entity.depth, depth(entities.get("i2-service-low")) + 1);
       }
       if (link.support) entity.depth = Math.max(entity.depth, depth(entities.get(link.support)) + 1);
@@ -729,6 +744,67 @@ const island2Renderer = (() => {
   function turnShovel(angle, duration = 350) {
     const from = shovelAngle;
     assembly("shovel", duration, 0, (t) => shovelPose(from + (angle - from) * smooth(t)));
+  }
+
+  function paintGlassFinish(amount) {
+    [...document.getElementById("i2-glass-roughness").children].forEach((patch, index) => {
+      patch.style.opacity = String(.8 * (1 - bounded(amount * 5 - index)));
+    });
+  }
+
+  function glassFinish(amount) {
+    if (!assemblies.has("glass-polish")) paintGlassFinish(amount);
+  }
+
+  function polishGlass(duration, delay, finish) {
+    const from = context.story.glassFinish;
+    assembly("glass-polish", duration, delay, (t) => paintGlassFinish(from + (finish - from) * smooth(t)));
+  }
+
+  function carveTerrain(kind, stage, duration) {
+    const port = kind === "port";
+    const floor = [...(port ? island2Terrain.portFloor : stage === 1 ? island2Terrain.upperPath : island2Terrain.lowerPath)];
+    const worker = entities.get("i2-person-gardener");
+    if (Math.hypot(worker.point[0] - floor[0].point[0], worker.point[1] - floor[0].point[1]) > 2) {
+      floor.unshift({ point: [...worker.point], height: worker.height });
+    }
+    const group = document.getElementById(`i2-${port ? "port" : "tunnel"}-stage-${stage}`);
+    const mask = document.querySelector(`#i2-${port ? "port" : "tunnel"}-work-mask path`);
+    const points = floor.map(({ point }) => point);
+    const lengths = points.slice(1).map((point, index) => Math.hypot(point[0] - points[index][0], point[1] - points[index][1]));
+    const total = lengths.reduce((sum, length) => sum + length, 0);
+    group.setAttribute("clip-path", `url(#i2-${port ? "port" : "tunnel"}-work-mask)`);
+    perform("gardener", points, duration, "channel", 0, 1, port ? "front" : "underground", "idle",
+      floor.map(({ height }) => height));
+    const clods = document.getElementById("i2-cliff-clods");
+    clods.style.display = "";
+    assembly(`${kind}-terrain`, duration, 0, (t) => {
+      const progress = smooth(t);
+      let remaining = progress * total + 12;
+      let cut = "";
+      points.slice(1).forEach((b, index) => {
+        const a = points[index], amount = bounded(remaining / lengths[index]);
+        remaining -= lengths[index];
+        if (!amount) return;
+        const end = a.map((n, axis) => n + (b[axis] - n) * amount);
+        const width = port ? 30 : stage === 1 ? 36 : 50;
+        cut += island2Terrain.path([[a[0] - width, a[1] - 52], [end[0] - width, end[1] - 52],
+          [end[0] + width, end[1] + 12], [a[0] + width, a[1] + 12]]);
+      });
+      mask.setAttribute("d", cut);
+      if (!port) document.querySelector("#i2-under-mask path").setAttribute("d",
+        island2Terrain.tunnelOpening(stage));
+      const worker = entities.get("i2-person-gardener");
+      [...clods.children].forEach((node, index) => {
+        const p = (t * 14 + index / 3) % 1;
+        node.setAttribute("transform", `translate(${worker.point[0] + 5 + p * (index - 1) * 12} ${worker.point[1] + p * p * 22})`);
+        node.setAttribute("opacity", t < 1 ? 1 - p : 0);
+      });
+      if (t === 1) {
+        group.removeAttribute("clip-path");
+        clods.style.display = "none";
+      }
+    });
   }
 
   function digField(duration) {
@@ -991,16 +1067,16 @@ const island2Renderer = (() => {
       context.branches.wheel === "pottery");
   }
 
-  function perform(role, points, duration, mode, delay = 0, direction = 1, plane = "front", finishPose = "work") {
+  function perform(role, points, duration, mode, delay = 0, direction = 1, plane = "front", finishPose = "work", elevations) {
     const id = `i2-person-${role}`;
     context.story.people[role] = [...points.at(-1)];
     const lengths = points.slice(1).map((point, index) => Math.hypot(point[0] - points[index][0], point[1] - points[index][1]));
     const total = lengths.reduce((sum, length) => sum + length, 0);
     let cursor = 0;
     const offsets = [0, ...lengths.map((length) => { cursor += length; return cursor / Math.max(1, total); })];
-    const path = points.map((point) => ({ point, plane, mode: "walk",
-      height: context.story.bridgeBuilt && point.every((n, i) => Math.abs(n - nodes.bridge.point[i]) < .01)
-        ? nodes.bridge.height : undefined }));
+    const path = points.map((point, index) => ({ point, plane, mode: "walk",
+      height: elevations ? elevations[index] : context.story.bridgeBuilt &&
+        point.every((n, i) => Math.abs(n - nodes.bridge.point[i]) < .01) ? nodes.bridge.height : undefined }));
     move(id, points, duration, offsets, { path, length: total, role, delay, finishPose,
       gait: mode === "channel" || mode === "walk" ? mode : undefined });
     if (mode !== "channel" && mode !== "walk") act(role, mode, duration, delay, direction);
@@ -1027,8 +1103,6 @@ const island2Renderer = (() => {
       entity.depth = undefined;
       if (entity.plane === "peak" || entity.node.dataset.pose === "climb" && entity.height > 0 && entity.point[1] > 270) {
         entity.depth = Math.max(entity.point[1] + entity.height, depth(entities.get("i2-service-low")) + .5);
-      } else if (entity.node.dataset.pose === "climb" && entity.height < 0 && entity.node.parentNode === layers.get("world")) {
-        entity.depth = depth(entities.get("i2-cliff-ladder")) + .5;
       }
     }
     const leaf = entities.get("i2-lily");
@@ -1051,7 +1125,8 @@ const island2Renderer = (() => {
     } else if (!assemblies.has("wire")) drawWire(island2Wiring.points.map((point) => [...point]));
     const table = entities.get("i2-wheel");
     table.depth = table.point[1] + (context.levels.wheel >= 2 && context.branches.wheel !== "pottery" ? 2 : 13.6);
-    entities.get("i2-seeds").depth = context.story.usingShovel === "gardener" ? 349 : 356;
+    if (!assemblies.has("tunnel-terrain")) document.querySelector("#i2-under-mask path").setAttribute("d",
+      island2Terrain.tunnelOpening(context.story.tunnelStage));
     const stone = entities.get("i2-cover");
     stone.depth = stone.point[1] + 4;
     if (context.story.crateBoat) entities.get("i2-crate").depth = entities.get("i2-crate").point[1] + 2;
@@ -1357,6 +1432,7 @@ const island2Renderer = (() => {
     for (const [id, plane, point, anchor] of [
       ["i2-background", "background", [0, 0], -1000], ["i2-base-terrain", "base", [0, 0], -1000],
       ["i2-cutaway", "base", [0, 0], 1], ["i2-magnet", "underground", [254, 485], 486],
+      ["i2-port-stairs", "base", [0, 0], 2], ["i2-tunnels", "base", [0, 0], 3],
       ["i2-shovel", "front", island2Work.shovelRest, 350], ["i2-clay", "front", island2Work.clayBank, 340],
       ["i2-clay-bank", "floor", island2Work.clayBank, 341],
       ["i2-field-clods", "front", [0, 0], 360], ["i2-cliff-clods", "front", [0, 0], 520],
@@ -1367,10 +1443,12 @@ const island2Renderer = (() => {
       ["i2-tower", "peak", [0, 0], 374], ["i2-lamp", "front", island2Layout.lampRest], ["i2-glass", "front", island2Layout.glassRest],
       ["i2-gallery-rail", "front", [0, 0], 430],
       ["i2-tea", "front", island2Layout.wheelRest, 401],
-      ["i2-beam", "optics", [0, 0], 189], ["i2-seeds", "front", [0, 0], 356], ["i2-stream", "floor", [0, 0], 339],
+      ["i2-beam", "optics", [0, 0], 189], ["i2-seeds", "floor", [0, 0], 338], ["i2-stream", "floor", [0, 0], 339],
+      ...island2Plot.plants.map((point, index) => [`i2-crop-${index}`, "front", point]),
+      ["i2-crop-box", "front", [118, 357]],
       ["i2-overflow", "floor", [0, 0], 355],
       ["i2-lily-contact", "floor", [0, 0], 356],
-      ["i2-outfall", "sea-back", [0, 0], 615], ["i2-cliff-ladder", "front", [0, 0], 413],
+      ["i2-outfall", "sea-back", [0, 0], 615],
       ["i2-scaffold", "front", [0, 0], 363],
       ["i2-service-low", "front", [0, 0], 379],
       ["i2-service-upper", "front", [0, 0], 397],
@@ -1579,6 +1657,6 @@ const island2Renderer = (() => {
   return { mount, position, move, actor, act, perform, follow, release, sync, reset, clear, parcel,
     glass, lamp, discPlane, buildWheel, buildCabin, fillSpring, digChannel, fillFall, rockPose, turnStone,
     shovelPose, turnShovel, digField, knockDoor, braceSource, operateSluice, revealCutaway, growMagnet, seatWire, upgrade,
-    turnGlass, growLeaf, raiseLeafSail, carryOffset, supportPoint,
+    turnGlass, growLeaf, raiseLeafSail, carryOffset, supportPoint, glassFinish, polishGlass, carveTerrain,
     stopIdle, nodes, entities, journeys, followers, acts, assemblies, upgrades };
 })();
