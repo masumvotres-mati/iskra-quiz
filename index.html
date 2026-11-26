@@ -7,7 +7,7 @@
     <meta name="description" content="Przygotowanie do szkolnego etapu Olimpiady Wiedzy o Wynalazczości. Autorskie pytania ABCD z historii wynalazków i prawa własności przemysłowej.">
     <title>Iskra — Olimpiada Wiedzy o Wynalazczości</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%2358a700'/%3E%3Cpath d='M36 8 16 35h15l-3 21 21-29H34z' fill='%23fff'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="./styles.css?v=terrain-steps-1">
+    <link rel="stylesheet" href="./styles.css?v=valley-post-1">
     <script src="./questions.js" defer></script>
     <script src="./fact-checks.js" defer></script>
     <script src="./glossary.js" defer></script>
@@ -18,7 +18,8 @@
     <script src="./legal-games.js" defer></script>
     <script src="./workshop.js" defer></script>
     <script src="./island-music.js" defer></script>
-    <script src="./island.js" defer></script>
+    <script src="./valley-art.js?v=valley-post-1" defer></script>
+    <script src="./valley.js?v=valley-post-1" defer></script>
     <script src="./island2-art.js?v=terrain-steps-1" defer></script>
     <script src="./island2-renderer.js?v=terrain-steps-1" defer></script>
     <script src="./island2-story.js?v=terrain-steps-1" defer></script>
@@ -87,9 +88,9 @@
             </div>
             <div class="game-entry island-entry">
               <p class="eyebrow">GRA GRAFICZNA · EKSPERYMENTUJ</p>
-              <h2>Wyspa wynalazków</h2>
-              <p>Sześć elementów, różne kolejności. Dodawaj wynalazki i obserwuj, jak pomagają rozwijać się całej osadzie.</p>
-              <button id="island-open" class="button secondary" type="button">Rozwiń własną wyspę →</button>
+              <h2>Poczta nad wąwozem</h2>
+              <p>Dwa skalne tarasy, ogród i osiem drobiazgów. Powstanie poczta linowa czy droga dla małego wózka?</p>
+              <button id="island-open" class="button secondary" type="button">Połącz dwa brzegi →</button>
               <small>Bez zegara i bez wpływu na zaliczenia.</small>
             </div>
             <div class="game-entry island2-entry">
@@ -312,159 +313,14 @@
           </div>
         </section>
         <section id="island" class="screen" aria-labelledby="island-title" hidden>
-          <button id="island-exit" class="button text-button game-back" type="button">← Wróć do ścieżki</button>
-          <p class="eyebrow">MAŁY ŚWIAT WYNALAZKÓW</p>
-          <h1 id="island-title" tabindex="-1">Wyspa wynalazków</h1>
-          <p class="workshop-goal">Wybierz ikonę. Resztą zajmą się mieszkańcy.</p>
-          <div class="progress-label"><span id="island-count"></span><span id="island-level-count"></span></div>
-          <div id="island-scene" class="island-scene" data-busy="false">
-            <svg viewBox="0 0 640 580" role="img" aria-labelledby="island-scene-title island-scene-description">
-              <title id="island-scene-title">Rozwijająca się wyspa wynalazków</title>
-              <desc id="island-scene-description"></desc>
-              <defs>
-                <linearGradient id="island-sea-color" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#cae9ef"/><stop offset="1" stop-color="#f0f7e9"/></linearGradient>
-                <linearGradient id="island-grass-color" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#d1ebb0"/><stop offset="1" stop-color="#a1cf91"/></linearGradient>
-                <symbol id="island-resident" viewBox="-23 -80 46 86">
-                  <ellipse cy="2" rx="19" ry="5" fill="#35564526"/>
-                  <path d="m-8-7-2 7m18-7 2 7" stroke="#44685f" stroke-width="10" stroke-linecap="round"/>
-                  <path d="M-15-35q15-12 30 0v19q0 12-15 12t-15-12Z" fill="#79c9b0" stroke="#36584e" stroke-width="2.8"/>
-                  <path d="m-16-29-4 14m36-14 4 14" stroke="#f8d3a1" stroke-width="8" stroke-linecap="round"/>
-                  <circle cy="-49" r="18" fill="#ffdfb3" stroke="#5b5949" stroke-width="2.8"/>
-                  <path d="M-20-54q1-23 20-23t20 23Z" fill="#edb46c" stroke="#976c41" stroke-width="2.8"/>
-                  <path d="M-22-53h44m-27-19v13" stroke="#f9d79a" stroke-width="4" stroke-linecap="round"/>
-                  <circle cx="-6" cy="-48" r="2.1" fill="#4b584e"/><circle cx="6" cy="-48" r="2.1" fill="#4b584e"/>
-                  <ellipse cx="-11" cy="-42" rx="3.5" ry="2" fill="#eaa09a"/><ellipse cx="11" cy="-42" rx="3.5" ry="2" fill="#eaa09a"/>
-                  <path d="M-3-40q3 3 6 0" fill="none" stroke="#a57f64" stroke-width="1.8" stroke-linecap="round"/>
-                </symbol>
-                <g id="island-token-food"><path d="m-14-1 4 14h25l5-14Z" fill="#a8784c" stroke="#5c543e" stroke-width="2"/><circle cx="-4" cy="16" r="4" fill="#5b6554"/><circle cx="12" cy="16" r="4" fill="#5b6554"/><path d="m-2-3-3-12H9L7-3Z" fill="#f3d37e" stroke="#a27e40" stroke-width="2"/><path d="M-14 1h-10" stroke="#5c543e" stroke-width="3"/></g>
-                <g id="island-token-tools"><path d="m-10 10 17-17m-3-5 8 8m-3-10 5 5" stroke="#566f78" stroke-width="6" stroke-linecap="round"/><path d="m-10 10 6-6" stroke="#d7a464" stroke-width="6" stroke-linecap="round"/></g>
-                <g id="island-token-gear"><circle r="10" fill="#f2cc71" stroke="#766343" stroke-width="3"/><path d="M0-14v8m0 12v8M-14 0h8m12 0h8M-10-10l6 6m8 8 6 6m-20 0 6-6m8-8 6-6" stroke="#766343" stroke-width="3"/><circle r="3" fill="#a6c596"/></g>
-                <g id="island-token-note"><path d="M-10-15h20v29h-20Z" fill="#fffdf0" stroke="#85917a" stroke-width="2"/><path d="M-5-8H6M-5-2H6M-5 4H3" stroke="#85917a" stroke-width="2"/></g>
-                <symbol id="island-icon-water" viewBox="0 0 32 32"><path d="M16 3C12 10 7 15 7 21a9 9 0 0 0 18 0c0-6-5-11-9-18Z"/><path d="M11 21a5 5 0 0 0 5 5"/></symbol>
-                <symbol id="island-icon-crops" viewBox="0 0 32 32"><path d="M16 29V9m0 9C5 18 4 9 4 9s12-1 12 9Zm0-6C16 3 28 3 28 3s0 10-12 9Z"/></symbol>
-                <symbol id="island-icon-workshop" viewBox="0 0 32 32"><path d="m3 14 13-10 13 10M6 13v15h20V13M13 28V18h6v10M3 28h26"/></symbol>
-                <symbol id="island-icon-wheel" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="3"/><path d="M16 4v9m0 6v9M4 16h9m6 0h9M7 7l7 7m4 4 7 7M7 25l7-7m4-4 7-7"/></symbol>
-                <symbol id="island-icon-generator" viewBox="0 0 32 32"><path d="M4 12h24v16H4Zm5 0V7h14v5m-8 3-5 7h6l-1 5 7-9h-6l1-3"/></symbol>
-                <symbol id="island-icon-telegraph" viewBox="0 0 32 32"><path d="M5 29V5m22 24V5M1 10h8m14 0h8M5 7q11 11 22 0M3 29h6m14 0h6M10 19h12v8H10Zm0 0 6 5 6-5"/></symbol>
-              </defs>
-              <rect width="640" height="580" fill="#d8eff0"/>
-              <ellipse cx="326" cy="503" rx="250" ry="37" fill="#6fa6a2" opacity=".2"/>
-              <g fill="#fffef2" opacity=".9"><path d="M33 95q-3-18 15-20 9-23 30-7 19-4 23 14 17 0 17 13Z"/><path d="M504 66q0-14 15-15 11-20 28-5 17-3 21 14h13v6Z"/></g>
-              <path d="M65 252 300 128 566 222 590 311v85L350 520 90 423Z" fill="#bba17b" stroke="#526f5a" stroke-width="4" stroke-linejoin="round"/>
-              <path d="m90 338 260 98v84L90 423Z" fill="#cdb28a" stroke="#8c8966" stroke-width="3" stroke-linejoin="round"/>
-              <path d="m350 436 240-125v85L350 520Z" fill="#a38d6b" stroke="#778568" stroke-width="3" stroke-linejoin="round"/>
-              <path d="M65 252q-4-12 10-20l213-115q12-6 25-2l243 92q10 3 13 15l21 74q4 13-9 21L360 434q-10 5-22 1L101 347q-10-3-14-14Z" fill="#a9d77d" stroke="#526f5a" stroke-width="4" stroke-linejoin="round"/>
-              <path d="m81 244 219-116 252 94M101 335l247 90 224-118" fill="none" stroke="#d3ed9e" stroke-width="7" stroke-linecap="round" opacity=".85"/>
-              <path d="m131 375 182 67m-162-48 61 24m162 65 176-89" fill="none" stroke="#dfc89f" stroke-width="3" opacity=".55"/>
-              <path d="m150 444 26 8m-44 27h39m272 56h47m81-82h30" fill="none" stroke="#9ccfd0" stroke-width="5" stroke-linecap="round"/>
-              <path d="m126 270 42-25m148-52 45 17m124 96 24 10" stroke="#88bf6d" stroke-width="4" stroke-linecap="round"/>
-              <g fill="#7fb975" stroke="#577e5c" stroke-width="3"><path d="M111 258v36m12-43v38" fill="none"/><circle cx="107" cy="247" r="17"/><circle cx="126" cy="239" r="20"/><circle cx="142" cy="251" r="16"/></g>
-              <ellipse cx="199" cy="247" rx="26" ry="11" fill="#8ad5e2" stroke="#579ea9" stroke-width="3"/>
-              <g id="island-earthworks"><path d="M284 485v-30q19-35 47-8v55Z" fill="#607b75" stroke="#8c8966" stroke-width="8"/><path d="M293 485v-28q15-24 29-8v46Z" fill="#355b60"/><path d="m306 458 12 4v31" fill="none" stroke="#74cbd8" stroke-width="9"/><path d="m282 450 49 15m-48 18 49 16" stroke="#dbbd88" stroke-width="5"/></g>
-              <path id="island-road" d="M481 300 420 334 350 367 290 394 230 405" fill="none" stroke="#dfc18d" stroke-width="17" stroke-linecap="round"/>
-              <g id="island-asset-water" class="island-asset" data-level="0">
-                <g class="island-grow-body">
-                  <path d="M220 254q68 30 99 79t3 98v65" fill="none" stroke="#638d68" stroke-width="30" stroke-linecap="round"/>
-                  <path d="M220 254q68 30 99 79t3 98v65" class="island-stream" fill="none" stroke="#5cc6dc" stroke-width="20" stroke-linecap="round"/>
-                  <path d="M220 254q68 30 99 79t3 98v65" class="island-current" fill="none" stroke="#c6f7ed" stroke-width="4" stroke-dasharray="7 22"/>
-                  <path d="M162 230v25q36 31 80 0v-25Z" fill="#8ab5b6" stroke="#4c7776" stroke-width="4"/>
-                  <ellipse cx="202" cy="230" rx="40" ry="23" fill="#b6e3df" stroke="#4c7776" stroke-width="4"/>
-                  <ellipse cx="202" cy="232" rx="31" ry="15" fill="#65cde0" stroke="#8ee5e8" stroke-width="3"/>
-                  <path d="M184 214q-8-40 19-54 22 17 18 46" fill="#a0b7a3" stroke="#658775" stroke-width="4"/>
-                  <path d="M203 176v39" stroke="#9ae9ec" stroke-width="9" stroke-linecap="round"/>
-                  <path d="m232 253 15-7v-13" fill="none" stroke="#7b7856" stroke-width="5"/><g transform="translate(247 230)"><path class="island-valve-handle" d="M-9 0H9m-9-5v10" stroke="#e4bd70" stroke-width="5" stroke-linecap="round"/></g>
-                  <g data-island-stage="2"><path d="m262 277 105-35 42 17" fill="none" stroke="#5d8a6b" stroke-width="20" stroke-linejoin="round"/><path d="m262 277 105-35 42 17" fill="none" stroke="#69cee0" stroke-width="12" stroke-linejoin="round"/></g>
-                  <g data-island-stage="3"><path d="m246 262 14-8 16 9v26l-15 9-15-8Z" fill="#d3ac69" stroke="#766446" stroke-width="3"/><path d="M260 254v-16" stroke="#766446" stroke-width="5"/><ellipse cx="260" cy="234" rx="15" ry="7" fill="#f3cf83" stroke="#766446" stroke-width="3"/></g>
-                </g>
-              </g>
-              <g id="island-asset-crops" class="island-asset" data-level="0">
-                <g class="island-grow-body">
-                  <path d="m353 251 76-41 73 38v23l-78 44-71-41Z" fill="#a57b4d" stroke="#665d40" stroke-width="4" stroke-linejoin="round"/>
-                  <path d="m353 251 76-41 73 38-78 44Z" fill="#c39b60" stroke="#665d40" stroke-width="4" stroke-linejoin="round"/>
-                  <path d="m374 251 53-28m-31 40 53-28m-30 41 53-28" stroke="#e4bd7a" stroke-width="5" stroke-linecap="round"/>
-                  <g data-island-stage="2" class="island-seedlings" fill="#87c875" stroke="#4e8654" stroke-width="3"><path d="M391 248v-25q-23-8-23-21 25-2 25 20 1-24 23-24 1 20-23 25m31 41v-27q-22-6-22-22 23-1 23 22 0-23 23-23 0 18-23 24m33 9v-27q-23-5-23-21 22-1 24 20 2-23 22-23 0 18-23 23"/></g>
-                  <g data-island-stage="3" class="island-wheat" stroke="#f6d363" stroke-width="7" stroke-linecap="round"><path d="M390 250v-51m-12 8 12 8 12-10m-24 17 12 8 12-10m23 47v-51m-12 8 12 8 12-10m-24 17 12 8 12-10m22 12v-51m-12 8 12 8 12-10m-24 17 12 8 12-10"/></g>
-                  <g data-island-stage="3"><path d="m465 282-4 23q22 20 41 0l-4-23Z" fill="#f4d791" stroke="#927340" stroke-width="3"/><ellipse cx="482" cy="282" rx="17" ry="6" fill="#d3aa5e"/></g>
-                </g>
-              </g>
-              <g id="island-asset-workshop" class="island-asset" data-level="0">
-                <g class="island-grow-body">
-                  <g class="island-first-stage"><path d="m149 374 58-31 45 26-59 32Z" fill="#c8a373" stroke="#6c6248" stroke-width="4"/><path d="M157 373v37m79-35v32m-54-57v-55l28-16 29 18v48" fill="none" stroke="#967344" stroke-width="8" stroke-linejoin="round"/><path d="m169 371 24-20m-23-4 24 23" stroke="#64857f" stroke-width="8" stroke-linecap="round"/></g>
-                  <g data-island-stage="2">
-                    <ellipse cx="201" cy="411" rx="71" ry="17" fill="#4b714c33"/>
-                    <path d="m144 328 65-32 48 30v70l-59 33-54-34Z" fill="#f1d28c" stroke="#655d45" stroke-width="4" stroke-linejoin="round"/>
-                    <path d="m198 359 59-33v70l-59 33Z" fill="#cfa868" stroke="#655d45" stroke-width="3"/>
-                    <path d="M132 332q5-40 40-68l41-16q39 27 57 77l-67 41Z" fill="#eab098" stroke="#996f52" stroke-width="4" stroke-linejoin="round"/>
-                    <path d="M172 264q29 27 31 102l67-41q-18-50-57-77Z" fill="#d58c75" stroke="#996f52" stroke-width="3"/>
-                    <path d="m152 313 38 15m-27-36 24 9m36-31 14 20" fill="none" stroke="#f6cbaa" stroke-width="5" stroke-linecap="round"/>
-                    <path d="M156 402v-38a13 13 0 0 1 26 0v52" fill="#9d7958" stroke="#655d45" stroke-width="3"/>
-                    <rect class="island-window" x="150" y="338" width="22" height="23" rx="6" fill="#92bfb1" stroke="#655d45" stroke-width="3"/>
-                    <path class="island-window" d="m219 366 21-12v24l-21 12Z" fill="#92bfb1" stroke="#655d45" stroke-width="3"/>
-                  </g>
-                  <g data-island-stage="3"><path d="m252 381 46-25m-13-15v40" stroke="#6b654c" stroke-width="8"/><circle cx="270" cy="375" r="17" fill="#e1bd73" stroke="#756445" stroke-width="4"/><path d="M255 375h30m-15-15v30" stroke="#756445" stroke-width="4"/><g transform="translate(277 354)"><path class="island-hammer" d="M0 0v-34m-14-2h28v13H-14Z" fill="#7fa7a1" stroke="#4f6e67" stroke-width="4"/></g><path d="M260 392h40" stroke="#b48b59" stroke-width="8"/></g>
-                </g>
-              </g>
-              <g id="island-asset-wheel" class="island-asset" data-level="0">
-                <g class="island-grow-body">
-                  <ellipse cx="329" cy="396" rx="53" ry="15" fill="#406a5533"/>
-                  <path d="m283 394 39-98 45 95m-73-14h60" fill="none" stroke="#806540" stroke-width="10" stroke-linejoin="round"/>
-                  <g transform="translate(337 337)"><circle r="44" fill="#9c744b" stroke="#5f573d" stroke-width="4"/></g>
-                  <path d="m324 295 13-2m-13 98 13-10m-55-39 14-5m59 5 13-5" stroke="#806540" stroke-width="10"/>
-                  <g transform="translate(324 345)"><g class="island-rotor"><circle r="44" fill="#dfb872" stroke="#655b3f" stroke-width="6"/><circle r="31" fill="#9ac8ab" stroke="#655b3f" stroke-width="4"/><path d="M0-43v86m-43-43h86m-74-31 62 62m-62 0 62-62" stroke="#a57d49" stroke-width="8"/><circle r="11" fill="#f9dda0" stroke="#655b3f" stroke-width="4"/></g></g>
-                  <g data-island-stage="3"><path d="m302 370-30 15m85-19 40 25" stroke="#75664c" stroke-width="9" stroke-linecap="round"/><circle cx="374" cy="376" r="13" fill="#e1bb73" stroke="#75664c" stroke-width="4"/></g>
-                </g>
-              </g>
-              <g id="island-asset-generator" class="island-asset" data-level="0">
-                <g class="island-grow-body">
-                  <ellipse cx="424" cy="420" rx="58" ry="17" fill="#406a5533"/>
-                  <path d="m376 403 47-25 52 24-49 29Z" fill="#a7bba4" stroke="#567866" stroke-width="4"/>
-                  <g class="island-first-stage"><path d="M397 398v-37q0-16 14-16t14 16v37" fill="none" stroke="#cc8c69" stroke-width="11"/><path d="M440 391v-35m-9 0h19" stroke="#648b80" stroke-width="7"/></g>
-                  <g data-island-stage="2"><path d="M391 364q0-19 24-19h25q25 0 25 22v31q0 20-25 20h-25q-24 0-24-20Z" fill="#8cc8b6" stroke="#4c7569" stroke-width="4"/><ellipse cx="443" cy="381" rx="23" ry="35" fill="#bbdfc6" stroke="#4c7569" stroke-width="4"/><path d="M403 355v49m9-52v55" stroke="#6ca291" stroke-width="5"/><circle cx="443" cy="381" r="14" fill="#fff0b5" stroke="#6f8b70" stroke-width="3"/><path class="island-gauge" d="m443 381 6-8" stroke="#a18148" stroke-width="3" stroke-linecap="round"/><path d="M478 372v-30" stroke="#6f8b70" stroke-width="5"/><circle class="island-window" cx="478" cy="333" r="10" fill="#aec9b7" stroke="#6f8b70" stroke-width="3"/></g>
-                  <g data-island-stage="3"><path d="M428 349q-67-58-142-15t-125 9M459 370q38-55 71-23" fill="none" stroke="#76896c" stroke-width="3"/></g>
-                </g>
-              </g>
-              <g id="island-asset-telegraph" class="island-asset" data-level="0">
-                <g class="island-grow-body">
-                  <path d="M510 249v-93m-17 18h34M535 372v-79m-17 17h34m-42-145q63 63 25 138" fill="none" stroke="#8d7754" stroke-width="6" stroke-linecap="round"/>
-                  <path d="m488 236 30-16 28 16v29l-29 17-29-16Z" fill="#f2dbaa" stroke="#776e4e" stroke-width="4"/>
-                  <path d="m507 368 31-18 31 18v32l-31 18-31-17Z" fill="#f2dbaa" stroke="#776e4e" stroke-width="4"/>
-                  <path d="m488 236 30-16 28 16-29 17Zm19 132 31-18 31 18-31 18Z" fill="#fff0c7" stroke="#776e4e" stroke-width="3"/>
-                  <path class="island-key" d="m524 357 19-10m-17-5 3 17" stroke="#658a7f" stroke-width="6" stroke-linecap="round"/>
-                  <circle class="island-window" cx="518" cy="263" r="6" fill="#9cbca8"/><circle class="island-window" cx="538" cy="399" r="6" fill="#9cbca8"/>
-                  <g data-island-stage="2"><path class="island-signal" d="M510 165q63 63 25 138" fill="none" stroke="#ffe89c" stroke-width="4" stroke-dasharray="5 13"/></g>
-                  <g data-island-stage="3"><path class="island-paper" d="M510 237v-26q12 4 24-2v28q-12 8-24 0Z" fill="#fffdf0" stroke="#84977c" stroke-width="2"/><path d="m515 216 12-2m-12 8 12-2m-12 8 8-1" stroke="#84977c" stroke-width="2"/><path class="island-port-flag" d="M551 344v-27m0 0 20 5-20 12" fill="#e7ab69" stroke="#8e7950" stroke-width="3"/></g>
-                </g>
-              </g>
-              <g id="island-bridge"><path d="m291 384 48-27 21 13-48 28Z" fill="#e4c389" stroke="#907246" stroke-width="3"/><path d="m299 380 20 12m-9-18 20 12m-9-18 20 12m-9-18 20 12" stroke="#ad8958" stroke-width="3"/><path d="M293 384v-17m48-10v-16m-48 28 48-26" fill="none" stroke="#997a50" stroke-width="4"/></g>
-              <g id="island-dock"><path d="m411 518 47-23 45 21-48 25Z" fill="#d0aa72" stroke="#8c7655" stroke-width="3"/><path d="m420 514 43 21m-32-26 43 21m-31-26 43 21M420 522v18m73-17v17" stroke="#8c7655" stroke-width="3"/><g class="island-delivery"><path d="m427 504 13-7 15 7v17l-15 8-13-8Z" fill="#ecc489" stroke="#9c7d50" stroke-width="2"/><path d="M440 499v27" stroke="#f8e0b2" stroke-width="4"/></g></g>
-              <g id="island-finale" aria-hidden="true">
-                <g id="island-supply-boat"><g class="island-boat-float"><ellipse cx="492" cy="533" rx="43" ry="7" fill="#8bbec0"/><path d="m449 514 87 1-17 17h-51Z" fill="#cf9462" stroke="#7b7250" stroke-width="3"/><path d="M489 514v-52l-29 44h29m5-43 31 39h-31" fill="#fff4cc" stroke="#9e8d61" stroke-width="3"/></g></g>
-              </g>
-              <g id="island-effects" aria-hidden="true" pointer-events="none"></g>
-              <g id="island-residents" aria-hidden="true">
-                <g id="island-person-foreman" class="island-person"><g class="island-helper"><g class="island-person-pose"><use href="#island-resident" x="-23" y="-78" width="46" height="78"/><g class="island-person-cargo" transform="translate(23 -24)"><use href="#island-token-tools"/></g></g></g></g>
-                <g id="island-person-farmer" class="island-person"><g class="island-person-pose"><use href="#island-resident" x="-23" y="-78" width="46" height="78"/><g class="island-person-cargo" transform="translate(25 -3)"><use href="#island-token-food"/></g></g></g>
-                <g id="island-person-maker" class="island-person"><g class="island-person-pose"><use href="#island-resident" x="-23" y="-78" width="46" height="78"/><g class="island-person-cargo" transform="translate(20 -29)"><use href="#island-token-tools"/></g></g></g>
-                <g id="island-person-operator" class="island-person"><g class="island-person-pose"><use href="#island-resident" x="-23" y="-78" width="46" height="78"/><g class="island-person-cargo" transform="translate(20 -29)"><use href="#island-token-note"/></g></g></g>
-              </g>
-            </svg>
-            <button class="island-hotspot" data-island-inspect="water" style="left:33%;top:40%" type="button" aria-label="Obejrzyj wodę" hidden></button>
-            <button class="island-hotspot" data-island-inspect="crops" style="left:66%;top:43%" type="button" aria-label="Obejrzyj uprawy" hidden></button>
-            <button class="island-hotspot" data-island-inspect="workshop" style="left:30%;top:59%" type="button" aria-label="Obejrzyj warsztat" hidden></button>
-            <button class="island-hotspot" data-island-inspect="wheel" style="left:51%;top:60%" type="button" aria-label="Obejrzyj koło wodne" hidden></button>
-            <button class="island-hotspot" data-island-inspect="generator" style="left:67%;top:66%" type="button" aria-label="Obejrzyj prądnicę" hidden></button>
-            <button class="island-hotspot" data-island-inspect="telegraph" style="left:84%;top:62%" type="button" aria-label="Obejrzyj telegraf" hidden></button>
-          </div>
-          <p id="island-status" class="island-status" role="status" aria-live="polite" aria-atomic="true"></p>
-          <div id="island-controls" class="island-controls" role="group" aria-label="Wybierz element rozwoju wyspy" aria-busy="false">
-            <button id="island-pick-water" class="island-choice" data-feedback-sound type="button"><small id="island-order-water" class="island-choice-order" aria-hidden="true"></small><svg aria-hidden="true"><use href="#island-icon-water"/></svg><span>Woda</span><span class="island-level-dots" aria-hidden="true"><span></span><span></span><span></span></span><small id="island-level-water">Dodaj</small></button>
-            <button id="island-pick-crops" class="island-choice" data-feedback-sound type="button"><small id="island-order-crops" class="island-choice-order" aria-hidden="true"></small><svg aria-hidden="true"><use href="#island-icon-crops"/></svg><span>Uprawy</span><span class="island-level-dots" aria-hidden="true"><span></span><span></span><span></span></span><small id="island-level-crops">Dodaj</small></button>
-            <button id="island-pick-workshop" class="island-choice" data-feedback-sound type="button"><small id="island-order-workshop" class="island-choice-order" aria-hidden="true"></small><svg aria-hidden="true"><use href="#island-icon-workshop"/></svg><span>Warsztat</span><span class="island-level-dots" aria-hidden="true"><span></span><span></span><span></span></span><small id="island-level-workshop">Dodaj</small></button>
-            <button id="island-pick-wheel" class="island-choice" data-feedback-sound type="button"><small id="island-order-wheel" class="island-choice-order" aria-hidden="true"></small><svg aria-hidden="true"><use href="#island-icon-wheel"/></svg><span>Koło</span><span class="island-level-dots" aria-hidden="true"><span></span><span></span><span></span></span><small id="island-level-wheel">Dodaj</small></button>
-            <button id="island-pick-generator" class="island-choice" data-feedback-sound type="button"><small id="island-order-generator" class="island-choice-order" aria-hidden="true"></small><svg aria-hidden="true"><use href="#island-icon-generator"/></svg><span>Prąd</span><span class="island-level-dots" aria-hidden="true"><span></span><span></span><span></span></span><small id="island-level-generator">Dodaj</small></button>
-            <button id="island-pick-telegraph" class="island-choice" data-feedback-sound type="button"><small id="island-order-telegraph" class="island-choice-order" aria-hidden="true"></small><svg aria-hidden="true"><use href="#island-icon-telegraph"/></svg><span>Telegraf</span><span class="island-level-dots" aria-hidden="true"><span></span><span></span><span></span></span><small id="island-level-telegraph">Dodaj</small></button>
-          </div>
-          <div class="island-tools">
+          <button id="island-exit" class="button text-button game-back" type="button">← Wróć do nauki</button>
+          <div class="valley-heading"><h1 id="island-title" tabindex="-1">Poczta nad wąwozem</h1><span id="island-count">0 / 8</span></div>
+          <p class="valley-goal">Dwa brzegi, osiem drobiazgów. Co je połączy?</p>
+          <div id="island-scene" class="valley-scene" data-busy="false"></div>
+          <p id="island-status" class="valley-status" role="status" aria-live="polite" aria-atomic="true"></p>
+          <div id="island-controls" class="valley-controls" role="group" aria-label="Wybierz przedmiot dla doliny" aria-busy="false"></div>
+          <div class="valley-tools">
+            <span id="island-level-count" class="valley-max-count">0 MAX</span>
             <button id="island-skip" class="button text-button" data-feedback-sound type="button" hidden>Pomiń scenkę</button>
             <button id="island-reset" class="button text-button" type="button">Od nowa ↻</button>
             <button id="island-motion" class="button text-button" type="button" aria-pressed="false">Pauza animacji</button>
@@ -475,8 +331,8 @@
             <p id="island-build-order" class="island-build-order"></p>
             <button id="island-replay" class="button primary" type="button">Sprawdź inną kolejność →</button>
             <details id="island-explanations" class="sources">
-              <summary>Co z czym współpracuje? Wyjaśnienia i źródła</summary>
-              <p>To uproszczony model osady, nie chronologia pierwszych wynalazków. Poziomy i czas rozwoju są regułami gry. Istnieje więcej niż jedna kolejność pełnego rozwoju.</p>
+              <summary>Co z czym współpracuje?</summary>
+              <p>To autorska, baśniowa zagadka, nie chronologia wynalazków. Poziomy i czas rozwoju są regułami gry. Koło wodne i ręczny wózek prowadzą do różnych zakończeń.</p>
               <div id="island-learning"></div>
             </details>
           </div>
